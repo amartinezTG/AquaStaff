@@ -14,6 +14,7 @@ use App\Http\Controllers\CompaqController;
 use App\Http\Controllers\ProductosController;
 use App\Http\Controllers\TipoDeCambioController;
 use App\Http\Controllers\IndicadoresController;
+use App\Http\Controllers\AdministracionController;
 
 use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
@@ -48,6 +49,35 @@ Route::middleware('auth')->controller(DashboardController::class)->group(functio
 });
 
 
+#################
+# Administracion
+#################
+
+// Route::middleware('auth')->controller(AdministracionController::class)->group(function(){
+//     Route::get('/administracion/index',  'index')->name('administracion.index');
+
+
+// });
+/*
+|--------------------------------------------------------------------------
+| Rutas de Administración - Auditoría de Transacciones
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->prefix('administracion')->controller(AdministracionController::class)->group(function() {
+
+    // Vista principal
+    Route::get('/', 'index')->name('administracion.index');
+    // Obtener resumen de transacciones faltantes por día
+    Route::post('/transaction-gaps-summary', 'getTransactionGapsSummary')->name('administracion.gaps.summary');
+    // Obtener detalle de huecos específicos
+    Route::post('/transaction-gaps-detail', 'getTransactionGapsDetail')->name('administracion.gaps.detail');
+    // Exportar reporte a CSV
+    Route::get('/export-transaction-gaps', 'exportTransactionGaps')->name('administracion.gaps.export');
+    // Estadísticas rápidas (últimos 7 días)
+    Route::get('/quick-stats', 'getQuickStats')->name('administracion.quick.stats');
+
+});
 
 
 #################
@@ -71,9 +101,7 @@ Route::post('cajero', [CajeroController::class, 'index'])->middleware('auth')->n
 Route::get('cajero/membership-packages', [CajeroController::class, 'membershipPackages'])->middleware('auth')->name('cajero.membership.packages');
 
 Route::get('/exportar-csv/{startDate}/{endDate}', [CajeroController::class, 'exportCsv'])->middleware('auth')->name('exportar-csv');
-
 Route::get('/exportar-trafico-ventas/{startDate}/{endDate}', [CajeroController::class, 'exportSalesTraffic'])->middleware('auth')->name('exportar-trafico-ventas');
-
 Route::get('/exportar-listado-transacciones/{startDate}/{endDate}', [CajeroController::class, 'exportTransactionsList'])->middleware('auth')->name('exportar-trafico-ventas');
 
 
@@ -82,6 +110,13 @@ Route::get('/exportar-listado-transacciones/{startDate}/{endDate}', [CajeroContr
 Route::get('/membresias', [MembershipController::class, 'index'])->middleware('auth')->name('membresias');
 Route::post('/membresias', [MembershipController::class, 'index'])->middleware('auth')->name('membresias');
 Route::get('/exportar-membresias-ventas/{startDate}/{endDate}', [MembershipController::class, 'exportMembershipTraffic'])->middleware('auth')->name('exportar-membresias-ventas');
+// Rutas para membresías en cajero
+Route::get('/membresias/cajero', [MembershipController::class, 'membresia_cajero'])->name('membresias.cajero');
+Route::post('/membresias/membresias_cajero_table', [MembershipController::class, 'membresias_cajero_table'])->name('membresias.cajero.table');
+
+
+
+
 
 #################
 # COMPAQ

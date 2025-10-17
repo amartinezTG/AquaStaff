@@ -137,61 +137,94 @@ class LocalTransaction extends Model
     // }
 
     public static function indicadores_membresias_table(?string $from = null, ?string $until = null)
-{
-    $sql = "
-        WITH latest AS (
+    {
+        $sql = "
+            WITH latest AS (
+                SELECT
+                    cm.client_id,
+                    cm.membership_id,
+                    cm.start_date,
+                    cm.end_date,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY cm.client_id
+                        ORDER BY cm.start_date DESC
+                    ) AS rn
+                FROM client_membership cm
+            ),
+            orders_agg AS (
+                SELECT 
+                    o.UserId AS client_id,
+                    COUNT(*) AS total
+                FROM orders o
+                WHERE 
+                    o.OrderType = 1
+                    AND o.created_at BETWEEN ? AND ?
+                    -- Si prefieres fin exclusivo: 
+                    -- AND o.created_at >= ? AND o.created_at < ?
+                GROUP BY o.UserId
+            )
             SELECT
-                cm.client_id,
-                cm.membership_id,
-                cm.start_date,
-                cm.end_date,
-                ROW_NUMBER() OVER (
-                    PARTITION BY cm.client_id
-                    ORDER BY cm.start_date DESC
-                ) AS rn
-            FROM client_membership cm
-        ),
-        orders_agg AS (
-            SELECT 
-                o.UserId AS client_id,
-                COUNT(*) AS total
-            FROM orders o
-            WHERE 
-                o.OrderType = 1
-                AND o.created_at BETWEEN ? AND ?
-                -- Si prefieres fin exclusivo: 
-                -- AND o.created_at >= ? AND o.created_at < ?
-            GROUP BY o.UserId
-        )
-        SELECT
-            l.client_id,
-            CONCAT(COALESCE(c.first_name,''), ' ', COALESCE(c.last_name,'')) AS cliente,
-            COALESCE(oa.total, 0) AS total_orders,
-            CASE l.membership_id
-                WHEN '612f057787e473107fda56aa' THEN 'Express'
-                WHEN '61344ae637a5f00383106c7a' THEN 'Express'
-                WHEN '612f067387e473107fda56b0' THEN 'Básico'
-                WHEN '61344b5937a5f00383106c80' THEN 'Básico'
-                WHEN '612f1c4f30b90803837e7969' THEN 'Ultra'
-                WHEN '61344b9137a5f00383106c84' THEN 'Ultra'
-                WHEN '61344bab37a5f00383106c88' THEN 'Delux'
-                WHEN '612abcd1c4ce4c141237a356' THEN 'Delux'
-                ELSE 'N/A'
-            END AS package_name,
-            l.start_date,
-            l.end_date,
-            c.first_name,
-            c.last_name
-        FROM latest l
-        LEFT JOIN orders_agg oa
-            ON oa.client_id = l.client_id
-        LEFT JOIN clients c
-            ON c._id = l.client_id
-        WHERE l.rn = 1
-        ORDER BY oa.total DESC, cliente ASC
-    ";
+                l.client_id,
+                CONCAT(COALESCE(c.first_name,''), ' ', COALESCE(c.last_name,'')) AS cliente,
+                COALESCE(oa.total, 0) AS total_orders,
+                CASE l.membership_id
+                    WHEN '612f057787e473107fda56aa' THEN 'Express'
+                    WHEN '61344ae637a5f00383106c7a' THEN 'Express'
+                    WHEN '612f067387e473107fda56b0' THEN 'Básico'
+                    WHEN '61344b5937a5f00383106c80' THEN 'Básico'
+                    WHEN '612f1c4f30b90803837e7969' THEN 'Ultra'
+                    WHEN '61344b9137a5f00383106c84' THEN 'Ultra'
+                    WHEN '61344bab37a5f00383106c88' THEN 'Delux'
+                    WHEN '612abcd1c4ce4c141237a356' THEN 'Delux'
+                    ELSE 'N/A'
+                END AS package_name,
+                l.start_date,
+                l.end_date,
+                c.first_name,
+                c.last_name
+            FROM latest l
+            LEFT JOIN orders_agg oa
+                ON oa.client_id = l.client_id
+            LEFT JOIN clients c
+                ON c._id = l.client_id
+            WHERE l.rn = 1
+            ORDER BY oa.total DESC, cliente ASC
+        ";
 
-    return DB::select($sql, [$from, $until]);
-}
+        return DB::select($sql, [$from, $until]);
+    }
+    public static function membresiasCajero(?string $from = null, ?string $until = null)
+    {
+        $from  = $from  ? Carbon::parse($from)->startOfDay() : now()->startOfDay();
+        $until = $until ? Carbon::parse($until)->endOfDay()   : now()->endOfDay();
+
+        return self::query()
+            ->selectRaw("
+                _id,
+                TransationDate,
+                DATE(TransationDate) AS fecha,
+                TIME(DATE_ADD(TransationDate, INTERVAL 1 HOUR)) AS hora,
+                CASE TransactionType 
+                    WHEN 0 THEN 'Compra'
+                    WHEN 1 THEN 'Renovacion'
+                    ELSE 'N/A'
+                END AS tipo_transaccion,
+                CASE PaymentType 
+                    WHEN 0 THEN 'Efectivo'
+                    WHEN 1 THEN 'Tarjeta Debito'
+                    WHEN 2 THEN 'Tarjeta Credito'
+                    WHEN 3 THEN 'Cortesia'
+                    ELSE 'N/A'
+                END AS tipo_pago,
+                Package,
+                Membership,
+                Total,
+                Atm
+            ")
+            ->whereBetween('TransationDate', [$from, $until])
+            ->whereIn('TransactionType', [0, 1]) // Solo compras (0) y renovaciones (1)
+            ->orderBy('_id', 'desc')
+            ->get();
+    }
     
 }

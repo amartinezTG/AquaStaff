@@ -359,26 +359,7 @@ class DashboardController extends Controller
         // 4) Devuelve como arreglo indexado
         return array_values($defaults);
     }
-    
-    // private function getDetailedSummary($startDate, $endDate)
-    // {
-    //     return DB::select("
-    //         SELECT 
-    //             CASE 
-    //                 WHEN EXISTS (SELECT 1 FROM client_membership cm WHERE cm.client_id = o.UserId) 
-    //                 THEN 'Membresías' 
-    //                 ELSE 'Paquetes' 
-    //             END as concepto,
-    //             COUNT(*) as cantidad,
-    //             COALESCE(SUM(Price), 0) as total
-    //         FROM orders o
-    //         WHERE o.created_at BETWEEN ? AND ? 
-    //         AND o.OrderType = 1
-    //         GROUP BY concepto
-    //         ORDER BY total DESC
-    //     ", [$startDate, $endDate]);
-    // }
-    
+
     private function calculatePercentageChange($current, $previous)
     {
         if (!$previous || $previous == 0) {

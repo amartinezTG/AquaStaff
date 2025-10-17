@@ -73,7 +73,7 @@ async function loadDashboardData() {
 }
 async function loadActiveMemberships() {
     try {
-        const response = await fetch('/dashboard/active_memberships ', {
+        const response = await fetch('/dashboard/active_memberships', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',

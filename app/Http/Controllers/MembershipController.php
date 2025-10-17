@@ -122,7 +122,67 @@ class MembershipController extends Controller{
         ]);
 
     }
+    public function membresia_cajero()
+    {
+        $activePage = 'membresia_cajero';
+         return view('membresias.cajero', compact('activePage'));
+    }
 
+    public function membresias_cajero_table(Request $request)
+    {
+        $from  = $request->input('fecha_inicio');
+        $until = $request->input('fecha_final');
+
+        $rows = LocalTransaction::membresiasCajero($from, $until);
+        $data = [];
+
+        if ($rows) {
+            foreach ($rows as $row) {
+                // Determinar qué paquete usar según el tipo de transacción
+                $paquete = '';
+                if ($row->tipo_transaccion === 'Renovacion') {
+                    // Para renovación, usar Membership (package_name2)
+                    $paquete = $this->getPackageName($row->Membership);
+                } else {
+                    // Para compra, usar Package (package_name)
+                    $paquete = $this->getPackageName($row->Package);
+                }
+
+                $data[] = [
+                    '_id'               => $row->_id,
+                    'fecha'             => $row->fecha,
+                    'hora'              => $row->hora,
+                    'tipo_transaccion'  => $row->tipo_transaccion,
+                    'tipo_pago'         => $row->tipo_pago,
+                    'paquete'           => $paquete,
+                    'total'             => $row->Total,
+                    'atm'               => $row->Atm ?? 'N/A'
+                ];
+            }
+            return response()->json(["data" => $data]);
+        }
+
+        return response()->json(["data" => []]);
+    }
+
+    /**
+     * Mapea el ID del paquete a su nombre
+     */
+    private function getPackageName($packageId)
+    {
+        $packages = [
+            '612f057787e473107fda56aa' => 'Express',
+            '61344ae637a5f00383106c7a' => 'Express',
+            '612f067387e473107fda56b0' => 'Básico',
+            '61344b5937a5f00383106c80' => 'Básico',
+            '612f1c4f30b90803837e7969' => 'Ultra',
+            '61344b9137a5f00383106c84' => 'Ultra',
+            '61344bab37a5f00383106c88' => 'Delux',
+            '612abcd1c4ce4c141237a356' => 'Delux',
+        ];
+
+        return $packages[$packageId] ?? 'N/A';
+    }
     public function exportMembershipTraffic(Request $request){
         $startDate = $this->getStartDate($request->startDate);
         $endDate   = $this->getEndDate($request->endDate);

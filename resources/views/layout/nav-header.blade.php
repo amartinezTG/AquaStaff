@@ -24,7 +24,12 @@
                 <i class="bi bi-person-badge"></i>
                 <span>Membresías</span>
             </a>
-        </li><!-- End Membresías Nav -->
+        </li>
+         <li class="nav-item">
+            <a class="nav-link {{ $activePage === 'membresia_cajero' ? '' : 'collapsed' }}" href="/membresias/cajero"><i class="bi bi-person-badge"></i><span>Membresías Cajero</span>
+            </a>
+        </li>
+        <!-- End Membresías Nav -->
 
 
         <li class="nav-item">
@@ -149,28 +154,12 @@
                     <i class="bi bi-bar-chart"></i><span>Configuración </span><i class="bi bi-chevron-down ms-auto"></i>
                 </a>
                 <ul id="configuracion-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                    <li><a href="/usuarios"><i class="bi bi-circle"></i><span>Usuarios </span></a></li>
+                    <li><a href="{{ route('administracion.index') }}"><i class="bi bi-shield-check"></i><span>Auditoría </span></a></li>
 
-
-
-                    <li>
-                        <a href="/usuarios">
-                            <i class="bi bi-circle"></i><span>Usuarios </span>
-                        </a>
-                    </li>
-
-
-                    <li>
-                        <a href="/tipo_de_cambio">
-                            <i class="bi bi-circle"></i><span>Tipo de Cambio</span>
-                        </a>
-                    </li>
-                    <!--<li>
-            <a href="#">
-              <i class="bi bi-circle"></i><span>Niveles de inventario</span>
-            </a>
-          </li>-->
+                    <li><a href="/tipo_de_cambio"><i class="bi bi-circle"></i><span>Tipo de Cambio</span></a></li>
                 </ul>
-            </li><!-- End Charts Nav -->
+            </li>
         @endif
 
         <li class="nav-item">
