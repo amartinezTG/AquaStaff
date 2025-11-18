@@ -170,9 +170,9 @@ class IndicadoresController extends Controller
                 return intval($row->total_orders) > 0;
             });
             $precios = [
-                'Delux'   => 1000,
-                'Ultra'   => 800,
-                'Básico'  => 650,
+                'Delux'   => 599,
+                'Ultra'   => 499,
+                'Básico'  => 399,
                 'Express' => 500
             ];
                     // Formatear los resultados para DataTables
