@@ -2,11 +2,12 @@
 
 namespace App\Models;
 use Jenssegers\Mongodb\Eloquent\Model;
-//coment
+//comentario
 class Promocion extends Model
 {
     protected $connection = 'mongodb';
     protected $collection = 'specialorders';
+    public $timestamps = false;
 
     protected $fillable = [
         'IsSync',

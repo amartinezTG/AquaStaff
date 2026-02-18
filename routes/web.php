@@ -130,7 +130,7 @@ Route::get('/download/txt/{name}', [CompaqController::class, 'downloadTXT'])->na
 Route::get('/compaq_detalle/{id}', [CompaqController::class, 'DetailCompaq'])->middleware('auth');
 Route::get('/compaq_archivo/{name}', [CompaqController::class, 'CompaqFile'])->middleware('auth');
 Route::get('/compaq/history', [CompaqController::class, 'history'])->name('compaq.history');
-#################
+#################s
 # / COMPAQ
 
 
@@ -254,8 +254,11 @@ Route::get('/exportar_membresias_pdf/', [IndicadoresController::class, 'generarM
 Route::middleware('auth')->controller(PromocionesController::class)->group(function () {
     Route::get('/promociones', 'index')->name('promociones.index');
     Route::post('/promociones/tabla', 'tabla')->name('promociones.tabla');
+    Route::post('/promociones/store', 'store')->name('promociones.store');
+    Route::put('/promociones/{id}', 'update')->name('promociones.update');
+    Route::get('/promociones/{id}/pdf', 'pdf')->name('promociones.pdf');
 });
-#################
+#################s
 # / PROMOCIONES
 
 Route::get('/vending', function () {
