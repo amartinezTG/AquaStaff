@@ -90,13 +90,18 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
         ],
+        'mongodb' => [
+            'driver'   => 'mongodb',
+            'dsn'      => env('MONGO_URI'),
+            'database' => env('MONGO_DB', 'AquaCloud'),
+        ],
 
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Migration Repository Table
-    |--------------------------------------------------------------------------
+    | Migration sRepository Table
+    |-------------s-------------------------------------------------------------
     |
     | This table keeps track of all the migrations that have already run for
     | your application. Using this information, we can determine which of

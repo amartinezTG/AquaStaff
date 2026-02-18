@@ -15,6 +15,7 @@ use App\Http\Controllers\ProductosController;
 use App\Http\Controllers\TipoDeCambioController;
 use App\Http\Controllers\IndicadoresController;
 use App\Http\Controllers\AdministracionController;
+use App\Http\Controllers\PromocionesController;
 
 use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
@@ -30,7 +31,7 @@ use Illuminate\Support\Facades\Artisan;
 |
 | Here is where you can register web routes for your application. These
 | routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
+| contains the "wsb" middleware group. Now create something great!
 |
 */
 
@@ -247,6 +248,15 @@ Route::get('/indicadores_operativos_pdf/', [IndicadoresController::class, 'gener
 
 Route::get('/exportar_membresias_pdf/', [IndicadoresController::class, 'generarMembresiasPDF'])->name('exportar_membresias_pdf');
 
+
+#################
+# PROMOCIONES
+Route::middleware('auth')->controller(PromocionesController::class)->group(function () {
+    Route::get('/promociones', 'index')->name('promociones.index');
+    Route::post('/promociones/tabla', 'tabla')->name('promociones.tabla');
+});
+#################
+# / PROMOCIONES
 
 Route::get('/vending', function () {
     $activePage = 'vending';

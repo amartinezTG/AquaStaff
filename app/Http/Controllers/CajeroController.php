@@ -820,7 +820,7 @@ class CajeroController extends Controller
     }
 
     public function CajerosTable(Request $request){
-        $from  = $request->input('fecha_inicio'); // opcional
+        $from  = $request->input('fecha_inicio'); // opcisonal
         $until = $request->input('fecha_final');  // opcional
 
        $rows = LocalTransaction::pagosCajero($from, $until);

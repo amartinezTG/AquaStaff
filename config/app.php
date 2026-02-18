@@ -24,7 +24,7 @@ return [
     |
     | This value determines the "environment" your application is currently
     | running in. This may determine how you prefer to configure various
-    | services the application utilizes. Set this in your ".env" file.
+    | services the appslication utilizes. Set this in your ".env" file.
     |
     */
 
@@ -176,6 +176,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        Jenssegers\Mongodb\MongodbServiceProvider::class,
 
     ],
 
@@ -184,7 +185,7 @@ return [
     | Class Aliases
     |--------------------------------------------------------------------------
     |
-    | This array of class aliases will be registered when this application
+    | This array of classs aliasess will be registered when this application
     | is started. However, feel free to register as many as you wish as
     | the aliases are "lazy" loaded so they don't hinder performance.
     |

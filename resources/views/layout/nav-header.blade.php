@@ -34,7 +34,7 @@
 
         {{-- <li class="nav-item">
             <a class="nav-link {{ $activePage === 'cajero' ? '' : 'collapsed' }}" href="/cajero">
-                <i class="bi bi-inboxes"></i>
+                <i class="bi bi-inboxes"></i>s
                 <span>Cajero </span>
             </a>
         </li><!-- End Cajero Nav --> --}}
@@ -180,6 +180,13 @@
                 </ul>
             </li>
         @endif
+
+        <li class="nav-item">
+            <a class="nav-link {{ $activePage === 'promociones' ? '' : 'collapsed' }}" href="/promociones">
+                <i class="bi bi-tag"></i>
+                <span>Promociones</span>
+            </a>
+        </li>
 
         <li class="nav-item">
             <a class="nav-link {{ $activePage === 'logoput' ? '' : 'collapsed' }}" href="/logout">
