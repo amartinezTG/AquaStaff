@@ -112,13 +112,13 @@
       </li> End Control de Inventarios Nav -->
 
         <!-- @if (auth()->user()->role == 1 or auth()->user()->role == 2)
-<li class="nav-item">
-        <a class="nav-link {{ $activePage === 'facturacion' ? '' : 'collapsed' }}" href="/facturacion">
-          <i class="bi bi-receipt"></i>
-          <span>Facturación</span>
-        </a>
-      </li>
-@endif -->
+            <li class="nav-item">
+                    <a class="nav-link {{ $activePage === 'facturacion' ? '' : 'collapsed' }}" href="/facturacion">
+                    <i class="bi bi-receipt"></i>
+                    <span>Facturación</span>
+                    </a>
+                </li>
+            @endif -->
 
         <!--<li class="nav-item">
         <a class="nav-link {{ $activePage === 'inventarios' ? '' : 'collapsed' }}" href="/inventarios">
@@ -180,13 +180,16 @@
                 </ul>
             </li>
         @endif
-
-        <li class="nav-item">
+        @if (auth()->user()->role == 1 or auth()->user()->role == 2)
+            <li class="nav-item">
             <a class="nav-link {{ $activePage === 'promociones' ? '' : 'collapsed' }}" href="/promociones">
                 <i class="bi bi-tag"></i>
                 <span>Promociones</span>
             </a>
         </li>
+        
+        @endif
+
 
         <li class="nav-item">
             <a class="nav-link {{ $activePage === 'logoput' ? '' : 'collapsed' }}" href="/logout">
