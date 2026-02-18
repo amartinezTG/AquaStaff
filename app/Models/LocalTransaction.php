@@ -230,5 +230,60 @@ class LocalTransaction extends Model
             ->orderBy('_id', 'desc')
             ->get();
     }
+
+    public static function pagosCajero(?string $from = null, ?string $until = null)
+    {
+
+        $sql = "SELECT 
+            t1._id,t1.local_transaction_id,
+            DATE(t1.TransationDate) AS fecha,
+            TIME(DATE_ADD(t1.TransationDate, INTERVAL 1 HOUR)) AS hora,  -- aquí le sumamos 1 hora
+            CONCAT(t3.first_name,\" \", t3.last_name) AS cliente,
+            CASE t1.package
+                    WHEN '612f057787e473107fda56aa' THEN 'Express'
+                    WHEN '61344ae637a5f00383106c7a' THEN 'Express'
+
+                    WHEN '612f067387e473107fda56b0' THEN 'Básico'
+                    WHEN '61344b5937a5f00383106c80' THEN 'Básico'
+
+                    WHEN '612f1c4f30b90803837e7969' THEN 'Ultra'
+                    WHEN '61344b9137a5f00383106c84' THEN 'Ultra'
+
+                    WHEN '61344bab37a5f00383106c88' THEN 'Delux'
+                    WHEN '612abcd1c4ce4c141237a356' THEN 'Delux'
+                    ELSE 'N/A'  -- por si aún quieres conservar el nombre si existe
+                END AS `package_name`,
+            t1.Atm,
+            case t1.PaymentType 
+                when 0 then 'Efectivo'
+                When 1 then 'Targeta Debito'
+                When 2 then 'Targeta Credito'
+                When 3 then 'Garantia'
+            ELSE 'N/A'  
+            END AS `method`,
+            case t1.TransactionType 
+                when 0 then 'Compra Membresia'
+                When 1 then 'Renovacion Membresia'
+                When 2 then 'Lavado'
+            ELSE 'N/A'  
+            END AS `tipo_transaccion`,
+            t1.TransactionType,t1.PaymentType,t1.Total,t1.TotalPayed,t1.`Change`,t1.Membership,t1.Package,t1.CadenaFacturacion,
+            t1.fiscal_invoice,
+            t1.fiscal_account_id,
+            t4.rfc, t4.company_name
+            FROM `local_transaction` t1
+            LEFT JOIN client_membership t2  ON t1.Membership = t2._id   AND LENGTH(t1.Membership) = 24 
+            LEFT JOIN clients t3 ON t2.client_id = t3._id
+            LEFT JOIN fiscal_accounts t4 ON t1.fiscal_account_id = t4.id
+            WHERE
+            t1.TransationDate BETWEEN ? AND ?
+            ORDER by
+            --  t1._id DESC,
+            fecha desc,hora desc 
+
+        ";
+
+        return DB::select($sql, [$from, $until]);
+    }
     
 }

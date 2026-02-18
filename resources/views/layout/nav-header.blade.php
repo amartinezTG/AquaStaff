@@ -32,12 +32,30 @@
         <!-- End Membresías Nav -->
 
 
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <a class="nav-link {{ $activePage === 'cajero' ? '' : 'collapsed' }}" href="/cajero">
                 <i class="bi bi-inboxes"></i>
                 <span>Cajero </span>
             </a>
-        </li><!-- End Cajero Nav -->
+        </li><!-- End Cajero Nav --> --}}
+
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#indicadores-nav" data-bs-toggle="collapse"
+                href="#">
+                <i class="bi bi-inboxes"></i><span>Cajero</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="indicadores-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li>
+                    <a class="nav-link {{ $activePage === 'cajero' ? '' : 'collapsed' }}" href="/cajero">
+                        <i class="bi bi-receipt"></i><span>Cajero</span></a>
+                </li>
+                <li>
+                    <a class="nav-link {{ $activePage === 'cajero_transacciones' ? '' : 'collapsed' }}" href="/cajero_transacciones">
+                        <i class="bi bi-receipt"></i><span>Transacciones</span></a>
+                </li>
+
+            </ul>
+        </li>
 
 
         @if (auth()->user()->role == 1 or auth()->user()->role == 2 or auth()->user()->role == 3)
@@ -63,6 +81,7 @@
                         </a>
                     </li>
                 </ul>
+            </li>
         @endif
 
 

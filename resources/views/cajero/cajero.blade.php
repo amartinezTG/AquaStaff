@@ -1,6 +1,7 @@
 @include('layout.shared')
 
 <body class="toggle-sidebar">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
   <!-- ======= Header ======= -->
   <header id="header" class="header fixed-top d-flex align-items-center">
@@ -657,8 +658,8 @@
                       <td>{{ Carbon\Carbon::parse($weather->created_at)->format('h:i A') }}</td>
                       <td>{{ $weather->temperature }}</td>
                       <td>{{isset($catalogs->weather_description[$weather->weather_descriptions])
-       ? $catalogs->weather_description[$weather->weather_descriptions]
-       : $weather->weather_descriptions }}</td>
+                        ? $catalogs->weather_description[$weather->weather_descriptions]
+                        : $weather->weather_descriptions }}</td>
                       <td>{{ $weather->wind_speed }}</td>
                       <td>{{ $weather->humidity }}</td>
                       </tr>
@@ -678,7 +679,7 @@
 
       </div>
 
-      <div class="row">
+      {{-- <div class="row">
         <div class="col-lg-12">
           <div class="card">
             <div class="card-body">
@@ -686,7 +687,7 @@
               <p><a href="/exportar-listado-transacciones/{{$startDate}}/{{$endDate}}">Descargar Reporte</a></p>
               <!-- Table with stripped rows -->
               <div class="table-responsive">
-              <table  class=" table-responsive" id="transacciones">
+              <table  class=" table-responsive" id="CajerosTable">
                 <thead>
                   <tr>
                     <th>Tipo de uso</th>
@@ -723,7 +724,7 @@
                     </td>
                     <td>
                       @if ($orders->Package)
-{{ $catalogs->package_type[$orders->Package] ?? 'Sin información' }}
+                      {{ $catalogs->package_type[$orders->Package] ?? 'Sin información' }}
                       @else
 
                       @endif
@@ -738,12 +739,15 @@
                   </tr>
                   @endforeach
                 </tbody>
+                <tbody>
+
+                </tbody>
                 </table>
             </div>
             </div>
           </div>
         </div>
-      </div>
+      </div> --}}
 
     </section>
     
@@ -751,7 +755,7 @@
 <br>
 
 
-  </main><!-- End #main -->
+  </main>
 
   <!-- ======= Footer ======= -->
   <footer id="footer" class="footer">
@@ -772,8 +776,8 @@
 @include('layout.footer')
 
 <script type="text/javascript">
-  
   $(document).ready(function(){
+
 
     $("#ventas").hide();
     $("#clientes").hide();

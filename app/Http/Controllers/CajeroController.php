@@ -728,9 +728,7 @@ class CajeroController extends Controller
             $totalOrders12 = Orders::whereBetween('created_at', [$startDate, $endDate])
             //->whereIn('OrderType', [1, 2])
             ->count();
-            
             $totalTransactions=$totalLocal_Transactions+$totalOrdersType1;
-        
         /*####
             / Número total de transacciones
         ####*/
@@ -738,7 +736,6 @@ class CajeroController extends Controller
         //weather log
         // Obtener datos del clima para la fecha seleccionada (usando whereBetween)
         $weatherData = WeatherLog::whereBetween('created_at', [$startDate, $endDate])->orderBy('created_at', 'DESC')->get();
-
 
         return view('cajero.cajero', compact('activePage', 'groupedSummary', 'totalSales',  'averageSale', 'mostUsedPaymentType', 'totalMembershipUses', 'packageData', 'packageType', 'package1timeData', 'totalTransactions',  'totalInvoices', 'startDate', 'endDate', 'catalogs',  'chartData', 'chartUsedPayment', 'packageChart', 'ordersByPeriod', 'totalTransactionsList', 'chartDataPie', 'DateVisual', 'timePeriodsData', 'combined',  'groupedSummaries', 'weatherData', 'totalOrdersType2', 'combinedData', 'totals', 'realTotalOrders', 'carreraTotalSales', 'interlogicTotalSales'));
 
@@ -806,17 +803,49 @@ class CajeroController extends Controller
        }else{
         return Carbon::now()->subDays(7)->format('Y-m-d\TH:i');
        }
-        
     }
 
     private function getEndDate($end_date){
-    if($end_date){
-        return $end_date;
-       }else{
-        return Carbon::now()->format('Y-m-d\TH:i');
-       }
-
+        if($end_date){
+            return $end_date;
+        }else{
+            return Carbon::now()->format('Y-m-d\TH:i');
+        }
         //return $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
     }
+    function cajero_transacciones(){
+        $activePage = 'cajero_transacciones';
+
+        return view('cajero.cajero_transacciones', compact('activePage'));
+    }
+
+    public function CajerosTable(Request $request){
+        $from  = $request->input('fecha_inicio'); // opcional
+        $until = $request->input('fecha_final');  // opcional
+
+       $rows = LocalTransaction::pagosCajero($from, $until);
+        $data  = [];
+        foreach ($rows as $row) {
+            $data[] = [
+                '_id' => $row->_id,
+                'local_transaction_id' => $row->local_transaction_id,
+                'fecha' => $row->fecha,
+                'hora' => $row->hora,
+                'cliente' => $row->cliente,
+                'package_name' => $row->package_name,
+                'Atm' => $row->Atm,
+                'method' => $row->method,
+                'tipo_transaccion' => $row->tipo_transaccion,
+                'Total' => $row->Total,
+                'CadenaFacturacion' => $row->CadenaFacturacion,
+                'fiscal_invoice' => $row->fiscal_invoice,
+                'rfc' => $row->rfc,
+                'company_name' => $row->company_name,
+            ];
+        }
+
+       echo json_encode(array("data" => $data));
+    }
+
 
 }

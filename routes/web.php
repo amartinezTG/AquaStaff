@@ -98,6 +98,8 @@ Route::middleware('auth')->controller(IndicadoresController::class)->group(funct
 # CAJERO
 Route::get('cajero', [CajeroController::class, 'index'])->middleware('auth');
 Route::post('cajero', [CajeroController::class, 'index'])->middleware('auth')->name('cajero');
+Route::get('cajero_transacciones', [CajeroController::class, 'cajero_transacciones'])->middleware('auth')->name('cajero_transacciones');
+Route::post('cajero/CajerosTable', [CajeroController::class, 'CajerosTable'])->middleware('auth')->name('cajero.CajerosTable');
 Route::get('cajero/membership-packages', [CajeroController::class, 'membershipPackages'])->middleware('auth')->name('cajero.membership.packages');
 
 Route::get('/exportar-csv/{startDate}/{endDate}', [CajeroController::class, 'exportCsv'])->middleware('auth')->name('exportar-csv');
