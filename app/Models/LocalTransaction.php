@@ -58,10 +58,14 @@ class LocalTransaction extends Model
                 SUM(CASE WHEN t1.TransactionType IN (1) AND t1.Total <> 0 THEN t1.Total ELSE 0 END) AS sum__renovacion_membresia,
 
                 -- Cortesía
-                SUM(CASE WHEN t1.TransactionType = 2 AND t1.Total = 0 AND t1.PaymentType = 3 THEN 1 ELSE 0 END) AS lavados_cortesia,
+                SUM(CASE WHEN t1.TransactionType = 2 AND t1.Total = 0 AND t1.PaymentType = 3 AND t1.Membership NOT IN ('f104f389-103f-44fa-bd41-f948af1ecbb7','92a43e72-4e6e-4ecc-8b80-b6a921166cdb','e7089f5a-8d86-40e2-8b87-c092fd026f5d' ,'81e4abd3-0ead-4d5b-a834-08a1e7a6a9ca') THEN 1 ELSE 0 END) AS lavados_cortesia,
 
                 -- Total del día
-                SUM(t1.Total) AS suma_total_dia
+                SUM(t1.Total) AS suma_total_dia,
+                SUM(CASE WHEN t1.Membership = 'f104f389-103f-44fa-bd41-f948af1ecbb7' THEN 1 ELSE 0 END ) AS QrMembresiaDeluxe,
+                SUM(CASE WHEN t1.Membership = '92a43e72-4e6e-4ecc-8b80-b6a921166cdb' THEN 1 ELSE 0 END ) AS QrMembresiaExpress,
+                SUM(CASE WHEN t1.Membership = 'e7089f5a-8d86-40e2-8b87-c092fd026f5d' THEN 1 ELSE 0 END ) AS QrMembresiaBasico,
+                SUM(CASE WHEN t1.Membership = '81e4abd3-0ead-4d5b-a834-08a1e7a6a9ca' THEN 1 ELSE 0 END ) AS QrMembresiaUltra
             ")
             ->whereBetween('t1.TransationDate', [$from, $until])
             ->groupBy(DB::raw('DATE(t1.TransationDate)'))

@@ -47,6 +47,11 @@ class IndicadoresController extends Controller
         $data  = [];
         if ($rows) {
             foreach ($rows as $key => $row) {
+                $lavados_deluxe_membresia = $row['lavados_deluxe_membresia'] + $row['QrMembresiaDeluxe'] ?? 0;
+                $lavados_ultra_membresia = $row['lavados_ultra_membresia'] + $row['QrMembresiaUltra'] ?? 0;
+                $lavados_basico_membresia = $row['lavados_basico_membresia'] + $row['QrMembresiaBasico'] ?? 0;
+                $lavados_express_membresia = $row['lavados_express_membresia'] + $row['QrMembresiaExpress'] ?? 0;
+
                 
                 $data[] = array(
                     'fecha'                     => $row['fecha'],
@@ -60,10 +65,10 @@ class IndicadoresController extends Controller
                     'promo50'                   => $row['promo50'],
                     'suma_total_tipo2'          => $row['suma_total_tipo2'],
                     'lavados_membresia'         => $row['lavados_membresia'],
-                    'lavados_express_membresia' => $row['lavados_express_membresia'],
-                    'lavados_basico_membresia'  => $row['lavados_basico_membresia'],
-                    'lavados_ultra_membresia'   => $row['lavados_ultra_membresia'],
-                    'lavados_deluxe_membresia'  => $row['lavados_deluxe_membresia'],
+                    'lavados_express_membresia' => $lavados_express_membresia,
+                    'lavados_basico_membresia'  => $lavados_basico_membresia,
+                    'lavados_ultra_membresia'   => $lavados_ultra_membresia,
+                    'lavados_deluxe_membresia'  => $lavados_deluxe_membresia,
                     'compra_membresia'          => $row['compra_membresia'],
                     'renovacion_membresia'      => $row['renovacion_membresia'],
                     'sum_compra_membresia'      => $row['sum_compra_membresia'],
