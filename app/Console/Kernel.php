@@ -16,7 +16,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // Revisa estructuras sin sincronizar y envía correo si hay alguna con +24h
-        $schedule->command('sync:check-status')->dailyAt('08:00');
+        $schedule->command('sync:check-status')->dailyAt('15:40');
     }
  
     /**
@@ -29,5 +29,5 @@ class Kernel extends ConsoleKernel
         $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
-    }
+    } 
 }
