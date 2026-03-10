@@ -201,7 +201,7 @@ class AdministracionController extends Controller
 
         // Generar CSV
         $filename = "transacciones_faltantes_{$atm}_" . date('Y-m-d_His') . ".csv";
-        
+         
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         
@@ -295,6 +295,74 @@ class AdministracionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Vista del monitor de sincronización de transactions_log
+     */
+    public function syncMonitor()
+    {
+        $activePage = 'administracion';
+        return view('administracion.sync-monitor', compact('activePage'));
+    }
+
+    /**
+     * DataTable: última recepción por estructura en transactions_log
+     */ 
+    public function syncMonitorTable(Request $request)
+    {
+        $structures = [
+            'local_transactions',
+            'orders',
+            'recurrent_logs',
+            'used_business_codes',
+            'client_memberships',
+            'clients',
+            'special_orders',
+        ];
+
+        $data = [];
+ 
+        try {
+            foreach ($structures as $structure) {
+                $row = DB::selectOne("
+                    SELECT MAX(created_at) AS ultima_recepcion
+                    FROM transactions_log
+                    WHERE JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.structure')) = ?
+                ", [$structure]);
+
+                $ultimaRecepcion = $row && $row->ultima_recepcion ? $row->ultima_recepcion : null;
+                $minutosDesdeUltima = null;
+                $estado = 'Sin datos';
+
+                if ($ultimaRecepcion) {
+                    $diff = now()->diffInMinutes(\Carbon\Carbon::parse($ultimaRecepcion));
+                    $minutosDesdeUltima = $diff;
+
+                    if ($diff <= 60) {
+                        $estado = 'ok';
+                    } elseif ($diff <= 1440) {
+                        $estado = 'warning';
+                    } else {
+                        $estado = 'danger';
+                    }
+                }
+
+                $data[] = [
+                    'estructura'       => $structure,
+                    'ultima_recepcion' => $ultimaRecepcion,
+                    'minutos_desde'    => $minutosDesdeUltima,
+                    'estado'           => $estado,
+                ];
+            }
+
+            return response()->json(['data' => $data]);
+
+        } catch (\Exception $e) {
+            return response()->json([
                 'error' => $e->getMessage()
             ], 500);
         }

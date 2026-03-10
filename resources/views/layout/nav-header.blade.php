@@ -82,7 +82,7 @@
                     </li>
                 </ul>
             </li>
-        @endif
+        @endif   
 
 
         <li class="nav-item">
@@ -175,6 +175,7 @@
                 <ul id="configuracion-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
                     <li><a href="/usuarios"><i class="bi bi-circle"></i><span>Usuarios </span></a></li>
                     <li><a href="{{ route('administracion.index') }}"><i class="bi bi-shield-check"></i><span>Auditoría </span></a></li>
+                    <li><a href="{{ route('administracion.sync.monitor') }}"><i class="bi bi-arrow-repeat"></i><span>Monitor Sync</span></a></li>
 
                     <li><a href="/tipo_de_cambio"><i class="bi bi-circle"></i><span>Tipo de Cambio</span></a></li>
                 </ul>

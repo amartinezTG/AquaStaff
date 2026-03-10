@@ -78,9 +78,13 @@ Route::middleware('auth')->prefix('administracion')->controller(AdministracionCo
     // Estadísticas rápidas (últimos 7 días)
     Route::get('/quick-stats', 'getQuickStats')->name('administracion.quick.stats');
 
+    // Monitor de sincronización de transactions_log
+    Route::get('/sync-monitor', 'syncMonitor')->name('administracion.sync.monitor');
+    Route::post('/sync-monitor/table', 'syncMonitorTable')->name('administracion.sync.monitor.table');
+
 });
 
-
+ 
 #################
 # /INDICADORES MENSUALES
 #################
@@ -258,7 +262,7 @@ Route::middleware('auth')->controller(PromocionesController::class)->group(funct
     Route::put('/promociones/{id}', 'update')->name('promociones.update');
     Route::get('/promociones/{id}/pdf', 'pdf')->name('promociones.pdf');
 });
-#################s
+###### ###########s
 # / PROMOCIONES
 
 Route::get('/vending', function () {
@@ -266,7 +270,7 @@ Route::get('/vending', function () {
     return view('vending', compact('activePage'));
 })->middleware('auth');
 
-
+ 
 
 
 
