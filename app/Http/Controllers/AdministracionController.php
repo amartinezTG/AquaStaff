@@ -327,19 +327,35 @@ class AdministracionController extends Controller
         $data = [];
  
         try {
-            foreach ($structures as $structure) {
-                $row = DB::selectOne("
-                    SELECT MAX(created_at) AS ultima_recepcion
-                    FROM transactions_log
-                    WHERE JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.structure')) = ?
-                ", [$structure]);
+            // Una sola query: filtra por año actual y agrupa por estructura
+            $year = now()->year;
+            $placeholders = implode(',', array_fill(0, count($structures), '?'));
+ 
+            $rows = DB::select("
+                SELECT
+                    JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.structure')) AS estructura,
+                    MAX(created_at) AS ultima_recepcion,
+                    TIMESTAMPDIFF(MINUTE, MAX(created_at), NOW()) AS minutos_desde
+                FROM transactions_log
+                WHERE YEAR(created_at) = ?
+                  AND JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.structure')) IN ({$placeholders})
+                GROUP BY JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.structure'))
+            ", array_merge([$year], $structures));
 
-                $ultimaRecepcion = $row && $row->ultima_recepcion ? $row->ultima_recepcion : null;
+            // Indexar resultados por estructura para lookup O(1)
+            $index = [];
+            foreach ($rows as $row) {
+                $index[$row->estructura] = $row;
+            }
+
+            foreach ($structures as $structure) {
+                $rowData = $index[$structure] ?? null;
+                $ultimaRecepcion = $rowData ? $rowData->ultima_recepcion : null;
                 $minutosDesdeUltima = null;
                 $estado = 'Sin datos';
 
                 if ($ultimaRecepcion) {
-                    $diff = now()->diffInMinutes(\Carbon\Carbon::parse($ultimaRecepcion));
+                    $diff = (int)$rowData->minutos_desde;
                     $minutosDesdeUltima = $diff;
 
                     if ($diff <= 60) {
@@ -353,7 +369,7 @@ class AdministracionController extends Controller
 
                 $data[] = [
                     'estructura'       => $structure,
-                    'ultima_recepcion' => $ultimaRecepcion,
+                    'ultima_recepcion' => $ultimaRecepcion ?? '—',
                     'minutos_desde'    => $minutosDesdeUltima,
                     'estado'           => $estado,
                 ];
