@@ -6,17 +6,17 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
-{
+{ 
     /**
-     * Define the application's command schedule.
-     *
-     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
+     * Define the  application's command schedule.
+     * 
+     * @param    \Illuminate\Console\Scheduling\Schedule  $schedule
      * @return void
      */
     protected function schedule(Schedule $schedule)
     {
         // Revisa estructuras sin sincronizar y envía correo si hay alguna con +24h
-        $schedule->command('sync:check-status')->dailyAt('15:40');
+        $schedule->command('sync:check-status')->dailyAt('03:00');
     }
  
     /**
