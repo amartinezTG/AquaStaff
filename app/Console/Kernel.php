@@ -15,9 +15,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // Revisa estructuras sin sincronizar y envía correo si hay alguna con +24h
+        $schedule->command('sync:check-status')->dailyAt('08:00');
     }
-
+ 
     /**
      * Register the commands for the application.
      *
