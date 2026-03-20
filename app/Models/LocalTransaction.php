@@ -5,10 +5,11 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LocalTransaction extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'local_transaction';
     protected $fillable = ['TransationDate', 'TransactionType', 'Total', 'PaymentType', 'fiscal_invoice'];

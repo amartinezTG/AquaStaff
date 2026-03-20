@@ -5,7 +5,10 @@
       "Bash(php artisan:*)",
       "Bash(grep -r \"DataTable\\\\|datatable\\\\|\\\\.datatable\\\\|initTable\" /c/Users/alejandro.martinez/Desktop/codigo/AquaStaff --include=\"*.js\" --include=\"*.php\" 2>/dev/null | head -30)",
       "Bash(grep -r \"local_transaction\\\\|transactions\\\\|transfers_logs\" /c/Users/alejandro.martinez/Desktop/codigo/AquaStaff/database --include=\"*.php\" 2>/dev/null | head -20)",
-      "Bash(find /c/Users/alejandro.martinez/Desktop/codigo/AquaStaff -name \"*.sql\" -o -name \"database.sql\" 2>/dev/null | head -5)"
+      "Bash(find /c/Users/alejandro.martinez/Desktop/codigo/AquaStaff -name \"*.sql\" -o -name \"database.sql\" 2>/dev/null | head -5)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)"
     ]
   }
 }
