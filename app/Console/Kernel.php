@@ -19,9 +19,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('sync:check-status')->dailyAt('03:00');
 
         // Limpia renovaciones/compras de membresía duplicadas del día en curso
-        $schedule->command('transactions:clean-duplicates')->everyFifteenMinutes();
+        $schedule->command('transactions:clean-duplicates')->everyFiveMinutes();
     } 
- 
+  
     /**
      * Register the commands for the application.
      *

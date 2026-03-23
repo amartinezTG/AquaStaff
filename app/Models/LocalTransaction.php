@@ -23,7 +23,7 @@ class LocalTransaction extends Model
     {
         $from  = $from  ? Carbon::parse($from)->startOfDay() : now()->startOfMonth();
         $until = $until ? Carbon::parse($until)->endOfDay()   : now()->endOfMonth();
-  
+   
         return self::withoutGlobalScopes()
             ->from('local_transaction as t1')
             ->selectRaw("
@@ -98,8 +98,6 @@ class LocalTransaction extends Model
                     -- Total del día
                     SUM(t1.Total) AS suma_total_dia
                 FROM `local_transaction` t1
-                LEFT JOIN client_membership t2 ON t1.Membership = t2._id AND LENGTH(t1.Membership) = 24 
-                LEFT JOIN clients t3 ON t2.client_id = t3._id
                 WHERE t1.TransationDate BETWEEN ? AND ?
                  AND t1.deleted_at IS NULL
                 GROUP BY DATE(t1.TransationDate)

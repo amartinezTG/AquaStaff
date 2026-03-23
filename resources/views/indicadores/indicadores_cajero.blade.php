@@ -152,7 +152,7 @@
 
             .buttons-copy {
                 background: linear-gradient(135deg, #ffb800ff 0%, #f59e0b 100%) !important;
-            }
+            } 
 
             .btn-primary {
                 background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
@@ -327,6 +327,25 @@
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
+                                    <tfoot>
+                                        <tr style="background: linear-gradient(135deg, #1e7e34 0%, #155724 100%); color:#fff; font-weight:700; font-size:0.80rem;">
+                                            <th>Total</th>
+                                            <th></th><!-- total_eventos -->
+                                            <th></th><!-- suma_total_efectivo -->
+                                            <th></th><!-- suma_total_cajero1 -->
+                                            <th></th><!-- suma_total_cajero2 -->
+                                            <th></th><!-- suma_targetas_paquetes -->
+                                            <th></th><!-- suma_targetas_cajero_1 -->
+                                            <th></th><!-- suma_targetas_cajero_2 -->
+                                            <th></th><!-- suma_compra_membrecias -->
+                                            <th></th><!-- suma_comra_membresia_cajero_1 -->
+                                            <th></th><!-- suma_compra_membresia_cajero_2 -->
+                                            <th></th><!-- suma_renovacion_membresia_cajero_1 -->
+                                            <th></th><!-- suma_renovacion_membresia_cajero_2 -->
+                                            <th></th><!-- suma_procepago -->
+                                            <th></th><!-- suma_total_dia -->
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>

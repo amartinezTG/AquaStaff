@@ -71,7 +71,7 @@ function indicadoresTable(){
                 error: function() {
                     // $('#indicadores_table').waitMe('hide');
                     $('.table-responsive').removeClass('loader_iiee');
-                
+                 
                     // Swal.fire({
                     //     icon: "error",
                     //     title: "Error",
@@ -616,22 +616,30 @@ function indicadoresPagosTable(){
             { data: 'suma_total_dia', render: $.fn.dataTable.render.number(',', '.', 2), title: '$ Total Día'},
         ],
         createdRow: function (row, data, dataIndex) {
-            // Destacar primera columna (fecha)
             $(row).find('td:first-child').addClass('font-weight-bold bg-light');
-            
-            // Destacar columnas de totales
-            // $(row).find('td:nth-child(2)').addClass('text-primary font-weight-bold'); // Total eventos
-            // $(row).find('td:nth-child(3)').addClass('text-success font-weight-bold'); // Total efectivo
-            // $(row).find('td:nth-child(6)').addClass('text-info font-weight-bold'); // Total tarjetas
-            // $(row).find('td:nth-child(9)').addClass('text-warning font-weight-bold'); // Total membresías
-            // $(row).find('td:nth-child(14)').addClass('text-success font-weight-bold'); // Total Procepago
-            // $(row).find('td:last-child').addClass('text-danger font-weight-bold bg-light'); // Total día
+        },
+        footerCallback: function (row, data, start, end, display) {
+            var api = this.api();
+
+            // Columna entera: total_eventos (índice 1)
+            var totalEventos = api.column(1, { page: 'all' }).data().reduce(function(a, b) {
+                return (parseInt(a) || 0) + (parseInt(b) || 0);
+            }, 0);
+            $(api.column(1).footer()).html(totalEventos.toLocaleString('es-MX'));
+
+            // Columnas monetarias (índices 2-14)
+            var moneyCols = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+            moneyCols.forEach(function(col) {
+                var total = api.column(col, { page: 'all' }).data().reduce(function(a, b) {
+                    var val = typeof b === 'string' ? parseFloat(b.replace(/,/g, '')) : parseFloat(b);
+                    return (parseFloat(a) || 0) + (val || 0);
+                }, 0);
+                $(api.column(col).footer()).html('$' + total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            });
         },
         initComplete: function () {
             $('.table-responsive').removeClass('loader_iiee');
             console.log('DataTable de pagos inicializada correctamente');
-            
-            // Crear gráficas automáticamente
             createPaymentCharts(this.api());
             generateSummaryStats(this.api());
         }
