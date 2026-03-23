@@ -267,7 +267,7 @@
                                             <th colspan="8" class="text-center">Paquetes (pago)</th>
                                             <th colspan="5" class="text-center">Membresías (uso)</th>
                                             <th colspan="4" class="text-center">Mov. Membresía</th>
-
+ 
                                             <th rowspan="2">Garantia</th>
                                             <th rowspan="2">$ Total día</th>
                                             <th rowspan="2">$ Total Sin IVA </th>
@@ -298,6 +298,32 @@
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
+                                        <tfoot>
+                                            <tr style="background: linear-gradient(135deg, #1a7a91 0%, #145a6b 100%); color:#fff; font-weight:700; font-size:0.80rem;">
+                                                <th>Total</th>
+                                                <th></th><!-- total_eventos -->
+                                                <th></th><!-- lavados_paquete -->
+                                                <th></th><!-- lavados_express -->
+                                                <th></th><!-- lavados_basico -->
+                                                <th></th><!-- lavados_ultra -->
+                                                <th></th><!-- lavados_deluxe -->
+                                                <th></th><!-- promo150 -->
+                                                <th></th><!-- promo50 -->
+                                                <th></th><!-- suma_total_tipo2 -->
+                                                <th></th><!-- lavados_membresia -->
+                                                <th></th><!-- lavados_express_membresia -->
+                                                <th></th><!-- lavados_basico_membresia -->
+                                                <th></th><!-- lavados_ultra_membresia -->
+                                                <th></th><!-- lavados_deluxe_membresia -->
+                                                <th></th><!-- compra_membresia -->
+                                                <th></th><!-- renovacion_membresia -->
+                                                <th></th><!-- sum_compra_membresia -->
+                                                <th></th><!-- sum__renovacion_membresia -->
+                                                <th></th><!-- lavados_cortesia -->
+                                                <th></th><!-- suma_total_dia -->
+                                                <th></th><!-- suma_total_dia_iva -->
+                                            </tr>
+                                        </tfoot>
                                         </table>
 
                                 </div>

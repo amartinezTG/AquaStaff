@@ -63,7 +63,7 @@ function indicadoresTable(){
                 url: '/indicadores/indicadores_table',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
+                }, 
                 data: {
                     fecha_inicio: fecha_inicio,
                     fecha_final: fecha_final
@@ -117,6 +117,28 @@ function indicadoresTable(){
                 { data: 'suma_total_dia_iva' ,render: $.fn.dataTable.render.number(',', '.', 2)},
                 ],
             createdRow: function (row, data, dataIndex) {
+            },
+            footerCallback: function (row, data, start, end, display) {
+                var api = this.api();
+
+                // Columnas numéricas enteras (índice de columna)
+                var intCols = [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,19];
+                intCols.forEach(function(col) {
+                    var total = api.column(col, { page: 'all' }).data().reduce(function(a, b) {
+                        return (parseInt(a) || 0) + (parseInt(b) || 0);
+                    }, 0);
+                    $(api.column(col).footer()).html(total.toLocaleString('es-MX'));
+                });
+
+                // Columnas monetarias (formateadas con 2 decimales)
+                var moneyCols = [9, 17, 18, 20, 21];
+                moneyCols.forEach(function(col) {
+                    var total = api.column(col, { page: 'all' }).data().reduce(function(a, b) {
+                        var val = typeof b === 'string' ? parseFloat(b.replace(/,/g, '')) : parseFloat(b);
+                        return (parseFloat(a) || 0) + (val || 0);
+                    }, 0);
+                    $(api.column(col).footer()).html('$' + total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                });
             },
             initComplete: function () {
                 $('.table-responsive').removeClass('loader_iiee');

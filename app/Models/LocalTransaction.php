@@ -23,14 +23,9 @@ class LocalTransaction extends Model
     {
         $from  = $from  ? Carbon::parse($from)->startOfDay() : now()->startOfMonth();
         $until = $until ? Carbon::parse($until)->endOfDay()   : now()->endOfMonth();
- 
+  
         return self::withoutGlobalScopes()
             ->from('local_transaction as t1')
-            ->leftJoin('client_membership as t2', function ($join) {
-                $join->on('t1.Membership', '=', 't2._id')
-                     ->whereRaw('LENGTH(t1.Membership) = 24');
-            }) 
-            ->leftJoin('clients as t3', 't2.client_id', '=', 't3._id')
             ->selectRaw("
                 DATE(t1.TransationDate) AS fecha,
                 COUNT(*) AS total_eventos,
