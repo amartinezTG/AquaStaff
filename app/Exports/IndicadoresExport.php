@@ -20,7 +20,7 @@ class IndicadoresExport implements FromCollection, WithHeadings, WithMapping
     protected $totTrans;
 
     public function __construct($startDate, $endDate)
-    {
+    {  
         $this->startDate = Carbon::parse($startDate)->startOfDay();
         $this->endDate   = Carbon::parse($endDate)->endOfDay();
 
@@ -56,6 +56,7 @@ class IndicadoresExport implements FromCollection, WithHeadings, WithMapping
             ")
             ->where('ag.proveedor', 'INTERLOGIC')
             ->whereBetween('lt.TransationDate', [$this->startDate, $this->endDate])
+            ->whereNull('lt.deleted_at')
             ->groupBy(DB::raw('DATE(lt.TransationDate)'))
             ->get()
             ->keyBy('fecha');

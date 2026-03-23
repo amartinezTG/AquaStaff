@@ -6,7 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+ 
 class LocalTransaction extends Model
 {
     use HasFactory, SoftDeletes;
@@ -23,13 +23,13 @@ class LocalTransaction extends Model
     {
         $from  = $from  ? Carbon::parse($from)->startOfDay() : now()->startOfMonth();
         $until = $until ? Carbon::parse($until)->endOfDay()   : now()->endOfMonth();
-
-        return self::query()
+ 
+        return self::withoutGlobalScopes()
             ->from('local_transaction as t1')
             ->leftJoin('client_membership as t2', function ($join) {
                 $join->on('t1.Membership', '=', 't2._id')
                      ->whereRaw('LENGTH(t1.Membership) = 24');
-            })
+            }) 
             ->leftJoin('clients as t3', 't2.client_id', '=', 't3._id')
             ->selectRaw("
                 DATE(t1.TransationDate) AS fecha,
@@ -69,10 +69,11 @@ class LocalTransaction extends Model
                 SUM(CASE WHEN t1.Membership = '81e4abd3-0ead-4d5b-a834-08a1e7a6a9ca' THEN 1 ELSE 0 END ) AS QrMembresiaUltra
             ")
             ->whereBetween('t1.TransationDate', [$from, $until])
+            ->whereNull('t1.deleted_at')
             ->groupBy(DB::raw('DATE(t1.TransationDate)'))
             ->orderBy('fecha', 'desc')
             ->get();
-    }
+    } 
 
     public static function indicadores_pagos_table(?string $from = null, ?string $until = null){
         $resultados = DB::select("
@@ -105,6 +106,7 @@ class LocalTransaction extends Model
                 LEFT JOIN client_membership t2 ON t1.Membership = t2._id AND LENGTH(t1.Membership) = 24 
                 LEFT JOIN clients t3 ON t2.client_id = t3._id
                 WHERE t1.TransationDate BETWEEN ? AND ?
+                 AND t1.deleted_at IS NULL
                 GROUP BY DATE(t1.TransationDate)
                 ORDER BY fecha DESC
             ", [$from, $until]);
@@ -278,6 +280,7 @@ class LocalTransaction extends Model
             LEFT JOIN fiscal_accounts t4 ON t1.fiscal_account_id = t4.id
             WHERE
             t1.TransationDate BETWEEN ? AND ?
+             AND t1.deleted_at IS NULL
             ORDER by
             --  t1._id DESC,
             fecha desc,hora desc 

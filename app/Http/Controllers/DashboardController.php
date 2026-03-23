@@ -31,7 +31,7 @@ class DashboardController extends Controller
             ->whereIn('PaymentType', [0,1,2,3])
             ->whereIn('TransactionType', [0,1,2])
             ->groupBy('_id');
-
+ 
         return DB::query()
             ->fromSub($sub, 'Unicas')
             ->select([
@@ -136,7 +136,7 @@ class DashboardController extends Controller
 
 
     public function info_dashboard(Request $request)
-    {
+    { 
         try {
             $date = $request->input('date', now()->toDateString());
 
@@ -175,7 +175,7 @@ class DashboardController extends Controller
     {
         // Datos del día actual
         $today = DB::select("
-           SELECT 
+           SELECT
                 CAST(t1.TransationDate AS DATE) AS fecha,
                 COUNT(*) AS total_ordenes,
                 SUM(t1.Total) AS total_ingresos,
@@ -184,12 +184,13 @@ class DashboardController extends Controller
 
             WHERE t1.TransationDate >= ?
             AND t1.TransationDate <  ?
+            AND t1.deleted_at IS NULL
             GROUP BY CAST(t1.TransationDate AS DATE)
             ORDER BY fecha DESC
         ", [$startDate, $endDate])[0] ?? (object)['total_ingresos' => 0, 'total_ordenes' => 0, 'ticket_promedio' => 0];
         // Datos del día anterior
         $yesterday = DB::select("
-           SELECT 
+           SELECT
                 CAST(t1.TransationDate AS DATE) AS fecha,
                 COUNT(*) AS total_ordenes,
                 SUM(t1.Total) AS total_ingresos,
@@ -197,6 +198,7 @@ class DashboardController extends Controller
             FROM local_transaction AS t1
             WHERE t1.TransationDate >= ?
             AND t1.TransationDate <  ?
+            AND t1.deleted_at IS NULL
             GROUP BY CAST(t1.TransationDate AS DATE)
             ORDER BY fecha DESC
         ", [$yesterdayStart, $yesterdayEnd])[0] ?? (object)['total_ingresos' => 0, 'total_ordenes' => 0, 'ticket_promedio' => 0];
@@ -207,6 +209,7 @@ class DashboardController extends Controller
                 SUM(CASE WHEN t1.TransactionType = 0 THEN 1 ELSE 0 END) AS `total`
             FROM local_transaction AS t1
             WHERE t1.TransationDate between ? AND  ?
+            AND t1.deleted_at IS NULL
             GROUP BY CAST(t1.TransationDate AS DATE)
         ",  [$startDate, $endDate])[0]->total ?? 0;
 
@@ -215,6 +218,7 @@ class DashboardController extends Controller
                 SUM(CASE WHEN t1.TransactionType = 0 THEN 1 ELSE 0 END) AS `total`
             FROM local_transaction AS t1
             WHERE t1.TransationDate between ? AND  ?
+            AND t1.deleted_at IS NULL
             GROUP BY CAST(t1.TransationDate AS DATE)
         ", [$yesterdayStart, $yesterdayEnd])[0]->total ?? 0;
 
@@ -235,13 +239,14 @@ class DashboardController extends Controller
     private function getHourlyData($startDate, $endDate)
     {
         return DB::select("
-           SELECT 
+           SELECT
                 HOUR(t1.TransationDate)+1 AS `hour`,
                 SUM(t1.Total) AS ingresos,
                 COUNT(*) as ordenes
             FROM `local_transaction` t1
             WHERE
             t1.TransationDate BETWEEN ? AND ?
+            AND t1.deleted_at IS NULL
             GROUP BY hour
         ", [$startDate, $endDate]);
     }
@@ -267,6 +272,7 @@ class DashboardController extends Controller
             WHERE
             t1.TransationDate >= ?
             AND t1.TransationDate <  ?
+            AND t1.deleted_at IS NULL
             AND (
                 (t1.TransactionType = 2 AND t1.Total = 0 AND t1.PaymentType <> 3)
                 OR t1.TransactionType IN (0,1)
@@ -293,6 +299,7 @@ class DashboardController extends Controller
             WHERE
             t1.TransationDate >= ?
             AND t1.TransationDate <  ?
+            AND t1.deleted_at IS NULL
             AND (
                (t1.TransactionType = 2 AND t1.Total != 0 AND t1.PaymentType <> 3)
             )
@@ -309,13 +316,14 @@ class DashboardController extends Controller
     private function getTopCajeros($startDate, $endDate)
     {
         return DB::select("
-        SELECT 
+        SELECT
             COUNT(*) AS total_ordenes,
             sum(t1.Total) AS total,
             t1.atm as `cajero`
         FROM local_transaction t1
         WHERE
         t1.TransationDate BETWEEN ? AND  ?
+        AND t1.deleted_at IS NULL
         GROUP BY atm
         ", [$startDate, $endDate]);
     }
@@ -337,6 +345,7 @@ class DashboardController extends Controller
             WHERE
             t1.TransationDate >= ?
             AND t1.TransationDate <  ?
+            AND t1.deleted_at IS NULL
             GROUP BY method
         ", [$startDate, $endDate]);
 

@@ -28,7 +28,7 @@ class IndicadoresController extends Controller
         $this->catalogs = $catalogs;
     }
 
-    
+     
     function indicadores_cajero(){
         $activePage = 'Indicadores';
         return view('indicadores.indicadores_cajero', compact('activePage'));
@@ -52,7 +52,7 @@ class IndicadoresController extends Controller
                 $lavados_basico_membresia = $row['lavados_basico_membresia'] + $row['QrMembresiaBasico'] ?? 0;
                 $lavados_express_membresia = $row['lavados_express_membresia'] + $row['QrMembresiaExpress'] ?? 0;
 
-                
+                 
                 $data[] = array(
                     'fecha'                     => $row['fecha'],
                     'total_eventos'             => $row['total_eventos'],
@@ -385,6 +385,7 @@ class IndicadoresController extends Controller
         ")
         ->where('ag.proveedor', 'INTERLOGIC')
         ->whereBetween('lt.TransationDate', ['2025-07-01', '2025-07-30'])
+        ->whereNull('lt.deleted_at')
         ->groupBy(DB::raw('DATE(lt.TransationDate)'))
         ->orderBy('fecha')
         ->get()
@@ -634,6 +635,7 @@ class IndicadoresController extends Controller
             ")
             ->where('ag.proveedor', 'INTERLOGIC')
             ->whereBetween('lt.TransationDate', ['2025-07-01', '2025-07-30'])
+            ->whereNull('lt.deleted_at')
             ->groupBy(DB::raw('DATE(lt.TransationDate)'))
             ->orderBy('fecha')
             ->get()

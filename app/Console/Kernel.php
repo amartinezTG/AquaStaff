@@ -17,7 +17,10 @@ class Kernel extends ConsoleKernel
     {
         // Revisa estructuras sin sincronizar y envía correo si hay alguna con +24h
         $schedule->command('sync:check-status')->dailyAt('03:00');
-    }
+
+        // Limpia renovaciones/compras de membresía duplicadas del día en curso
+        $schedule->command('transactions:clean-duplicates')->everyFifteenMinutes();
+    } 
  
     /**
      * Register the commands for the application.

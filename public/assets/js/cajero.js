@@ -63,8 +63,8 @@ function CajerosDaTable(){
                         $('.table-responsive').addClass('loader_iiee');
                 }
             }
-                
-        ],
+                 
+        ], 
         ajax: {
             method: 'POST',
             url: '/cajero/CajerosTable',
@@ -78,7 +78,7 @@ function CajerosDaTable(){
             error: function() {
                 // $('#indicadores_table').waitMe('hide');
                 $('.table-responsive').removeClass('loader_iiee');
-            
+             
                 // Swal.fire({
                 //     icon: "error",
                 //     title: "Error",
