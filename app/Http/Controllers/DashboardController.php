@@ -53,7 +53,7 @@ class DashboardController extends Controller
         $activePage = 'dashboard';
 
         $timezone = 'America/Mexico_City';
-  
+   
         // Establecer el inicio de la semana antes de cualquier cálculo
         Carbon::setWeekStartsAt(Carbon::SUNDAY);
 
@@ -153,7 +153,7 @@ class DashboardController extends Controller
                 'membership_distribution' => $this->getMembershipDistribution($startDate, $endDate),
                 'cajeros' => $this->getTopCajeros($startDate, $endDate),
                 'payment_methods' => $this->getPaymentMethods($startDate, $endDate),
-                // 'detailed_summary' => $this->getDetailedSummary($startDate, $endDate)
+                'servicios' => $this->getServiciosDelDia($startDate, $endDate),
             ];
 
             
@@ -371,6 +371,39 @@ class DashboardController extends Controller
 
         // 4) Devuelve como arreglo indexado
         return array_values($defaults);
+    }
+
+    private function getServiciosDelDia($startDate, $endDate)
+    {
+        return DB::select("
+            SELECT
+                CASE
+                    WHEN TransactionType = 0 AND Package IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Compra Membresía Deluxe'
+                    WHEN TransactionType = 0 AND Package IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Compra Membresía Express'
+                    WHEN TransactionType = 0 AND Package IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Compra Membresía Ultra'
+                    WHEN TransactionType = 0 AND Package IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Compra Membresía Básico'
+                    WHEN TransactionType = 1 AND Package IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Renovación Membresía Deluxe'
+                    WHEN TransactionType = 1 AND Package IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Renovación Membresía Express'
+                    WHEN TransactionType = 1 AND Package IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Renovación Membresía Ultra'
+                    WHEN TransactionType = 1 AND Package IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Renovación Membresía Básico'
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 THEN 'Uso Membresía'
+                    WHEN TransactionType = 2 AND PaymentType = 3 THEN 'Cortesía'
+                    WHEN TransactionType = 2 AND Total > 0 AND Package IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Deluxe'
+                    WHEN TransactionType = 2 AND Total > 0 AND Package IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Express'
+                    WHEN TransactionType = 2 AND Total > 0 AND Package IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Ultra'
+                    WHEN TransactionType = 2 AND Total > 0 AND Package IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Básico'
+                    ELSE 'Otro'
+                END AS servicio,
+                COUNT(*) AS pagos,
+                SUM(CASE WHEN PaymentType = 0 THEN Total ELSE 0 END) AS efectivo,
+                SUM(CASE WHEN PaymentType IN (1,2) THEN Total ELSE 0 END) AS tarjeta,
+                SUM(Total) AS total
+            FROM local_transaction
+            WHERE TransationDate BETWEEN ? AND ?
+              AND deleted_at IS NULL
+            GROUP BY servicio
+            ORDER BY servicio
+        ", [$startDate, $endDate]);
     }
 
     private function calculatePercentageChange($current, $previous)

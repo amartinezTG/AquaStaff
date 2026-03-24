@@ -24,7 +24,7 @@
                 border: none;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
                 transition: transform 0.3s ease, box-shadow 0.3s ease;
-            }
+            } 
 
             .dashboard-card:hover {
                 transform: translateY(-5px);
@@ -225,6 +225,41 @@
             .mini-membership-card.ultra   { background: linear-gradient(135deg, #6f42c1, #5a32a3); }
             .mini-membership-card.delux   { background: linear-gradient(135deg, #fd7e14, #e36209); }
 
+            /* Badges compactos de membresías por tipo */
+            .membership-badge {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 14px;
+                border-radius: 20px;
+                background: #f8f9fa;
+                border: 1px solid #e9ecef;
+                min-width: 100px;
+            }
+            .membership-badge .badge-dot {
+                width: 10px; height: 10px;
+                border-radius: 50%;
+                flex-shrink: 0;
+            }
+            .membership-badge .badge-label {
+                font-size: 0.78rem;
+                color: #6c757d;
+                font-weight: 500;
+            }
+            .membership-badge .badge-count {
+                font-size: 1.1rem;
+                font-weight: 700;
+                margin-left: auto;
+            }
+            .membership-badge.express .badge-dot   { background: #17a2b8; }
+            .membership-badge.express .badge-count { color: #17a2b8; }
+            .membership-badge.basico  .badge-dot   { background: #28a745; }
+            .membership-badge.basico  .badge-count { color: #28a745; }
+            .membership-badge.ultra   .badge-dot   { background: #6f42c1; }
+            .membership-badge.ultra   .badge-count { color: #6f42c1; }
+            .membership-badge.delux   .badge-dot   { background: #fd7e14; }
+            .membership-badge.delux   .badge-count { color: #fd7e14; }
+
             /* Responsive */
             @media (max-width: 768px) {
                 .metric-value {
@@ -342,6 +377,44 @@
                 </div>
             </div>
 
+            <!-- Tabla de servicios del día -->
+            <div class="row g-3 mt-1">
+                <div class="col-12">
+                    <div class="card dashboard-card">
+                        <div class="card-body p-0">
+                            <div class="d-flex align-items-center px-3 pt-3 pb-2">
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2 text-muted"></i>Resumen de Servicios del Día</h6>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0" id="servicios_table" style="font-size:0.82rem;">
+                                    <thead style="background:#f8f9fa;">
+                                        <tr>
+                                            <th class="px-3 py-2">Servicio</th>
+                                            <th class="text-center py-2">Cantidad</th>
+                                            <th class="text-end py-2">Efectivo</th>
+                                            <th class="text-end py-2">Tarjeta</th>
+                                            <th class="text-end py-2 pe-3">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="servicios_tbody">
+                                        <tr><td colspan="5" class="text-center text-muted py-3">Cargando...</td></tr>
+                                    </tbody>
+                                    <tfoot id="servicios_tfoot" style="background:#f8f9fa; font-weight:700; display:none;">
+                                        <tr>
+                                            <td class="px-3">Total</td>
+                                            <td class="text-center" id="sf_pagos">0</td>
+                                            <td class="text-end" id="sf_efectivo">$0</td>
+                                            <td class="text-end" id="sf_tarjeta">$0</td>
+                                            <td class="text-end pe-3" id="sf_total">$0</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Cards por cajero: efectivo, tarjeta, lavados -->
             <div class="row g-3 mt-1">
                 <!-- AQUA01 -->
@@ -420,50 +493,40 @@
                 </div>
             </div>
 
-            <!-- Membresías Activas — fila compacta -->
-            <div class="row g-3 mt-1">
-                <div class="col-xl col-md-4 col-6">
-                    <div class="mini-membership-card total">
+            <!-- Membresías Activas -->
+            <div class="row g-3 mt-1 align-items-stretch">
+                <!-- Card total -->
+                <div class="col-auto">
+                    <div class="mini-membership-card total h-100">
                         <i class="bi bi-star-fill mini-icon"></i>
                         <div>
-                            <div class="mini-label">Total Activas</div>
+                            <div class="mini-label">Membresías Activas</div>
                             <div class="mini-count" id="total_active_memberships">0</div>
                         </div>
                     </div>
                 </div>
-                <div class="col-xl col-md-4 col-6">
-                    <div class="mini-membership-card express">
-                        <i class="bi bi-speedometer2 mini-icon"></i>
-                        <div>
-                            <div class="mini-label">Express</div>
-                            <div class="mini-count" id="count_express">0</div>
+                <!-- Badges por paquete -->
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm px-3 py-2 d-flex flex-row flex-wrap align-items-center gap-3">
+                        <div class="membership-badge express">
+                            <span class="badge-dot"></span>
+                            <span class="badge-label">Express</span>
+                            <span class="badge-count" id="count_express">0</span>
                         </div>
-                    </div>
-                </div>
-                <div class="col-xl col-md-4 col-6">
-                    <div class="mini-membership-card basico">
-                        <i class="bi bi-check-circle mini-icon"></i>
-                        <div>
-                            <div class="mini-label">Básico</div>
-                            <div class="mini-count" id="count_basico">0</div>
+                        <div class="membership-badge basico">
+                            <span class="badge-dot"></span>
+                            <span class="badge-label">Básico</span>
+                            <span class="badge-count" id="count_basico">0</span>
                         </div>
-                    </div>
-                </div>
-                <div class="col-xl col-md-4 col-6">
-                    <div class="mini-membership-card ultra">
-                        <i class="bi bi-gem mini-icon"></i>
-                        <div>
-                            <div class="mini-label">Ultra</div>
-                            <div class="mini-count" id="count_ultra">0</div>
+                        <div class="membership-badge ultra">
+                            <span class="badge-dot"></span>
+                            <span class="badge-label">Ultra</span>
+                            <span class="badge-count" id="count_ultra">0</span>
                         </div>
-                    </div>
-                </div>
-                <div class="col-xl col-md-4 col-6">
-                    <div class="mini-membership-card delux">
-                        <i class="bi bi-award mini-icon"></i>
-                        <div>
-                            <div class="mini-label">Delux</div>
-                            <div class="mini-count" id="count_delux">0</div>
+                        <div class="membership-badge delux">
+                            <span class="badge-dot"></span>
+                            <span class="badge-label">Delux</span>
+                            <span class="badge-count" id="count_delux">0</span>
                         </div>
                     </div>
                 </div>

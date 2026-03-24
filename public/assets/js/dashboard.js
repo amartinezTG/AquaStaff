@@ -24,7 +24,7 @@ const COLORS = {
 // Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(0, 0, 0, 0.8)';
 // Chart.defaults.plugins.tooltip.cornerRadius = 8;
 
-/**
+/** 
  * Función principal para cargar todos los datos del dashboard
  */
 async function loadDashboardData() {
@@ -116,6 +116,9 @@ function updateDashboard(data) {
     
     // Actualizar cards por cajero
     updateCajeroCards(data.cajeros || []);
+
+    // Actualizar tabla de servicios del día
+    updateServiciosTable(data.servicios || []);
 
     // Ocultar loading
     hideLoadingCards();
@@ -357,6 +360,54 @@ function updateCajeroCards(cajerosData) {
 function setVal(id, value) {
     const el = document.getElementById(id);
     if (el) el.textContent = value;
+}
+
+/**
+ * Actualizar tabla de servicios del día
+ */
+function updateServiciosTable(servicios = []) {
+    const tbody = document.getElementById('servicios_tbody');
+    const tfoot = document.getElementById('servicios_tfoot');
+    if (!tbody) return;
+
+    if (!servicios.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">Sin datos</td></tr>';
+        if (tfoot) tfoot.style.display = 'none';
+        return;
+    }
+
+    let totPagos = 0, totEfectivo = 0, totTarjeta = 0, totTotal = 0;
+    let html = '';
+
+    servicios.forEach(s => {
+        const pagos     = parseInt(s.pagos)     || 0;
+        const efectivo  = parseFloat(s.efectivo) || 0;
+        const tarjeta   = parseFloat(s.tarjeta)  || 0;
+        const total     = parseFloat(s.total)    || 0;
+
+        totPagos    += pagos;
+        totEfectivo += efectivo;
+        totTarjeta  += tarjeta;
+        totTotal    += total;
+
+        html += `<tr>
+            <td>${s.servicio}</td>
+            <td class="text-center">${formatNumber(pagos)}</td>
+            <td class="text-end">${formatCurrency(efectivo)}</td>
+            <td class="text-end">${formatCurrency(tarjeta)}</td>
+            <td class="text-end fw-semibold">${formatCurrency(total)}</td>
+        </tr>`;
+    });
+
+    tbody.innerHTML = html;
+
+    if (tfoot) {
+        tfoot.style.display = '';
+        setVal('sf_pagos',    formatNumber(totPagos));
+        setVal('sf_efectivo', formatCurrency(totEfectivo));
+        setVal('sf_tarjeta',  formatCurrency(totTarjeta));
+        setVal('sf_total',    formatCurrency(totTotal));
+    }
 }
 
 /**
