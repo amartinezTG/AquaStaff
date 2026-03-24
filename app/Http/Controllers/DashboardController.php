@@ -28,8 +28,7 @@ class DashboardController extends Controller
                 DB::raw('SUM(Total) as tot'),
             ])
             ->whereBetween('TransationDate', [$from, $to])
-            ->whereIn('PaymentType', [0,1,2,3])
-            ->whereIn('TransactionType', [0,1,2])
+            ->whereNull('deleted_at')
             ->groupBy('_id');
  
         return DB::query()
@@ -47,7 +46,7 @@ class DashboardController extends Controller
         return view('dashboard.dashboard', compact('activePage'));
     }
 
-
+ 
     public function index(Request $request)
     {
         $catalogs = new GeneralCatalogs();
@@ -179,9 +178,8 @@ class DashboardController extends Controller
                 CAST(t1.TransationDate AS DATE) AS fecha,
                 COUNT(*) AS total_ordenes,
                 SUM(t1.Total) AS total_ingresos,
-                COALESCE(AVG(t1.Total), 0) as ticket_promedio
+                COALESCE(AVG(CASE WHEN t1.Total > 0 THEN t1.Total END), 0) as ticket_promedio
             FROM local_transaction AS t1
-
             WHERE t1.TransationDate >= ?
             AND t1.TransationDate <  ?
             AND t1.deleted_at IS NULL
@@ -194,7 +192,7 @@ class DashboardController extends Controller
                 CAST(t1.TransationDate AS DATE) AS fecha,
                 COUNT(*) AS total_ordenes,
                 SUM(t1.Total) AS total_ingresos,
-                COALESCE(AVG(t1.Total), 0) as ticket_promedio
+                COALESCE(AVG(CASE WHEN t1.Total > 0 THEN t1.Total END), 0) as ticket_promedio
             FROM local_transaction AS t1
             WHERE t1.TransationDate >= ?
             AND t1.TransationDate <  ?
@@ -325,6 +323,7 @@ class DashboardController extends Controller
         t1.TransationDate BETWEEN ? AND  ?
         AND t1.deleted_at IS NULL
         GROUP BY atm
+        HAVING atm IS NOT NULL
         ", [$startDate, $endDate]);
     }
     

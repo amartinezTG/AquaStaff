@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 
-
+ 
 // Artisan::call('view:clear');
 /*
 |--------------------------------------------------------------------------
@@ -45,7 +45,7 @@ Route::middleware('auth')->controller(DashboardController::class)->group(functio
     Route::get('/dashboard',  'dashboard')->name('dashboard');
     Route::post('/dashboard/info_dashboard',  'info_dashboard')->name('dashboard.info_dashboard');
 
-    Route::post('/dashboard/active_memberships',  'active_memberships')->name('dashboard.active_memberships');
+    Route::get('/dashboard/active_memberships',  'active_memberships')->name('dashboard.active_memberships');
 
 });
 

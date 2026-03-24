@@ -29,7 +29,7 @@ const COLORS = {
  */
 async function loadDashboardData() {
     const selectedDate = document.getElementById('dashboard_date').value;
-    
+     
     if (!selectedDate) {
         showError('Por favor selecciona una fecha');
         return;
@@ -74,11 +74,11 @@ async function loadDashboardData() {
 async function loadActiveMemberships() {
     try {
         const response = await fetch('/dashboard/active_memberships', {
-                method: 'POST',
+                method: 'GET',
                 headers: {
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content            },
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
             });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -531,8 +531,6 @@ function formatChange(change) {
 function formatHour(hour) {
     const hourNum = parseInt(hour);
     if (isNaN(hourNum)) return '00:00';
-    
-    const nextHour = hourNum + 1;
     return `${hourNum.toString().padStart(2, '0')}:00`;
 }
 
@@ -590,7 +588,7 @@ function hideLoadingCards() {
  * Actualizar timestamp de última actualización
  */
 function updateLastUpdated() {
-    const element = document.getElementById('last_updated');
+    const element = document.getElementById('last-update');
     if (element) {
         const now = new Date();
         const timeString = now.toLocaleTimeString('es-MX', { 
