@@ -9,7 +9,7 @@ const COLORS = {
     primary: '#007bff',
     success: '#28a745', 
     danger: '#dc3545',
-    warning: '#ffc107',
+    warning: '#ffc107', 
     info: '#17a2b8',
     purple: '#6f42c1',
     orange: '#fd7e14',
@@ -276,16 +276,20 @@ function updateHourlyLavadosChart(hourlyData = null) {
     const data   = hourlyData.map(item => item.ordenes || 0);
 
     hourlyLavadosChart = new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
             labels,
             datasets: [{
                 label: 'Lavados',
                 data,
-                backgroundColor: 'rgba(15, 118, 110, 0.7)',
                 borderColor: '#0f766e',
-                borderWidth: 1,
-                borderRadius: 4
+                backgroundColor: 'rgba(15, 118, 110, 0.08)',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#0f766e',
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                fill: true,
+                tension: 0.4
             }]
         },
         options: {
