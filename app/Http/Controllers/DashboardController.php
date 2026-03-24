@@ -45,7 +45,7 @@ class DashboardController extends Controller
         $activePage = 'dashboard';
         return view('dashboard.dashboard', compact('activePage'));
     }
-
+ 
  
     public function index(Request $request)
     {
@@ -53,7 +53,7 @@ class DashboardController extends Controller
         $activePage = 'dashboard';
 
         $timezone = 'America/Mexico_City';
-
+  
         // Establecer el inicio de la semana antes de cualquier cálculo
         Carbon::setWeekStartsAt(Carbon::SUNDAY);
 
@@ -75,7 +75,7 @@ class DashboardController extends Controller
 
         $MonthStart = $fechaEnZonaHoraria->copy()->startOfMonth();
         $MonthEnd   = $fechaEnZonaHoraria->copy()->endOfMonth();
-
+ 
         $numberOfMonth = $fechaEnZonaHoraria->month;
 
         $TodayTotalTransactions = Orders::whereBetween('created_at', [$todayStart, $todayEnd])
@@ -315,15 +315,20 @@ class DashboardController extends Controller
     {
         return DB::select("
         SELECT
+            t1.Atm AS cajero,
             COUNT(*) AS total_ordenes,
-            sum(t1.Total) AS total,
-            t1.atm as `cajero`
+            SUM(t1.Total) AS total,
+            SUM(CASE WHEN t1.PaymentType = 0 THEN t1.Total ELSE 0 END) AS efectivo,
+            SUM(CASE WHEN t1.PaymentType IN (1,2) THEN t1.Total ELSE 0 END) AS tarjeta,
+            COUNT(CASE WHEN t1.TransactionType = 2 AND t1.Total > 0 THEN 1 END) AS lavados_paquete,
+            COUNT(CASE WHEN t1.TransactionType = 2 AND t1.Total = 0 AND t1.PaymentType != 3 THEN 1 END) AS lavados_membresia,
+            COUNT(CASE WHEN t1.TransactionType = 2 AND t1.PaymentType = 3 THEN 1 END) AS cortesia
         FROM local_transaction t1
-        WHERE
-        t1.TransationDate BETWEEN ? AND  ?
+        WHERE t1.TransationDate BETWEEN ? AND ?
         AND t1.deleted_at IS NULL
-        GROUP BY atm
-        HAVING atm IS NOT NULL
+        GROUP BY t1.Atm
+        HAVING t1.Atm IS NOT NULL
+        ORDER BY total DESC
         ", [$startDate, $endDate]);
     }
     

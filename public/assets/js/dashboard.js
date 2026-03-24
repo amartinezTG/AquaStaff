@@ -3,7 +3,7 @@
 // Variables globales para almacenar datos y gráficas
 let dashboardData = {};
 let hourlyChart, membershipChart, cajerosChart, paymentMethodsChart;
-
+  
 // Configuración de colores
 const COLORS = {
     primary: '#007bff',
@@ -17,7 +17,7 @@ const COLORS = {
     pink: '#e83e8c',
     indigo: '#6610f2'
 };
-
+ 
 // Configuración de Chart.js
 // Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 // Chart.defaults.font.size = 11;
@@ -114,9 +114,9 @@ function updateDashboard(data) {
     updateCajerosChart(data.cajeros || []);
     updatePaymentMethodsChart(data.payment_methods || []);
     
-    // Actualizar tabla de resumen
-    // updateSummaryTable(data.detailed_summary || []);
-    
+    // Actualizar cards por cajero
+    updateCajeroCards(data.cajeros || []);
+
     // Ocultar loading
     hideLoadingCards();
 }
@@ -172,6 +172,8 @@ function updateHourlyChart(hourlyData = null) {
     
     if (!hourlyData || hourlyData.length === 0) {
         hourlyData = generateEmptyHourlyData();
+    } else {
+        hourlyData = hourlyData.filter(item => item.hour >= 6 && item.hour <= 21);
     }
     
     // Determinar qué tipo de gráfica mostrar
@@ -315,6 +317,47 @@ function updateMembershipChart(rawMembershipData = []) {
   });
 }
 
+
+/**
+ * Poblar las cards de desglose por cajero
+ */
+function updateCajeroCards(cajerosData) {
+    const cajeros = {};
+    cajerosData.forEach(c => { cajeros[c.cajero] = c; });
+
+    const totals = cajerosData.reduce((acc, c) => {
+        acc.efectivo          += parseFloat(c.efectivo)           || 0;
+        acc.tarjeta           += parseFloat(c.tarjeta)            || 0;
+        acc.lavados_paquete   += parseInt(c.lavados_paquete)      || 0;
+        acc.lavados_membresia += parseInt(c.lavados_membresia)    || 0;
+        return acc;
+    }, { efectivo: 0, tarjeta: 0, lavados_paquete: 0, lavados_membresia: 0 });
+
+    // AQUA01
+    const a1 = cajeros['AQUA01'] || {};
+    setVal('aqua01_efectivo',          formatCurrency(a1.efectivo           || 0));
+    setVal('aqua01_tarjeta',           formatCurrency(a1.tarjeta            || 0));
+    setVal('aqua01_lavados_paquete',   formatNumber(a1.lavados_paquete      || 0));
+    setVal('aqua01_lavados_membresia', formatNumber(a1.lavados_membresia    || 0));
+
+    // AQUA02
+    const a2 = cajeros['AQUA02'] || {};
+    setVal('aqua02_efectivo',          formatCurrency(a2.efectivo           || 0));
+    setVal('aqua02_tarjeta',           formatCurrency(a2.tarjeta            || 0));
+    setVal('aqua02_lavados_paquete',   formatNumber(a2.lavados_paquete      || 0));
+    setVal('aqua02_lavados_membresia', formatNumber(a2.lavados_membresia    || 0));
+
+    // Totales
+    setVal('total_efectivo',          formatCurrency(totals.efectivo));
+    setVal('total_tarjeta',           formatCurrency(totals.tarjeta));
+    setVal('total_lavados_paquete',   formatNumber(totals.lavados_paquete));
+    setVal('total_lavados_membresia', formatNumber(totals.lavados_membresia));
+}
+
+function setVal(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
 
 /**
  * Actualizar gráfica de top cajeros
@@ -535,16 +578,12 @@ function formatHour(hour) {
 }
 
 /**
- * Generar datos vacíos para gráfica por hora
+ * Generar datos vacíos para gráfica por hora (solo horas operativas 6am-9pm)
  */
 function generateEmptyHourlyData() {
     const data = [];
-    for (let i = 0; i < 24; i++) {
-        data.push({
-            hour: i,
-            ingresos: 0,
-            ordenes: 0
-        });
+    for (let i = 6; i <= 21; i++) {
+        data.push({ hour: i, ingresos: 0, ordenes: 0 });
     }
     return data;
 }

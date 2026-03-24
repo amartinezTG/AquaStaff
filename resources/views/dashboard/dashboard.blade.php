@@ -1,9 +1,9 @@
 @include('layout.shared')
 @include('layout.includes')
-
+ 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <body class="toggle-sidebar">
-
+  
     <!-- ======= Header ======= -->
     <header id="header" class="header fixed-top d-flex align-items-center">
         <div class="d-flex align-items-center justify-content-between">
@@ -153,92 +153,77 @@
                 100% { background-position: -100% 0; }
             }
 
-            /* Estilos para membresías activas */
-            .membership-package-card {
-                background: white;
+            /* Cards de cajeros y lavados */
+            .cajero-card {
                 border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 15px;
-                border-left: 5px solid;
-                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
-                transition: all 0.3s ease;
+                border: none;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
             }
-
-            .membership-package-card:hover {
-                transform: translateX(5px);
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.12);
+            .cajero-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 6px 16px rgba(0,0,0,0.14);
             }
-
-            .membership-package-card.express {
-                border-left-color: #17a2b8;
+            .cajero-card .cajero-header {
+                border-radius: 12px 12px 0 0;
+                padding: 10px 16px;
+                font-weight: 700;
+                font-size: 0.95rem;
+                color: white;
             }
-
-            .membership-package-card.basico {
-                border-left-color: #28a745;
-            }
-
-            .membership-package-card.ultra {
-                border-left-color: #6f42c1;
-            }
-
-            .membership-package-card.delux {
-                border-left-color: #fd7e14;
-            }
-
-            .package-header {
+            .cajero-card.aqua01 .cajero-header { background: linear-gradient(135deg, #007bff, #0056b3); }
+            .cajero-card.aqua02 .cajero-header { background: linear-gradient(135deg, #17a2b8, #117a8b); }
+            .cajero-card.total  .cajero-header { background: linear-gradient(135deg, #28a745, #1e7e34); }
+            .cajero-stat {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 10px;
-            }
-
-            .package-name {
-                font-size: 1.2rem;
-                font-weight: 600;
-                color: #333;
-            }
-
-            .package-count {
-                font-size: 2rem;
-                font-weight: 700;
-                color: #007bff;
-            }
-
-            .package-badge {
-                display: inline-block;
-                padding: 5px 12px;
-                border-radius: 20px;
+                padding: 7px 0;
+                border-bottom: 1px solid #f0f0f0;
                 font-size: 0.85rem;
-                font-weight: 600;
-                color: white;
             }
+            .cajero-stat:last-child { border-bottom: none; }
+            .cajero-stat .stat-label { color: #6c757d; }
+            .cajero-stat .stat-value { font-weight: 700; color: #333; }
+            .cajero-stat .stat-value.efectivo { color: #28a745; }
+            .cajero-stat .stat-value.tarjeta  { color: #007bff; }
+            .cajero-stat .stat-value.membresia { color: #6f42c1; }
+            .cajero-stat .stat-value.paquete   { color: #fd7e14; }
 
-            .package-badge.express { background-color: #17a2b8; }
-            .package-badge.basico { background-color: #28a745; }
-            .package-badge.ultra { background-color: #6f42c1; }
-            .package-badge.delux { background-color: #fd7e14; }
-
-            .total-memberships-card {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            /* Membresías activas — mini cards compactas */
+            .mini-membership-card {
+                border-radius: 12px;
+                padding: 14px 16px;
                 color: white;
-                border-radius: 15px;
-                padding: 25px;
-                text-align: center;
-                box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
             }
-
-            .total-memberships-number {
-                font-size: 3.5rem;
+            .mini-membership-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+            }
+            .mini-membership-card .mini-icon {
+                font-size: 1.8rem;
+                opacity: 0.85;
+            }
+            .mini-membership-card .mini-label {
+                font-size: 0.75rem;
+                opacity: 0.9;
+                margin-bottom: 2px;
+            }
+            .mini-membership-card .mini-count {
+                font-size: 1.7rem;
                 font-weight: 700;
-                margin: 10px 0;
-                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                line-height: 1;
             }
-
-            .total-memberships-label {
-                font-size: 1.1rem;
-                opacity: 0.95;
-                font-weight: 500;
-            }
+            .mini-membership-card.total  { background: linear-gradient(135deg, #667eea, #764ba2); }
+            .mini-membership-card.express { background: linear-gradient(135deg, #17a2b8, #138496); }
+            .mini-membership-card.basico  { background: linear-gradient(135deg, #28a745, #1e7e34); }
+            .mini-membership-card.ultra   { background: linear-gradient(135deg, #6f42c1, #5a32a3); }
+            .mini-membership-card.delux   { background: linear-gradient(135deg, #fd7e14, #e36209); }
 
             /* Responsive */
             @media (max-width: 768px) {
@@ -264,44 +249,27 @@
             }
         </style>
 
-        <div class="pagetitle">
-            <h1>Dashboard AquaCar</h1>
-            <nav>
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/dashboard">Portada</a></li>
-                    <li class="breadcrumb-item active">Dashboard</li>
-                </ol>
-            </nav>
+        <div class="pagetitle d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <h1>Dashboard AquaCar</h1>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/dashboard">Portada</a></li>
+                        <li class="breadcrumb-item active">Dashboard</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <input type="date" class="form-control form-control-sm" id="dashboard_date"
+                       value="{{ date('Y-m-d') }}" style="width:150px;">
+                <button class="btn refresh-btn btn-sm" onclick="loadDashboardData(); loadActiveMemberships();">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+                </button>
+                <small class="text-muted">Últ. act: <span id="last-update">--:--</span></small>
+            </div>
         </div>
 
         <section class="section dashboard">
-            <!-- Selector de fecha -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="date-selector">
-                        <div class="row align-items-center">
-                            <div class="col-md-3">
-                                <label for="dashboard_date" class="form-label">Fecha de consulta:</label>
-                                <input type="date" class="form-control" id="dashboard_date" 
-                                       value="{{ date('Y-m-d') }}">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">&nbsp;</label>
-                                <div>
-                                    <button class="btn refresh-btn" onclick="loadDashboardData()">
-                                        <i class="bi bi-arrow-clockwise me-2"></i>Actualizar
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-md-6 text-end">
-                                <div class="text-muted">
-                                    <small>Última actualización: <span id="last-update">--:--</span></small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Métricas principales del día -->
             <div class="row">
@@ -374,152 +342,176 @@
                 </div>
             </div>
 
-            <!-- NUEVA SECCIÓN: Membresías Activas -->
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card dashboard-card">
-                        <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <h5 class="card-title mb-0 text-white">
-                                <i class="bi bi-card-checklist me-2"></i>Membresías Activas
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <!-- Total de Membresías -->
-                                <div class="col-lg-4 col-md-6 mb-4">
-                                    <div class="total-memberships-card">
-                                        <i class="bi bi-star-fill" style="font-size: 2rem; opacity: 0.9;"></i>
-                                        <div class="total-memberships-label">Total Membresías Activas</div>
-                                        <div class="total-memberships-number" id="total_active_memberships">0</div>
-                                        <small style="opacity: 0.9;">Vigentes al día de hoy</small>
-                                    </div>
-                                </div>
-
-                                <!-- Desglose por paquetes -->
-                                <div class="col-lg-8 col-md-6">
-                                    <div class="row" id="membership_packages_container">
-                                        <!-- Express -->
-                                        <div class="col-md-6">
-                                            <div class="membership-package-card express">
-                                                <div class="package-header">
-                                                    <div>
-                                                        <span class="package-badge express">Express</span>
-                                                        <div class="package-name mt-2">Express</div>
-                                                    </div>
-                                                    <div class="package-count" id="count_express">0</div>
-                                                </div>
-                                                <div class="text-muted small">
-                                                    <i class="bi bi-speedometer2"></i> Servicio rápido
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Básico -->
-                                        <div class="col-md-6">
-                                            <div class="membership-package-card basico">
-                                                <div class="package-header">
-                                                    <div>
-                                                        <span class="package-badge basico">Básico</span>
-                                                        <div class="package-name mt-2">Básico</div>
-                                                    </div>
-                                                    <div class="package-count" id="count_basico">0</div>
-                                                </div>
-                                                <div class="text-muted small">
-                                                    <i class="bi bi-check-circle"></i> Servicio esencial
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Ultra -->
-                                        <div class="col-md-6">
-                                            <div class="membership-package-card ultra">
-                                                <div class="package-header">
-                                                    <div>
-                                                        <span class="package-badge ultra">Ultra</span>
-                                                        <div class="package-name mt-2">Ultra</div>
-                                                    </div>
-                                                    <div class="package-count" id="count_ultra">0</div>
-                                                </div>
-                                                <div class="text-muted small">
-                                                    <i class="bi bi-gem"></i> Servicio premium
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Delux -->
-                                        <div class="col-md-6">
-                                            <div class="membership-package-card delux">
-                                                <div class="package-header">
-                                                    <div>
-                                                        <span class="package-badge delux">Delux</span>
-                                                        <div class="package-name mt-2">Delux</div>
-                                                    </div>
-                                                    <div class="package-count" id="count_delux">0</div>
-                                                </div>
-                                                <div class="text-muted small">
-                                                    <i class="bi bi-award"></i> Servicio de lujo
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+            <!-- Cards por cajero: efectivo, tarjeta, lavados -->
+            <div class="row g-3 mt-1">
+                <!-- AQUA01 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="card cajero-card aqua01">
+                        <div class="cajero-header"><i class="bi bi-hdd-rack me-2"></i>AQUA01</div>
+                        <div class="card-body py-2 px-3">
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-cash me-1"></i>Efectivo</span>
+                                <span class="stat-value efectivo" id="aqua01_efectivo">$0</span>
                             </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-credit-card me-1"></i>Tarjeta</span>
+                                <span class="stat-value tarjeta" id="aqua01_tarjeta">$0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-box me-1"></i>Lavados Paquete</span>
+                                <span class="stat-value paquete" id="aqua01_lavados_paquete">0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-person-check me-1"></i>Lavados Membresía</span>
+                                <span class="stat-value membresia" id="aqua01_lavados_membresia">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AQUA02 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="card cajero-card aqua02">
+                        <div class="cajero-header"><i class="bi bi-hdd-rack me-2"></i>AQUA02</div>
+                        <div class="card-body py-2 px-3">
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-cash me-1"></i>Efectivo</span>
+                                <span class="stat-value efectivo" id="aqua02_efectivo">$0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-credit-card me-1"></i>Tarjeta</span>
+                                <span class="stat-value tarjeta" id="aqua02_tarjeta">$0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-box me-1"></i>Lavados Paquete</span>
+                                <span class="stat-value paquete" id="aqua02_lavados_paquete">0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-person-check me-1"></i>Lavados Membresía</span>
+                                <span class="stat-value membresia" id="aqua02_lavados_membresia">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TOTAL -->
+                <div class="col-lg-4 col-md-12">
+                    <div class="card cajero-card total">
+                        <div class="cajero-header"><i class="bi bi-calculator me-2"></i>Total General</div>
+                        <div class="card-body py-2 px-3">
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-cash me-1"></i>Efectivo Total</span>
+                                <span class="stat-value efectivo" id="total_efectivo">$0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-credit-card me-1"></i>Tarjeta Total</span>
+                                <span class="stat-value tarjeta" id="total_tarjeta">$0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-box me-1"></i>Lavados Paquete</span>
+                                <span class="stat-value paquete" id="total_lavados_paquete">0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-person-check me-1"></i>Lavados Membresía</span>
+                                <span class="stat-value membresia" id="total_lavados_membresia">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Membresías Activas — fila compacta -->
+            <div class="row g-3 mt-1">
+                <div class="col-xl col-md-4 col-6">
+                    <div class="mini-membership-card total">
+                        <i class="bi bi-star-fill mini-icon"></i>
+                        <div>
+                            <div class="mini-label">Total Activas</div>
+                            <div class="mini-count" id="total_active_memberships">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl col-md-4 col-6">
+                    <div class="mini-membership-card express">
+                        <i class="bi bi-speedometer2 mini-icon"></i>
+                        <div>
+                            <div class="mini-label">Express</div>
+                            <div class="mini-count" id="count_express">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl col-md-4 col-6">
+                    <div class="mini-membership-card basico">
+                        <i class="bi bi-check-circle mini-icon"></i>
+                        <div>
+                            <div class="mini-label">Básico</div>
+                            <div class="mini-count" id="count_basico">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl col-md-4 col-6">
+                    <div class="mini-membership-card ultra">
+                        <i class="bi bi-gem mini-icon"></i>
+                        <div>
+                            <div class="mini-label">Ultra</div>
+                            <div class="mini-count" id="count_ultra">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl col-md-4 col-6">
+                    <div class="mini-membership-card delux">
+                        <i class="bi bi-award mini-icon"></i>
+                        <div>
+                            <div class="mini-label">Delux</div>
+                            <div class="mini-count" id="count_delux">0</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Gráficas -->
-            <div class="row">
+            <div class="row mt-3">
                 <!-- Gráfica de ventas por hora -->
                 <div class="col-lg-8">
-                    <div class="chart-container">
-                        <h5 class="chart-title">Ventas por Hora del Día</h5>
-                        <div style="position: relative; height: 350px;">
-                            <canvas id="hourlyChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Distribución Membresías vs Paquetes -->
-                <div class="col-lg-4">
-                    <div class="chart-container">
-                        <h5 class="chart-title">Membresías vs Paquetes</h5>
-                        <div style="position: relative; height: 350px;">
-                            <canvas id="membershipChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <!-- Top Cajeros del Día -->
-                <div class="col-lg-6">
                     <div class="card dashboard-card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="bi bi-person-workspace me-2"></i>Top Cajeros del Día
-                            </h5>
-                        </div>
                         <div class="card-body">
-                            <div class="chart-container">
-                                <canvas id="cajerosChart"></canvas>
+                            <h5 class="chart-title"><i class="bi bi-clock me-2 text-muted"></i>Ventas por Hora del Día</h5>
+                            <div style="position: relative; height: 300px;">
+                                <canvas id="hourlyChart"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Métodos de Pago -->
-                <div class="col-lg-6">
-                    <div class="card dashboard-card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="bi bi-credit-card me-2"></i>Métodos de Pago
-                            </h5>
-                        </div>
+                <!-- Columna derecha: Membresías vs Paquetes + Métodos de Pago apilados -->
+                <div class="col-lg-4 d-flex flex-column gap-3">
+                    <div class="card dashboard-card flex-fill">
                         <div class="card-body">
-                            <div class="chart-container">
+                            <h5 class="chart-title"><i class="bi bi-pie-chart me-2 text-muted"></i>Membresías vs Paquetes</h5>
+                            <div style="position: relative; height: 180px;">
+                                <canvas id="membershipChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card dashboard-card flex-fill">
+                        <div class="card-body">
+                            <h5 class="chart-title"><i class="bi bi-credit-card me-2 text-muted"></i>Métodos de Pago</h5>
+                            <div style="position: relative; height: 180px;">
                                 <canvas id="paymentMethodsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cajeros -->
+            <div class="row mt-2">
+                <div class="col-12">
+                    <div class="card dashboard-card">
+                        <div class="card-body">
+                            <h5 class="chart-title"><i class="bi bi-person-workspace me-2 text-muted"></i>Cajeros del Día</h5>
+                            <div style="position: relative; height: 160px;">
+                                <canvas id="cajerosChart"></canvas>
                             </div>
                         </div>
                     </div>
