@@ -2,7 +2,7 @@
 
 // Variables globales para almacenar datos y gráficas
 let dashboardData = {};
-let hourlyChart, membershipChart, cajerosChart, paymentMethodsChart;
+let hourlyChart, hourlyLavadosChart, membershipChart, cajerosChart, paymentMethodsChart;
   
 // Configuración de colores
 const COLORS = {
@@ -13,7 +13,7 @@ const COLORS = {
     info: '#17a2b8',
     purple: '#6f42c1',
     orange: '#fd7e14',
-    teal: '#20c997',
+    teal: '#20c997', 
     pink: '#e83e8c',
     indigo: '#6610f2'
 };
@@ -110,6 +110,7 @@ function updateDashboard(data) {
     
     // Actualizar gráficas
     updateHourlyChart(data.hourly || []);
+    updateHourlyLavadosChart(data.hourly || []);
     updateMembershipChart(data.membership_distribution || []);
     updateCajerosChart(data.cajeros || []);
     updatePaymentMethodsChart(data.payment_methods || []);
@@ -252,6 +253,61 @@ function updateHourlyChart(hourlyData = null) {
                 intersect: false,
                 mode: 'index'
             }
+        }
+    });
+}
+
+/**
+ * Gráfica de lavados por hora (cantidad de órdenes)
+ */
+function updateHourlyLavadosChart(hourlyData = null) {
+    const ctx = document.getElementById('hourlyLavadosChart');
+    if (!ctx) return;
+
+    if (!hourlyData || hourlyData.length === 0) {
+        hourlyData = generateEmptyHourlyData();
+    } else {
+        hourlyData = hourlyData.filter(item => item.hour >= 6 && item.hour <= 21);
+    }
+
+    if (hourlyLavadosChart) hourlyLavadosChart.destroy();
+
+    const labels = hourlyData.map(item => formatHour(item.hour));
+    const data   = hourlyData.map(item => item.ordenes || 0);
+
+    hourlyLavadosChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Lavados',
+                data,
+                backgroundColor: 'rgba(15, 118, 110, 0.7)',
+                borderColor: '#0f766e',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `Lavados: ${ctx.raw}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, callback: v => Number.isInteger(v) ? v : '' },
+                    grid: { color: 'rgba(0,0,0,0.06)' }
+                },
+                x: { grid: { display: false } }
+            },
+            interaction: { intersect: false, mode: 'index' }
         }
     });
 }

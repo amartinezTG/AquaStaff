@@ -10,7 +10,7 @@ use App\Models\Client;
 use App\Models\Orders;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-
+    
 class DashboardController extends Controller
 {
     public $catalogs;
@@ -132,7 +132,7 @@ class DashboardController extends Controller
 
         ));
     }
-
+ 
 
     public function info_dashboard(Request $request)
     { 
@@ -378,22 +378,39 @@ class DashboardController extends Controller
         return DB::select("
             SELECT
                 CASE
-                    WHEN TransactionType = 0 AND Package IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Compra Membresía Deluxe'
-                    WHEN TransactionType = 0 AND Package IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Compra Membresía Express'
-                    WHEN TransactionType = 0 AND Package IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Compra Membresía Ultra'
-                    WHEN TransactionType = 0 AND Package IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Compra Membresía Básico'
-                    WHEN TransactionType = 1 AND Package IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Renovación Membresía Deluxe'
-                    WHEN TransactionType = 1 AND Package IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Renovación Membresía Express'
-                    WHEN TransactionType = 1 AND Package IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Renovación Membresía Ultra'
-                    WHEN TransactionType = 1 AND Package IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Renovación Membresía Básico'
-                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 THEN 'Uso Membresía'
+                    WHEN TransactionType = 0 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Compra Membresía Deluxe'
+                    WHEN TransactionType = 0 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Compra Membresía Express'
+                    WHEN TransactionType = 0 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Compra Membresía Ultra'
+                    WHEN TransactionType = 0 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Compra Membresía Básico'
+                    WHEN TransactionType = 1 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Renovación Membresía Deluxe'
+                    WHEN TransactionType = 1 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Renovación Membresía Express'
+                    WHEN TransactionType = 1 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Renovación Membresía Ultra'
+                    WHEN TransactionType = 1 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Renovación Membresía Básico'
+                    WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Lavado Deluxe'
+                    WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Lavado Express'
+                    WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Lavado Ultra'
+                    WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Lavado Básico'
                     WHEN TransactionType = 2 AND PaymentType = 3 THEN 'Cortesía'
-                    WHEN TransactionType = 2 AND Total > 0 AND Package IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Deluxe'
-                    WHEN TransactionType = 2 AND Total > 0 AND Package IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Express'
-                    WHEN TransactionType = 2 AND Total > 0 AND Package IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Ultra'
-                    WHEN TransactionType = 2 AND Total > 0 AND Package IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Básico'
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 THEN 'Uso Membresía'
                     ELSE 'Otro'
                 END AS servicio,
+                CASE
+                    WHEN TransactionType = 0 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 1
+                    WHEN TransactionType = 0 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 2
+                    WHEN TransactionType = 0 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 3
+                    WHEN TransactionType = 0 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 4
+                    WHEN TransactionType = 1 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 5
+                    WHEN TransactionType = 1 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 6
+                    WHEN TransactionType = 1 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 7
+                    WHEN TransactionType = 1 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 8
+                    WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 9
+                    WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 10
+                    WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 11
+                    WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 12
+                    WHEN TransactionType = 2 AND PaymentType = 3 THEN 13
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 THEN 14
+                    ELSE 99
+                END AS sort_order,
                 COUNT(*) AS pagos,
                 SUM(CASE WHEN PaymentType = 0 THEN Total ELSE 0 END) AS efectivo,
                 SUM(CASE WHEN PaymentType IN (1,2) THEN Total ELSE 0 END) AS tarjeta,
@@ -401,8 +418,8 @@ class DashboardController extends Controller
             FROM local_transaction
             WHERE TransationDate BETWEEN ? AND ?
               AND deleted_at IS NULL
-            GROUP BY servicio
-            ORDER BY servicio
+            GROUP BY servicio, sort_order
+            ORDER BY sort_order
         ", [$startDate, $endDate]);
     }
 

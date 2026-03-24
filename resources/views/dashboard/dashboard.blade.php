@@ -1,9 +1,9 @@
 @include('layout.shared')
 @include('layout.includes')
- 
+   
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <body class="toggle-sidebar">
-  
+    
     <!-- ======= Header ======= -->
     <header id="header" class="header fixed-top d-flex align-items-center">
         <div class="d-flex align-items-center justify-content-between">
@@ -15,272 +15,199 @@
         {{-- sidebar --}}
         @include('layout.nav-header')
     </header>
-
+ 
     <main id="main" class="main">
         <style>
-            /* Estilos personalizados del dashboard */
+            /* =============================================
+               PALETA PROFESIONAL — acento #1a56db (azul)
+               fondo cards blanco, textos #1e293b / #64748b
+            ============================================= */
+            :root {
+                --accent:      #1a56db;
+                --accent-dark: #1040a8;
+                --text-main:   #1e293b;
+                --text-muted:  #64748b;
+                --border:      #e2e8f0;
+                --bg-subtle:   #f8fafc;
+                --shadow-sm:   0 1px 4px rgba(0,0,0,0.07);
+                --shadow-md:   0 4px 12px rgba(0,0,0,0.09);
+            }
+
+            /* Cards base */
             .dashboard-card {
-                border-radius: 15px;
-                border: none;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                transition: transform 0.3s ease, box-shadow 0.3s ease;
-            } 
-
+                border-radius: 10px;
+                border: 1px solid var(--border);
+                box-shadow: var(--shadow-sm);
+                background: #fff;
+                transition: box-shadow 0.2s ease;
+            }
             .dashboard-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+                box-shadow: var(--shadow-md);
             }
 
+            /* KPI cards — borde izquierdo de acento, fondo blanco */
             .metric-card {
-                background: linear-gradient(135deg, var(--card-gradient-start), var(--card-gradient-end));
-                color: white;
+                background: #fff;
+                color: var(--text-main);
+                border-left: 4px solid var(--accent) !important;
             }
-
-            .metric-card.sales {
-                --card-gradient-start: #28a745;
-                --card-gradient-end: #20c997;
-            }
-
-            .metric-card.revenue {
-                --card-gradient-start: #007bff;
-                --card-gradient-end: #6610f2;
-            }
-
-            .metric-card.memberships {
-                --card-gradient-start: #ffc107;
-                --card-gradient-end: #fd7e14;
-            }
-
-            .metric-card.avg-ticket {
-                --card-gradient-start: #dc3545;
-                --card-gradient-end: #e83e8c;
-            }
+            .metric-card.sales       { border-left-color: #0f766e !important; }
+            .metric-card.revenue     { border-left-color: var(--accent) !important; }
+            .metric-card.memberships { border-left-color: #7c3aed !important; }
+            .metric-card.avg-ticket  { border-left-color: #b45309 !important; }
 
             .metric-value {
-                font-size: 2.5rem;
+                font-size: 2.2rem;
                 font-weight: 700;
                 margin: 0;
-                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                color: var(--text-main);
             }
-
             .metric-label {
-                font-size: 0.9rem;
-                opacity: 0.9;
-                margin-bottom: 5px;
-            }
-
-            .metric-change {
                 font-size: 0.8rem;
-                opacity: 0.8;
-            }
-
-            .metric-icon {
-                font-size: 3rem;
-                opacity: 0.3;
-            }
-
-            .chart-container {
-                background: white;
-                border-radius: 15px;
-                padding: 20px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                margin-bottom: 20px;
-            }
-
-            .chart-title {
-                font-size: 1.1rem;
                 font-weight: 600;
-                margin-bottom: 15px;
-                color: #333;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: var(--text-muted);
+                margin-bottom: 4px;
             }
+            .metric-change { font-size: 0.78rem; color: var(--text-muted); }
+            .metric-icon   { font-size: 2.4rem; opacity: 0.12; color: var(--text-main); }
 
-            .summary-section {
-                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-                border-radius: 15px;
-                padding: 25px;
-                margin-top: 20px;
-            }
-
-            .summary-item {
-                background: white;
-                border-radius: 10px;
-                padding: 15px;
-                margin-bottom: 10px;
-                border-left: 4px solid #007bff;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            }
-
-            .summary-item.membership {
-                border-left-color: #ffc107;
-            }
-
-            .summary-item.package {
-                border-left-color: #28a745;
-            }
-
-            .date-selector {
-                background: white;
-                border-radius: 10px;
-                padding: 15px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                margin-bottom: 20px;
-            }
-
+            /* Botón actualizar */
             .refresh-btn {
-                background: linear-gradient(135deg, #17a2b8, #138496);
+                background: var(--accent);
                 border: none;
-                border-radius: 25px;
+                border-radius: 6px;
                 color: white;
-                padding: 10px 20px;
+                padding: 6px 16px;
                 font-weight: 600;
-                transition: all 0.3s ease;
+                font-size: 0.85rem;
+                transition: background 0.2s ease;
+            }
+            .refresh-btn:hover { background: var(--accent-dark); color: white; }
+
+            /* Títulos de sección dentro de cards */
+            .chart-title, .card-section-title {
+                font-size: 0.82rem;
+                font-weight: 700;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                color: var(--text-muted);
+                margin-bottom: 14px;
             }
 
-            .refresh-btn:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+            /* Tabla de servicios */
+            #servicios_table thead th {
+                font-size: 0.75rem;
+                font-weight: 700;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                color: var(--text-muted);
+                border-bottom: 2px solid var(--border);
+                background: var(--bg-subtle);
+                padding: 10px 12px;
+            }
+            #servicios_table tbody td {
+                font-size: 0.83rem;
+                color: var(--text-main);
+                padding: 9px 12px;
+                vertical-align: middle;
+                border-bottom: 1px solid var(--border);
+            }
+            #servicios_table tbody tr:last-child td { border-bottom: none; }
+            #servicios_table tbody tr:hover td { background: var(--bg-subtle); }
+            #servicios_table tfoot td {
+                font-size: 0.83rem;
+                font-weight: 700;
+                color: var(--text-main);
+                padding: 10px 12px;
+                border-top: 2px solid var(--border);
+                background: var(--bg-subtle);
+            }
+
+            /* Cards cajeros */
+            .cajero-card {
+                border-radius: 10px;
+                border: 1px solid var(--border);
+                box-shadow: var(--shadow-sm);
+                overflow: hidden;
+                transition: box-shadow 0.2s ease;
+            }
+            .cajero-card:hover { box-shadow: var(--shadow-md); }
+            .cajero-card .cajero-header {
+                padding: 10px 16px;
+                font-weight: 700;
+                font-size: 0.82rem;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
                 color: white;
+                background: var(--text-main);
             }
+            .cajero-card.aqua01 .cajero-header { background: #1e3a5f; }
+            .cajero-card.aqua02 .cajero-header { background: #2d4a6e; }
+            .cajero-card.total  .cajero-header { background: #0f766e; }
+            .cajero-stat {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 0;
+                border-bottom: 1px solid var(--border);
+                font-size: 0.83rem;
+            }
+            .cajero-stat:last-child { border-bottom: none; }
+            .cajero-stat .stat-label { color: var(--text-muted); }
+            .cajero-stat .stat-value { font-weight: 700; color: var(--text-main); }
+            .cajero-stat .stat-value.efectivo  { color: #0f766e; }
+            .cajero-stat .stat-value.tarjeta   { color: var(--accent); }
+            .cajero-stat .stat-value.membresia { color: #7c3aed; }
+            .cajero-stat .stat-value.paquete   { color: #b45309; }
 
+            /* Membresías activas — card total */
+            .mini-membership-card {
+                border-radius: 10px;
+                padding: 16px 20px;
+                color: white;
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                background: #1e3a5f;
+            }
+            .mini-membership-card .mini-icon   { font-size: 2rem; opacity: 0.6; }
+            .mini-membership-card .mini-label  { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.85; margin-bottom: 2px; }
+            .mini-membership-card .mini-count  { font-size: 2rem; font-weight: 700; line-height: 1; }
+
+            /* Badges por paquete */
+            .membership-badge {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 14px;
+                border-radius: 8px;
+                background: var(--bg-subtle);
+                border: 1px solid var(--border);
+            }
+            .membership-badge .badge-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+            .membership-badge .badge-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; flex: 1; }
+            .membership-badge .badge-count { font-size: 1rem; font-weight: 700; color: var(--text-main); }
+            .membership-badge.express .badge-dot { background: var(--accent); }
+            .membership-badge.basico  .badge-dot { background: #0f766e; }
+            .membership-badge.ultra   .badge-dot { background: #7c3aed; }
+            .membership-badge.delux   .badge-dot { background: #b45309; }
+
+            /* Shimmer */
             .loading-skeleton {
                 background: linear-gradient(90deg, #f0f0f0 25%, transparent 37%, #f0f0f0 63%);
                 background-size: 400% 100%;
                 animation: shimmer 1.5s ease-in-out infinite;
             }
-
             @keyframes shimmer {
-                0% { background-position: 100% 0; }
+                0%   { background-position: 100% 0; }
                 100% { background-position: -100% 0; }
             }
 
-            /* Cards de cajeros y lavados */
-            .cajero-card {
-                border-radius: 12px;
-                border: none;
-                box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-                transition: transform 0.2s ease, box-shadow 0.2s ease;
-            }
-            .cajero-card:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 6px 16px rgba(0,0,0,0.14);
-            }
-            .cajero-card .cajero-header {
-                border-radius: 12px 12px 0 0;
-                padding: 10px 16px;
-                font-weight: 700;
-                font-size: 0.95rem;
-                color: white;
-            }
-            .cajero-card.aqua01 .cajero-header { background: linear-gradient(135deg, #007bff, #0056b3); }
-            .cajero-card.aqua02 .cajero-header { background: linear-gradient(135deg, #17a2b8, #117a8b); }
-            .cajero-card.total  .cajero-header { background: linear-gradient(135deg, #28a745, #1e7e34); }
-            .cajero-stat {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 7px 0;
-                border-bottom: 1px solid #f0f0f0;
-                font-size: 0.85rem;
-            }
-            .cajero-stat:last-child { border-bottom: none; }
-            .cajero-stat .stat-label { color: #6c757d; }
-            .cajero-stat .stat-value { font-weight: 700; color: #333; }
-            .cajero-stat .stat-value.efectivo { color: #28a745; }
-            .cajero-stat .stat-value.tarjeta  { color: #007bff; }
-            .cajero-stat .stat-value.membresia { color: #6f42c1; }
-            .cajero-stat .stat-value.paquete   { color: #fd7e14; }
-
-            /* Membresías activas — mini cards compactas */
-            .mini-membership-card {
-                border-radius: 12px;
-                padding: 14px 16px;
-                color: white;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                box-shadow: 0 3px 10px rgba(0,0,0,0.12);
-                transition: transform 0.2s ease, box-shadow 0.2s ease;
-            }
-            .mini-membership-card:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 6px 16px rgba(0,0,0,0.18);
-            }
-            .mini-membership-card .mini-icon {
-                font-size: 1.8rem;
-                opacity: 0.85;
-            }
-            .mini-membership-card .mini-label {
-                font-size: 0.75rem;
-                opacity: 0.9;
-                margin-bottom: 2px;
-            }
-            .mini-membership-card .mini-count {
-                font-size: 1.7rem;
-                font-weight: 700;
-                line-height: 1;
-            }
-            .mini-membership-card.total  { background: linear-gradient(135deg, #667eea, #764ba2); }
-            .mini-membership-card.express { background: linear-gradient(135deg, #17a2b8, #138496); }
-            .mini-membership-card.basico  { background: linear-gradient(135deg, #28a745, #1e7e34); }
-            .mini-membership-card.ultra   { background: linear-gradient(135deg, #6f42c1, #5a32a3); }
-            .mini-membership-card.delux   { background: linear-gradient(135deg, #fd7e14, #e36209); }
-
-            /* Badges compactos de membresías por tipo */
-            .membership-badge {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 6px 14px;
-                border-radius: 20px;
-                background: #f8f9fa;
-                border: 1px solid #e9ecef;
-                min-width: 100px;
-            }
-            .membership-badge .badge-dot {
-                width: 10px; height: 10px;
-                border-radius: 50%;
-                flex-shrink: 0;
-            }
-            .membership-badge .badge-label {
-                font-size: 0.78rem;
-                color: #6c757d;
-                font-weight: 500;
-            }
-            .membership-badge .badge-count {
-                font-size: 1.1rem;
-                font-weight: 700;
-                margin-left: auto;
-            }
-            .membership-badge.express .badge-dot   { background: #17a2b8; }
-            .membership-badge.express .badge-count { color: #17a2b8; }
-            .membership-badge.basico  .badge-dot   { background: #28a745; }
-            .membership-badge.basico  .badge-count { color: #28a745; }
-            .membership-badge.ultra   .badge-dot   { background: #6f42c1; }
-            .membership-badge.ultra   .badge-count { color: #6f42c1; }
-            .membership-badge.delux   .badge-dot   { background: #fd7e14; }
-            .membership-badge.delux   .badge-count { color: #fd7e14; }
-
-            /* Responsive */
             @media (max-width: 768px) {
-                .metric-value {
-                    font-size: 2rem;
-                }
-                
-                .metric-icon {
-                    font-size: 2rem;
-                }
-                
-                .chart-container {
-                    padding: 15px;
-                }
-                
-                .summary-section {
-                    padding: 15px;
-                }
-
-                .total-memberships-number {
-                    font-size: 2.5rem;
-                }
+                .metric-value { font-size: 1.8rem; }
+                .metric-icon  { font-size: 1.8rem; }
             }
         </style>
 
@@ -377,10 +304,11 @@
                 </div>
             </div>
 
-            <!-- Tabla de servicios del día -->
-            <div class="row g-3 mt-1">
-                <div class="col-12">
-                    <div class="card dashboard-card">
+            <!-- Fila 2: Tabla servicios + Membresías activas -->
+            <div class="row g-3 mt-1 align-items-stretch">
+                <!-- Tabla servicios col-8 -->
+                <div class="col-lg-8">
+                    <div class="card dashboard-card h-100">
                         <div class="card-body p-0">
                             <div class="d-flex align-items-center px-3 pt-3 pb-2">
                                 <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2 text-muted"></i>Resumen de Servicios del Día</h6>
@@ -413,9 +341,51 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Membresías activas col-4 -->
+                <div class="col-lg-4">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-star-fill me-2 text-warning"></i>Membresías Activas</h6>
+                            <!-- Total grande -->
+                            <div class="text-center mb-3">
+                                <div class="mini-membership-card total d-inline-flex mx-auto" style="width:100%; justify-content:center; padding: 18px 20px;">
+                                    <i class="bi bi-people-fill mini-icon" style="font-size:2.2rem;"></i>
+                                    <div>
+                                        <div class="mini-label" style="font-size:0.85rem; font-weight:600; opacity:1;">Total Activas</div>
+                                        <div class="mini-count" id="total_active_memberships" style="font-size:2.4rem;">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Badges por paquete -->
+                            <div class="d-flex flex-column gap-2 mt-auto">
+                                <div class="membership-badge express">
+                                    <span class="badge-dot"></span>
+                                    <span class="badge-label">Express</span>
+                                    <span class="badge-count" id="count_express">0</span>
+                                </div>
+                                <div class="membership-badge basico">
+                                    <span class="badge-dot"></span>
+                                    <span class="badge-label">Básico</span>
+                                    <span class="badge-count" id="count_basico">0</span>
+                                </div>
+                                <div class="membership-badge ultra">
+                                    <span class="badge-dot"></span>
+                                    <span class="badge-label">Ultra</span>
+                                    <span class="badge-count" id="count_ultra">0</span>
+                                </div>
+                                <div class="membership-badge delux">
+                                    <span class="badge-dot"></span>
+                                    <span class="badge-label">Delux</span>
+                                    <span class="badge-count" id="count_delux">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Cards por cajero: efectivo, tarjeta, lavados -->
+            <!-- Fila 3: Cards por cajero -->
             <div class="row g-3 mt-1">
                 <!-- AQUA01 -->
                 <div class="col-lg-4 col-md-6">
@@ -441,7 +411,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- AQUA02 -->
                 <div class="col-lg-4 col-md-6">
                     <div class="card cajero-card aqua02">
@@ -466,7 +435,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- TOTAL -->
                 <div class="col-lg-4 col-md-12">
                     <div class="card cajero-card total">
@@ -493,88 +461,58 @@
                 </div>
             </div>
 
-            <!-- Membresías Activas -->
+            <!-- Fila 4: Gráfica ingresos por hora + lavados por hora -->
             <div class="row g-3 mt-1 align-items-stretch">
-                <!-- Card total -->
-                <div class="col-auto">
-                    <div class="mini-membership-card total h-100">
-                        <i class="bi bi-star-fill mini-icon"></i>
-                        <div>
-                            <div class="mini-label">Membresías Activas</div>
-                            <div class="mini-count" id="total_active_memberships">0</div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Badges por paquete -->
-                <div class="col">
-                    <div class="card h-100 border-0 shadow-sm px-3 py-2 d-flex flex-row flex-wrap align-items-center gap-3">
-                        <div class="membership-badge express">
-                            <span class="badge-dot"></span>
-                            <span class="badge-label">Express</span>
-                            <span class="badge-count" id="count_express">0</span>
-                        </div>
-                        <div class="membership-badge basico">
-                            <span class="badge-dot"></span>
-                            <span class="badge-label">Básico</span>
-                            <span class="badge-count" id="count_basico">0</span>
-                        </div>
-                        <div class="membership-badge ultra">
-                            <span class="badge-dot"></span>
-                            <span class="badge-label">Ultra</span>
-                            <span class="badge-count" id="count_ultra">0</span>
-                        </div>
-                        <div class="membership-badge delux">
-                            <span class="badge-dot"></span>
-                            <span class="badge-label">Delux</span>
-                            <span class="badge-count" id="count_delux">0</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Gráficas -->
-            <div class="row mt-3">
-                <!-- Gráfica de ventas por hora -->
-                <div class="col-lg-8">
-                    <div class="card dashboard-card">
+                <div class="col-lg-6">
+                    <div class="card dashboard-card h-100">
                         <div class="card-body">
-                            <h5 class="chart-title"><i class="bi bi-clock me-2 text-muted"></i>Ventas por Hora del Día</h5>
-                            <div style="position: relative; height: 300px;">
+                            <h5 class="chart-title">Ingresos por Hora</h5>
+                            <div style="position: relative; height: 250px;">
                                 <canvas id="hourlyChart"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Columna derecha: Membresías vs Paquetes + Métodos de Pago apilados -->
-                <div class="col-lg-4 d-flex flex-column gap-3">
-                    <div class="card dashboard-card flex-fill">
+                <div class="col-lg-6">
+                    <div class="card dashboard-card h-100">
                         <div class="card-body">
-                            <h5 class="chart-title"><i class="bi bi-pie-chart me-2 text-muted"></i>Membresías vs Paquetes</h5>
-                            <div style="position: relative; height: 180px;">
-                                <canvas id="membershipChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card dashboard-card flex-fill">
-                        <div class="card-body">
-                            <h5 class="chart-title"><i class="bi bi-credit-card me-2 text-muted"></i>Métodos de Pago</h5>
-                            <div style="position: relative; height: 180px;">
-                                <canvas id="paymentMethodsChart"></canvas>
+                            <h5 class="chart-title">Lavados por Hora</h5>
+                            <div style="position: relative; height: 250px;">
+                                <canvas id="hourlyLavadosChart"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Cajeros -->
-            <div class="row mt-2">
-                <div class="col-12">
-                    <div class="card dashboard-card">
+            <!-- Fila 5: Cajeros del día + Donuts -->
+            <div class="row g-3 mt-1 align-items-stretch">
+                <div class="col-lg-6">
+                    <div class="card dashboard-card h-100">
                         <div class="card-body">
-                            <h5 class="chart-title"><i class="bi bi-person-workspace me-2 text-muted"></i>Cajeros del Día</h5>
-                            <div style="position: relative; height: 160px;">
+                            <h5 class="chart-title">Cajeros del Día</h5>
+                            <div style="position: relative; height: 220px;">
                                 <canvas id="cajerosChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-body">
+                            <h5 class="chart-title">Membresías vs Paquetes</h5>
+                            <div style="position: relative; height: 220px;">
+                                <canvas id="membershipChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-body">
+                            <h5 class="chart-title">Métodos de Pago</h5>
+                            <div style="position: relative; height: 220px;">
+                                <canvas id="paymentMethodsChart"></canvas>
                             </div>
                         </div>
                     </div>
