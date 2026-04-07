@@ -820,7 +820,7 @@ class CajeroController extends Controller
        }else{
         return Carbon::now()->subDays(7)->format('Y-m-d\TH:i');
        }
-    }   
+    }  
 
     private function getEndDate($end_date){
         if($end_date){
@@ -1003,6 +1003,120 @@ class CajeroController extends Controller
             return response()->json(['error' => 'Error al procesar el archivo: ' . $e->getMessage()], 500);
         }
     }
+ 
+    public function analisisView()
+    {
+        $activePage = 'analisis_procepago';
+        return view('cajero.analisis_procepago', compact('activePage'));
+    }
+
+    public function analisisData(Request $request)
+    {
+        $desde  = $request->input('fecha_inicio', now()->startOfMonth()->toDateString());
+        $hasta  = $request->input('fecha_final',  now()->toDateString());
+        $cajero = $request->input('cajero', '');
+
+        // AquaAdmin: agrupar por _id (una fila por transaccion)
+        $ltSub = DB::table('local_transaction')
+            ->select(
+                '_id',
+                DB::raw('DATE(TransationDate) as fecha'),
+                DB::raw('TIME(TransationDate) as hora'),
+                'Atm as cajero',
+                DB::raw('SUM(Total) as total_lt')
+            )
+            ->whereBetween('TransationDate', [$desde.' 00:00:00', $hasta.' 23:59:59'])
+            ->whereIn('Atm', ['AQUA01','AQUA02'])
+            ->groupBy('_id', DB::raw('DATE(TransationDate)'), DB::raw('TIME(TransationDate)'), 'Atm');
+
+        if ($cajero) {
+            $ltSub->where('Atm', $cajero);
+        }
+
+        // Procepago
+        $ppBase = DB::table('procepago_pagos')->whereBetween('fecha', [$desde, $hasta]);
+        if ($cajero) {
+            $ppBase->where('clave_cajero', $cajero);
+        }
+
+        $lt = DB::query()->fromSub($ltSub, 'lt')->get()->keyBy('_id');
+        $pp = (clone $ppBase)->get()->keyBy('num_operacion');
+
+        $ltIds = $lt->keys();
+        $ppIds = $pp->keys();
+
+        $soloEnAqua      = [];
+        $soloEnProcepago = [];
+        $diferenciaMonto = [];
+
+        foreach ($ltIds->diff($ppIds) as $id) {
+            $row = $lt[$id];
+            if ($row->total_lt > 0) {
+                $soloEnAqua[] = [
+                    'id'         => $id,
+                    'fecha'      => $row->fecha,
+                    'hora'       => $row->hora,
+                    'cajero'     => $row->cajero,
+                    'total_aqua' => $row->total_lt,
+                    'total_pp'   => '-',
+                    'diferencia' => -$row->total_lt,
+                ];
+            }
+        }
+
+        foreach ($ppIds->diff($ltIds) as $id) {
+            $row = $pp[$id];
+            if ($row->monto_total > 0) {
+                $soloEnProcepago[] = [
+                    'id'         => $id,
+                    'fecha'      => $row->fecha,
+                    'hora'       => $row->hora,
+                    'cajero'     => $row->clave_cajero,
+                    'servicio'   => $row->servicio,
+                    'forma_pago' => $row->forma_pago,
+                    'total_aqua' => '-',
+                    'total_pp'   => $row->monto_total,
+                    'diferencia' => $row->monto_total,
+                ];
+            }
+        }
+
+        foreach ($ltIds->intersect($ppIds) as $id) {
+            $rowLt = $lt[$id];
+            $rowPp = $pp[$id];
+            $dif   = round($rowPp->monto_total - $rowLt->total_lt, 2);
+            if (abs($dif) > 0.01) {
+                $diferenciaMonto[] = [
+                    'id'         => $id,
+                    'fecha'      => $rowLt->fecha,
+                    'hora'       => $rowLt->hora,
+                    'cajero'     => $rowLt->cajero,
+                    'servicio'   => $rowPp->servicio,
+                    'forma_pago' => $rowPp->forma_pago,
+                    'total_aqua' => $rowLt->total_lt,
+                    'total_pp'   => $rowPp->monto_total,
+                    'diferencia' => $dif,
+                ];
+            }
+        }
+
+        return response()->json([
+            'resumen' => [
+                'total_pp'           => round($pp->sum('monto_total'), 2),
+                'total_aqua'         => round($lt->sum('total_lt'), 2),
+                'solo_en_aqua_n'     => count($soloEnAqua),
+                'solo_en_aqua_monto' => round(collect($soloEnAqua)->sum('total_aqua'), 2),
+                'solo_en_pp_n'       => count($soloEnProcepago),
+                'solo_en_pp_monto'   => round(collect($soloEnProcepago)->sum('total_pp'), 2),
+                'dif_monto_n'        => count($diferenciaMonto),
+                'dif_monto_total'    => round(collect($diferenciaMonto)->sum('diferencia'), 2),
+            ],
+            'solo_en_aqua'      => collect($soloEnAqua)->sortBy('fecha')->values(),
+            'solo_en_procepago' => collect($soloEnProcepago)->sortBy('fecha')->values(),
+            'diferencia_monto'  => collect($diferenciaMonto)->sortBy('fecha')->values(),
+        ]);
+    }
+
 
     public function importacionTable(Request $request)
     {

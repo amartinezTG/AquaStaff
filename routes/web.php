@@ -16,7 +16,7 @@ use App\Http\Controllers\TipoDeCambioController;
 use App\Http\Controllers\IndicadoresController;
 use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\PromocionesController;
- 
+  
 use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -98,7 +98,7 @@ Route::middleware('auth')->controller(IndicadoresController::class)->group(funct
     Route::match(['get', 'post'], 'indicadores-membresias',  'membresias')->name('indicadores-membresias');
     Route::match(['get', 'post'], 'indicadores_membresias',  'indicadores_membresias')->name('indicadores_membresias');
 });
-
+ 
 #################
 # CAJERO
 Route::get('cajero', [CajeroController::class, 'index'])->middleware('auth');
@@ -110,6 +110,8 @@ Route::get('cajero/membership-packages', [CajeroController::class, 'membershipPa
 Route::get('cajero/importacion', [CajeroController::class, 'importacionView'])->middleware('auth')->name('cajero.importacion');
 Route::post('cajero/importacion', [CajeroController::class, 'importarProcepago'])->middleware('auth')->name('cajero.importacion.store');
 Route::post('cajero/importacion/table', [CajeroController::class, 'importacionTable'])->middleware('auth')->name('cajero.importacion.table');
+Route::get('cajero/analisis-procepago', [CajeroController::class, 'analisisView'])->middleware('auth')->name('cajero.analisis');
+Route::post('cajero/analisis-procepago', [CajeroController::class, 'analisisData'])->middleware('auth')->name('cajero.analisis.data');
 
 Route::get('/exportar-csv/{startDate}/{endDate}', [CajeroController::class, 'exportCsv'])->middleware('auth')->name('exportar-csv');
 Route::get('/exportar-trafico-ventas/{startDate}/{endDate}', [CajeroController::class, 'exportSalesTraffic'])->middleware('auth')->name('exportar-trafico-ventas');

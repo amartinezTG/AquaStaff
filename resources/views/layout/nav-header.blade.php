@@ -57,6 +57,10 @@
                     <a class="nav-link {{ $activePage === 'importacion' ? '' : 'collapsed' }}" href="/cajero/importacion">
                         <i class="bi bi-cloud-upload"></i><span>Importación</span></a>
                 </li>
+                <li>
+                    <a class="nav-link {{ $activePage === 'analisis_procepago' ? '' : 'collapsed' }}" href="/cajero/analisis-procepago">
+                        <i class="bi bi-bar-chart-steps"></i><span>Análisis Procepago</span></a>
+                </li>
 
             </ul>
         </li>
@@ -88,7 +92,7 @@
             </li>
         @endif
 
-  
+   
         <li class="nav-item">
             <a class="nav-link {{ $activePage === 'corte_caja' ? '' : 'collapsed' }}" href="/corte_caja">
                 <i class="bi bi-receipt"></i>
