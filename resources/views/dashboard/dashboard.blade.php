@@ -15,7 +15,7 @@
         {{-- sidebar --}}
         @include('layout.nav-header')
     </header> 
-     
+ 
     <main id="main" class="main">
         <style>
             /* =============================================
@@ -498,6 +498,10 @@
                                 <span class="stat-label"><i class="bi bi-arrow-repeat me-1"></i>Renovaciones</span>
                                 <span class="stat-value tarjeta" id="aqua01_renovaciones">0</span>
                             </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-shield-check me-1"></i>Garantía</span>
+                                <span class="stat-value" id="aqua01_garantia">0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -530,6 +534,10 @@
                                 <span class="stat-label"><i class="bi bi-arrow-repeat me-1"></i>Renovaciones</span>
                                 <span class="stat-value tarjeta" id="aqua02_renovaciones">0</span>
                             </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-shield-check me-1"></i>Garantía</span>
+                                <span class="stat-value" id="aqua02_garantia">0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -561,6 +569,10 @@
                             <div class="cajero-stat">
                                 <span class="stat-label"><i class="bi bi-arrow-repeat me-1"></i>Renovaciones</span>
                                 <span class="stat-value tarjeta" id="total_renovaciones">0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-shield-check me-1"></i>Garantía</span>
+                                <span class="stat-value" id="total_garantia">0</span>
                             </div>
                         </div>
                     </div>

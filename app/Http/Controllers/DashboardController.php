@@ -30,7 +30,7 @@ class DashboardController extends Controller
             ->whereBetween('TransationDate', [$from, $to])
             ->whereNull('deleted_at')
             ->groupBy('_id');
- 
+
         return DB::query()
             ->fromSub($sub, 'Unicas')
             ->select([
@@ -41,12 +41,12 @@ class DashboardController extends Controller
             ->get()
             ->keyBy('proveedor');
     }
+    
     public function dashboard(){
         $activePage = 'dashboard';
         return view('dashboard.dashboard', compact('activePage'));
     }
- 
-  
+
     public function index(Request $request)
     {
         $catalogs = new GeneralCatalogs();
@@ -324,7 +324,8 @@ class DashboardController extends Controller
             COUNT(CASE WHEN t1.TransactionType = 2 AND t1.Total = 0 AND t1.PaymentType != 3 THEN 1 END) AS lavados_membresia,
             COUNT(CASE WHEN t1.TransactionType = 2 AND t1.PaymentType = 3 THEN 1 END) AS cortesia,
             COUNT(CASE WHEN t1.TransactionType = 0 THEN 1 END) AS compras_membresia,
-            COUNT(CASE WHEN t1.TransactionType = 1 THEN 1 END) AS renovaciones
+            COUNT(CASE WHEN t1.TransactionType = 1 THEN 1 END) AS renovaciones,
+            COUNT(CASE WHEN t1.TransactionType = 2 AND t1.Total = 0 AND t1.PaymentType != 3 THEN 1 END) AS uso_membresia
         FROM local_transaction t1
         WHERE t1.TransationDate BETWEEN ? AND ?
         AND t1.deleted_at IS NULL

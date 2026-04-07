@@ -17,7 +17,7 @@ const COLORS = {
     pink: '#e83e8c',
     indigo: '#6610f2'
 };
-      
+
 // Configuración de Chart.js
 // Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 // Chart.defaults.font.size = 11;
@@ -398,8 +398,9 @@ function updateCajeroCards(cajerosData) {
         acc.lavados_membresia  += parseInt(c.lavados_membresia)     || 0;
         acc.compras_membresia  += parseInt(c.compras_membresia)     || 0;
         acc.renovaciones       += parseInt(c.renovaciones)          || 0;
+        acc.garantia           += parseInt(c.garantia)              || 0;
         return acc;
-    }, { efectivo: 0, tarjeta: 0, lavados_paquete: 0, lavados_membresia: 0, compras_membresia: 0, renovaciones: 0 });
+    }, { efectivo: 0, tarjeta: 0, lavados_paquete: 0, lavados_membresia: 0, compras_membresia: 0, renovaciones: 0, garantia: 0 });
 
     // AQUA01
     const a1 = cajeros['AQUA01'] || {};
@@ -409,6 +410,7 @@ function updateCajeroCards(cajerosData) {
     setVal('aqua01_lavados_membresia',  formatNumber(a1.lavados_membresia   || 0));
     setVal('aqua01_compras_membresia',  formatNumber(a1.compras_membresia   || 0));
     setVal('aqua01_renovaciones',       formatNumber(a1.renovaciones        || 0));
+    setVal('aqua01_garantia',           formatNumber(a1.garantia            || 0));
 
     // AQUA02
     const a2 = cajeros['AQUA02'] || {};
@@ -418,6 +420,7 @@ function updateCajeroCards(cajerosData) {
     setVal('aqua02_lavados_membresia',  formatNumber(a2.lavados_membresia   || 0));
     setVal('aqua02_compras_membresia',  formatNumber(a2.compras_membresia   || 0));
     setVal('aqua02_renovaciones',       formatNumber(a2.renovaciones        || 0));
+    setVal('aqua02_garantia',           formatNumber(a2.garantia            || 0));
 
     // Totales
     setVal('total_efectivo',           formatCurrency(totals.efectivo));
@@ -426,6 +429,7 @@ function updateCajeroCards(cajerosData) {
     setVal('total_lavados_membresia',  formatNumber(totals.lavados_membresia));
     setVal('total_compras_membresia',  formatNumber(totals.compras_membresia));
     setVal('total_renovaciones',       formatNumber(totals.renovaciones));
+    setVal('total_garantia',           formatNumber(totals.garantia));
 }
 
 function setVal(id, value) {
