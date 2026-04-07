@@ -1,7 +1,7 @@
 @include('layout.shared')
 
 <body class="toggle-sidebar">
-
+ 
   <!-- ======= Header ======= -->
   <header id="header" class="header fixed-top d-flex align-items-center">
 
@@ -55,7 +55,7 @@
 
                   <div class="col-md-2"><label class="col-sm-4 col-form-label">&nbsp;</label>
                     <button class="btn btn-warning w-100 submitBtn" tabindex="6" type="submit">Consultar</button>
-                  </div>                
+                  </div>
 
                 </form>
               </div>
@@ -503,7 +503,7 @@
 
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Membresias</h5>
+              <h5 class="card-title">Membresías</h5>
               <!-- Table with stripped rows -->
               <div class="table-responsive">
                 <table class="table table-bordered" >
@@ -567,7 +567,7 @@
                     <th>Fecha </th>
                     <th>Método de Pago</th>
                     <th>Total</th>
-                    <th>Membresia</th>
+                    <th>Membresía</th>
                     <th>Paquete</th>
                     <th>Folio</th>
                   </tr>

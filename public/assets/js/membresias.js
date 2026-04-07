@@ -15,7 +15,7 @@ function membresiasTable() {
         },
         pageLength: 50,
         order: [[0, 'desc'], [1, 'desc']],
-        buttons: [
+        buttons: [  
             {
                 extend: 'excelHtml5',
                 className: 'buttons-excel',
@@ -154,7 +154,8 @@ function membresiasTable() {
         initComplete: function () {
             $('.table-responsive').removeClass('loader_iiee');
             console.log('DataTable de membresías inicializada correctamente');
-            // Crear gráficas con los datos cargados
+            // Crear resumen y gráficas con los datos cargados
+            buildResumenMembresias(this.api());
             createChartsMembresias(this.api());
         },
         language: {
@@ -178,6 +179,91 @@ function membresiasTable() {
             }
         }
     });
+}
+
+// Función para construir el resumen pivote por paquete
+function buildResumenMembresias(api) {
+    const data = api.rows().data().toArray();
+    const body = document.getElementById('resumen_membresias_body');
+    const foot = document.getElementById('resumen_membresias_foot');
+
+    if (!body) return;
+
+    if (data.length === 0) {
+        body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Sin datos en el período seleccionado</td></tr>';
+        foot.style.display = 'none';
+        return;
+    }
+
+    // Acumular por paquete y tipo de transacción
+    const resumen = {};
+    data.forEach(row => {
+        const paquete = row.paquete || 'N/A';
+        const tipo = row.tipo_transaccion;
+        const monto = parseFloat(row.total) || 0;
+
+        if (!resumen[paquete]) {
+            resumen[paquete] = {
+                compra: { eventos: 0, monto: 0 },
+                renovacion: { eventos: 0, monto: 0 }
+            };
+        }
+
+        if (tipo === 'Compra') {
+            resumen[paquete].compra.eventos++;
+            resumen[paquete].compra.monto += monto;
+        } else if (tipo === 'Renovacion') {
+            resumen[paquete].renovacion.eventos++;
+            resumen[paquete].renovacion.monto += monto;
+        }
+    });
+
+    // Orden preferido de paquetes
+    const ordenPaquetes = ['Delux', 'Express', 'Ultra', 'Básico'];
+    const paquetes = Object.keys(resumen).sort((a, b) => {
+        const ia = ordenPaquetes.indexOf(a);
+        const ib = ordenPaquetes.indexOf(b);
+        if (ia === -1 && ib === -1) return a.localeCompare(b);
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+    });
+
+    const fmt = v => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    let html = '';
+    let totCompraEv = 0, totCompraMonto = 0, totRenovEv = 0, totRenovMonto = 0;
+
+    paquetes.forEach(paq => {
+        const r = resumen[paq];
+        const totEv = r.compra.eventos + r.renovacion.eventos;
+        const totMonto = r.compra.monto + r.renovacion.monto;
+        totCompraEv += r.compra.eventos;
+        totCompraMonto += r.compra.monto;
+        totRenovEv += r.renovacion.eventos;
+        totRenovMonto += r.renovacion.monto;
+
+        html += '<tr>' +
+            '<td class="text-center fw-semibold">' + paq + '</td>' +
+            '<td class="text-center">' + (r.compra.eventos > 0 ? r.compra.eventos : '-') + '</td>' +
+            '<td class="text-center">' + (r.compra.monto > 0 ? fmt(r.compra.monto) : '-') + '</td>' +
+            '<td class="text-center">' + (r.renovacion.eventos > 0 ? r.renovacion.eventos : '-') + '</td>' +
+            '<td class="text-center">' + (r.renovacion.monto > 0 ? fmt(r.renovacion.monto) : '-') + '</td>' +
+            '<td class="text-center fw-bold">' + totEv + '</td>' +
+            '<td class="text-center fw-bold" style="color:#28a745;">' + fmt(totMonto) + '</td>' +
+            '</tr>';
+    });
+
+    body.innerHTML = html;
+
+    // Totales en pie
+    document.getElementById('res_total_compra_eventos').textContent = totCompraEv;
+    document.getElementById('res_total_compra_monto').textContent = fmt(totCompraMonto);
+    document.getElementById('res_total_renov_eventos').textContent = totRenovEv;
+    document.getElementById('res_total_renov_monto').textContent = fmt(totRenovMonto);
+    document.getElementById('res_total_tot_eventos').textContent = totCompraEv + totRenovEv;
+    document.getElementById('res_total_tot_monto').textContent = fmt(totCompraMonto + totRenovMonto);
+    foot.style.display = '';
 }
 
 // Variables globales para las gráficas

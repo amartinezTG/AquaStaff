@@ -9,7 +9,7 @@
     <div class="d-flex align-items-center justify-content-between">
       <a href="index.php" class="logo d-flex align-items-center">
         <img src="https://facturacion.aquacarclub.com/public/img/AQUA-CAR-CLUB-LOGO-N.png" alt="">
-     
+
       </a>
       <i class="bi bi-list toggle-sidebar-btn"></i>
     </div><!-- End Logo -->
@@ -589,7 +589,7 @@
 
         <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Membresias</h5>
+              <h5 class="card-title">Membresías</h5>
            
               <div class="table-responsive">
                 <table class="table table-bordered" >
@@ -695,7 +695,7 @@
                     <th>Total</th>
                     
                     
-                    <th>Membresia</th>
+                    <th>Membresía</th>
                     <th>Paquete</th>
                     <th>Cajero</th>
                     <th>Folio</th>

@@ -252,8 +252,8 @@ class LocalTransaction extends Model
             t1.Atm,
             case t1.PaymentType 
                 when 0 then 'Efectivo'
-                When 1 then 'Targeta Debito'
-                When 2 then 'Targeta Credito'
+                When 1 then 'Tarjeta Débito'
+                When 2 then 'Tarjeta Crédito'
                 When 3 then 'Garantia'
             ELSE 'N/A'  
             END AS `method`,

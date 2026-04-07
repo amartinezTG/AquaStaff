@@ -3,7 +3,7 @@
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <body class="toggle-sidebar">
-
+  
     <!-- ======= Header ======= -->
     <header id="header" class="header fixed-top d-flex align-items-center">
         <div class="d-flex align-items-center justify-content-between">
@@ -14,7 +14,7 @@
         </div>
         @include('layout.nav-header')
     </header>
-
+ 
     <main id="main" class="main">
         <style>
             /* Estilos para la tabla de membresías */
@@ -231,6 +231,55 @@
                                         Consultar
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Resumen de Membresías -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card" style="border-left: 5px solid #17a2b8;">
+                        <div class="card-body p-3">
+                            <h6 class="card-title mb-3" style="color: #1a7a91; font-weight: 700;">
+                                <i class="ti ti-table me-2"></i>Resumen de Membresías por Paquete
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm mb-0" id="resumen_membresias_table" style="font-size: 0.82rem;">
+                                    <thead>
+                                        <tr>
+                                            <th rowspan="2" class="align-middle text-center" style="background: linear-gradient(135deg,#2399b7,#1a7a91);color:#fff;min-width:90px;">Paquete</th>
+                                            <th colspan="2" class="text-center" style="background: linear-gradient(135deg,#28a745,#20c997);color:#fff;">Compra</th>
+                                            <th colspan="2" class="text-center" style="background: linear-gradient(135deg,#007bff,#0056b3);color:#fff;">Renovación</th>
+                                            <th colspan="2" class="text-center" style="background: linear-gradient(135deg,#6c757d,#495057);color:#fff;">Total</th>
+                                        </tr>
+                                        <tr>
+                                            <th class="text-center" style="background:#d4edda;color:#155724;">Eventos</th>
+                                            <th class="text-center" style="background:#d4edda;color:#155724;">Monto</th>
+                                            <th class="text-center" style="background:#cce5ff;color:#004085;">Eventos</th>
+                                            <th class="text-center" style="background:#cce5ff;color:#004085;">Monto</th>
+                                            <th class="text-center" style="background:#e2e3e5;color:#383d41;">Eventos</th>
+                                            <th class="text-center" style="background:#e2e3e5;color:#383d41;">Monto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resumen_membresias_body">
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted py-3">Consulta datos para ver el resumen</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="resumen_membresias_foot" style="display:none;">
+                                        <tr style="font-weight:700; background:#f8f9fa;">
+                                            <td class="text-center">Total</td>
+                                            <td class="text-center" id="res_total_compra_eventos">0</td>
+                                            <td class="text-center" id="res_total_compra_monto">$0.00</td>
+                                            <td class="text-center" id="res_total_renov_eventos">0</td>
+                                            <td class="text-center" id="res_total_renov_monto">$0.00</td>
+                                            <td class="text-center" id="res_total_tot_eventos">0</td>
+                                            <td class="text-center" id="res_total_tot_monto">$0.00</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
                             </div>
                         </div>
                     </div>

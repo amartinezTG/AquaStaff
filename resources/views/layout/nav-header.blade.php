@@ -18,7 +18,7 @@
                 </a>
             </li><!-- End Vending Machine Nav -->
         @endif
-
+ 
         <li class="nav-item">
             <a class="nav-link {{ $activePage === 'membresias' ? '' : 'collapsed' }}" href="/membresias">
                 <i class="bi bi-person-badge"></i>
@@ -77,14 +77,14 @@
                     <li>
                         <a class="nav-link {{ $activePage === 'membresias' ? '' : 'collapsed' }}"
                             {{-- href="/indicadores-membresias"><i class="bi bi-receipt"></i><span>Membresias</span> --}}
-                            href="/indicadores_membresias"><i class="bi bi-receipt"></i><span>Membresias</span>
+                            href="/indicadores_membresias"><i class="bi bi-receipt"></i><span>Membresías</span>
                         </a>
                     </li>
                 </ul>
             </li>
         @endif   
 
-
+ 
         <li class="nav-item">
             <a class="nav-link {{ $activePage === 'corte_caja' ? '' : 'collapsed' }}" href="/corte_caja">
                 <i class="bi bi-receipt"></i>

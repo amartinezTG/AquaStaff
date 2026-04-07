@@ -34,7 +34,12 @@
       "Read(//c/Users/alejandro.martinez/Downloads/**)",
       "Bash(python3 -c \":*)",
       "Bash(py --version)",
-      "Bash(py:*)"
+      "Bash(py:*)",
+      "Bash(php --version)",
+      "Bash(php:*)",
+      "Bash(python3:*)",
+      "Bash(grep -rni \"title.*=.*['\\\\\"]\" public/assets/js/*.js resources/js/*.js)",
+      "Bash(echo \"Listo: $?\")"
     ]
   }
 }

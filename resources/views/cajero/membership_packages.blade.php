@@ -17,7 +17,7 @@
 
   </header><!-- End Header -->
 
-  
+
   <main id="main" class="main">
 
     <div class="pagetitle">
@@ -25,7 +25,7 @@
       <nav>
         <ol class="breadcrumb">
           <li class="breadcrumb-item"><a href="/dashboard">Portada</a></li>
-          <li class="breadcrumb-item active">Lavados por Membresia</li>
+          <li class="breadcrumb-item active">Lavados por Membresía</li>
         </ol>
       </nav>
     </div><!-- End Page Title -->
