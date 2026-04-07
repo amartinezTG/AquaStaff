@@ -46,7 +46,7 @@ class DashboardController extends Controller
         return view('dashboard.dashboard', compact('activePage'));
     }
  
- 
+  
     public function index(Request $request)
     {
         $catalogs = new GeneralCatalogs();
@@ -322,7 +322,9 @@ class DashboardController extends Controller
             SUM(CASE WHEN t1.PaymentType IN (1,2) THEN t1.Total ELSE 0 END) AS tarjeta,
             COUNT(CASE WHEN t1.TransactionType = 2 AND t1.Total > 0 THEN 1 END) AS lavados_paquete,
             COUNT(CASE WHEN t1.TransactionType = 2 AND t1.Total = 0 AND t1.PaymentType != 3 THEN 1 END) AS lavados_membresia,
-            COUNT(CASE WHEN t1.TransactionType = 2 AND t1.PaymentType = 3 THEN 1 END) AS cortesia
+            COUNT(CASE WHEN t1.TransactionType = 2 AND t1.PaymentType = 3 THEN 1 END) AS cortesia,
+            COUNT(CASE WHEN t1.TransactionType = 0 THEN 1 END) AS compras_membresia,
+            COUNT(CASE WHEN t1.TransactionType = 1 THEN 1 END) AS renovaciones
         FROM local_transaction t1
         WHERE t1.TransationDate BETWEEN ? AND ?
         AND t1.deleted_at IS NULL
@@ -391,6 +393,10 @@ class DashboardController extends Controller
                     WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Lavado Ultra'
                     WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Lavado Básico'
                     WHEN TransactionType = 2 AND PaymentType = 3 THEN 'Cortesía'
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Uso Membresía Deluxe'
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Uso Membresía Express'
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Uso Membresía Ultra'
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Uso Membresía Básico'
                     WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 THEN 'Uso Membresía'
                     ELSE 'Otro'
                 END AS servicio,
@@ -408,7 +414,11 @@ class DashboardController extends Controller
                     WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 11
                     WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 12
                     WHEN TransactionType = 2 AND PaymentType = 3 THEN 13
-                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 THEN 14
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 14
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 15
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 16
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 17
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 THEN 18
                     ELSE 99
                 END AS sort_order,
                 COUNT(*) AS pagos,

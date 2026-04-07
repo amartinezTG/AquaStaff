@@ -3,7 +3,7 @@
    
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <body class="toggle-sidebar">
-
+ 
     <!-- ======= Header ======= -->
     <header id="header" class="header fixed-top d-flex align-items-center">
         <div class="d-flex align-items-center justify-content-between">
@@ -14,8 +14,8 @@
         </div><!-- End Logo -->
         {{-- sidebar --}}
         @include('layout.nav-header')
-    </header>
- 
+    </header> 
+     
     <main id="main" class="main">
         <style>
             /* =============================================
@@ -304,6 +304,88 @@
                 </div>
             </div>
 
+            <!-- Fila 1b: Desglose por tipo de transacción -->
+            <div class="row g-3 mt-1">
+
+                <!-- Compra de Lavado -->
+                <div class="col-xl col-lg-4 col-md-6">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-body py-2 px-3">
+                            <div class="card-section-title mb-2"><i class="bi bi-droplet me-1"></i>Compra Lavado</div>
+                            <div class="d-flex flex-column gap-1">
+                                <div class="cajero-stat"><span class="stat-label">Express</span><span class="stat-value" id="cl_express">0</span></div>
+                                <div class="cajero-stat"><span class="stat-label">Básico</span><span class="stat-value" id="cl_basico">0</span></div>
+                                <div class="cajero-stat"><span class="stat-label">Ultra</span><span class="stat-value" id="cl_ultra">0</span></div>
+                                <div class="cajero-stat"><span class="stat-label">Delux</span><span class="stat-value" id="cl_delux">0</span></div>
+                                <div class="cajero-stat" style="border-top:2px solid var(--border); margin-top:4px; padding-top:6px;"><span class="stat-label fw-bold">Total</span><span class="stat-value fw-bold" id="cl_total">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Uso de Membresía -->
+                <div class="col-xl col-lg-4 col-md-6">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-body py-2 px-3">
+                            <div class="card-section-title mb-2"><i class="bi bi-person-check me-1"></i>Uso Membresía</div>
+                            <div class="d-flex flex-column gap-1">
+                                <div class="cajero-stat"><span class="stat-label">Express</span><span class="stat-value membresia" id="um_express">0</span></div>
+                                <div class="cajero-stat"><span class="stat-label">Básico</span><span class="stat-value membresia" id="um_basico">0</span></div>
+                                <div class="cajero-stat"><span class="stat-label">Ultra</span><span class="stat-value membresia" id="um_ultra">0</span></div>
+                                <div class="cajero-stat"><span class="stat-label">Delux</span><span class="stat-value membresia" id="um_delux">0</span></div>
+                                <div class="cajero-stat" style="border-top:2px solid var(--border); margin-top:4px; padding-top:6px;"><span class="stat-label fw-bold">Total</span><span class="stat-value fw-bold membresia" id="um_total">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Renovación Membresía -->
+                <div class="col-xl col-lg-4 col-md-6">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-body py-2 px-3">
+                            <div class="card-section-title mb-2"><i class="bi bi-arrow-repeat me-1"></i>Renovación</div>
+                            <div class="d-flex flex-column gap-1">
+                                <div class="cajero-stat"><span class="stat-label">Express</span><span class="stat-value tarjeta" id="ren_express">0</span></div>
+                                <div class="cajero-stat"><span class="stat-label">Básico</span><span class="stat-value tarjeta" id="ren_basico">0</span></div>
+                                <div class="cajero-stat"><span class="stat-label">Ultra</span><span class="stat-value tarjeta" id="ren_ultra">0</span></div>
+                                <div class="cajero-stat"><span class="stat-label">Delux</span><span class="stat-value tarjeta" id="ren_delux">0</span></div>
+                                <div class="cajero-stat" style="border-top:2px solid var(--border); margin-top:4px; padding-top:6px;"><span class="stat-label fw-bold">Total</span><span class="stat-value fw-bold tarjeta" id="ren_total">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compra Membresía -->
+                <div class="col-xl col-lg-4 col-md-6">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-body py-2 px-3">
+                            <div class="card-section-title mb-2"><i class="bi bi-bag-check me-1"></i>Compra Membresía</div>
+                            <div class="d-flex flex-column gap-1">
+                                <div class="cajero-stat"><span class="stat-label">Express</span><span class="stat-value paquete" id="cm_express">0</span></div>
+                                <div class="cajero-stat"><span class="stat-label">Básico</span><span class="stat-value paquete" id="cm_basico">0</span></div>
+                                <div class="cajero-stat"><span class="stat-label">Ultra</span><span class="stat-value paquete" id="cm_ultra">0</span></div>
+                                <div class="cajero-stat"><span class="stat-label">Delux</span><span class="stat-value paquete" id="cm_delux">0</span></div>
+                                <div class="cajero-stat" style="border-top:2px solid var(--border); margin-top:4px; padding-top:6px;"><span class="stat-label fw-bold">Total</span><span class="stat-value fw-bold paquete" id="cm_total">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Garantía -->
+                <div class="col-xl col-lg-4 col-md-6">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-body py-2 px-3">
+                            <div class="card-section-title mb-2"><i class="bi bi-shield-check me-1"></i>Garantía</div>
+                            <div class="d-flex flex-column gap-1">
+                                <div class="cajero-stat"><span class="stat-label">Cortesía</span><span class="stat-value" id="gar_cortesia">0</span></div>
+                                <div class="cajero-stat" style="border-top:2px solid var(--border); margin-top:4px; padding-top:6px;"><span class="stat-label fw-bold">Total</span><span class="stat-value fw-bold" id="gar_total">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
             <!-- Fila 2: Tabla servicios + Membresías activas -->
             <div class="row g-3 mt-1 align-items-stretch">
                 <!-- Tabla servicios col-8 -->
@@ -408,6 +490,14 @@
                                 <span class="stat-label"><i class="bi bi-person-check me-1"></i>Lavados Membresía</span>
                                 <span class="stat-value membresia" id="aqua01_lavados_membresia">0</span>
                             </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-bag-check me-1"></i>Compra Membresía</span>
+                                <span class="stat-value paquete" id="aqua01_compras_membresia">0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-arrow-repeat me-1"></i>Renovaciones</span>
+                                <span class="stat-value tarjeta" id="aqua01_renovaciones">0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -432,6 +522,14 @@
                                 <span class="stat-label"><i class="bi bi-person-check me-1"></i>Lavados Membresía</span>
                                 <span class="stat-value membresia" id="aqua02_lavados_membresia">0</span>
                             </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-bag-check me-1"></i>Compra Membresía</span>
+                                <span class="stat-value paquete" id="aqua02_compras_membresia">0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-arrow-repeat me-1"></i>Renovaciones</span>
+                                <span class="stat-value tarjeta" id="aqua02_renovaciones">0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -455,6 +553,14 @@
                             <div class="cajero-stat">
                                 <span class="stat-label"><i class="bi bi-person-check me-1"></i>Lavados Membresía</span>
                                 <span class="stat-value membresia" id="total_lavados_membresia">0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-bag-check me-1"></i>Compra Membresía</span>
+                                <span class="stat-value paquete" id="total_compras_membresia">0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-arrow-repeat me-1"></i>Renovaciones</span>
+                                <span class="stat-value tarjeta" id="total_renovaciones">0</span>
                             </div>
                         </div>
                     </div>

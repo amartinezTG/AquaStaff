@@ -3,7 +3,7 @@
 // Variables globales para almacenar datos y gráficas
 let dashboardData = {};
 let hourlyChart, hourlyLavadosChart, membershipChart, cajerosChart, paymentMethodsChart;
-  
+   
 // Configuración de colores
 const COLORS = {
     primary: '#007bff',
@@ -17,7 +17,7 @@ const COLORS = {
     pink: '#e83e8c',
     indigo: '#6610f2'
 };
- 
+      
 // Configuración de Chart.js
 // Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 // Chart.defaults.font.size = 11;
@@ -120,6 +120,9 @@ function updateDashboard(data) {
 
     // Actualizar tabla de servicios del día
     updateServiciosTable(data.servicios || []);
+
+    // Actualizar card de lavados por tipo de paquete
+    updateLavadosPorTipo(data.servicios || []);
 
     // Ocultar loading
     hideLoadingCards();
@@ -389,32 +392,40 @@ function updateCajeroCards(cajerosData) {
     cajerosData.forEach(c => { cajeros[c.cajero] = c; });
 
     const totals = cajerosData.reduce((acc, c) => {
-        acc.efectivo          += parseFloat(c.efectivo)           || 0;
-        acc.tarjeta           += parseFloat(c.tarjeta)            || 0;
-        acc.lavados_paquete   += parseInt(c.lavados_paquete)      || 0;
-        acc.lavados_membresia += parseInt(c.lavados_membresia)    || 0;
+        acc.efectivo           += parseFloat(c.efectivo)            || 0;
+        acc.tarjeta            += parseFloat(c.tarjeta)             || 0;
+        acc.lavados_paquete    += parseInt(c.lavados_paquete)       || 0;
+        acc.lavados_membresia  += parseInt(c.lavados_membresia)     || 0;
+        acc.compras_membresia  += parseInt(c.compras_membresia)     || 0;
+        acc.renovaciones       += parseInt(c.renovaciones)          || 0;
         return acc;
-    }, { efectivo: 0, tarjeta: 0, lavados_paquete: 0, lavados_membresia: 0 });
+    }, { efectivo: 0, tarjeta: 0, lavados_paquete: 0, lavados_membresia: 0, compras_membresia: 0, renovaciones: 0 });
 
     // AQUA01
     const a1 = cajeros['AQUA01'] || {};
-    setVal('aqua01_efectivo',          formatCurrency(a1.efectivo           || 0));
-    setVal('aqua01_tarjeta',           formatCurrency(a1.tarjeta            || 0));
-    setVal('aqua01_lavados_paquete',   formatNumber(a1.lavados_paquete      || 0));
-    setVal('aqua01_lavados_membresia', formatNumber(a1.lavados_membresia    || 0));
+    setVal('aqua01_efectivo',           formatCurrency(a1.efectivo          || 0));
+    setVal('aqua01_tarjeta',            formatCurrency(a1.tarjeta           || 0));
+    setVal('aqua01_lavados_paquete',    formatNumber(a1.lavados_paquete     || 0));
+    setVal('aqua01_lavados_membresia',  formatNumber(a1.lavados_membresia   || 0));
+    setVal('aqua01_compras_membresia',  formatNumber(a1.compras_membresia   || 0));
+    setVal('aqua01_renovaciones',       formatNumber(a1.renovaciones        || 0));
 
     // AQUA02
     const a2 = cajeros['AQUA02'] || {};
-    setVal('aqua02_efectivo',          formatCurrency(a2.efectivo           || 0));
-    setVal('aqua02_tarjeta',           formatCurrency(a2.tarjeta            || 0));
-    setVal('aqua02_lavados_paquete',   formatNumber(a2.lavados_paquete      || 0));
-    setVal('aqua02_lavados_membresia', formatNumber(a2.lavados_membresia    || 0));
+    setVal('aqua02_efectivo',           formatCurrency(a2.efectivo          || 0));
+    setVal('aqua02_tarjeta',            formatCurrency(a2.tarjeta           || 0));
+    setVal('aqua02_lavados_paquete',    formatNumber(a2.lavados_paquete     || 0));
+    setVal('aqua02_lavados_membresia',  formatNumber(a2.lavados_membresia   || 0));
+    setVal('aqua02_compras_membresia',  formatNumber(a2.compras_membresia   || 0));
+    setVal('aqua02_renovaciones',       formatNumber(a2.renovaciones        || 0));
 
     // Totales
-    setVal('total_efectivo',          formatCurrency(totals.efectivo));
-    setVal('total_tarjeta',           formatCurrency(totals.tarjeta));
-    setVal('total_lavados_paquete',   formatNumber(totals.lavados_paquete));
-    setVal('total_lavados_membresia', formatNumber(totals.lavados_membresia));
+    setVal('total_efectivo',           formatCurrency(totals.efectivo));
+    setVal('total_tarjeta',            formatCurrency(totals.tarjeta));
+    setVal('total_lavados_paquete',    formatNumber(totals.lavados_paquete));
+    setVal('total_lavados_membresia',  formatNumber(totals.lavados_membresia));
+    setVal('total_compras_membresia',  formatNumber(totals.compras_membresia));
+    setVal('total_renovaciones',       formatNumber(totals.renovaciones));
 }
 
 function setVal(id, value) {
@@ -591,6 +602,74 @@ function updatePaymentMethodsChart(paymentData = []) {
   });
 }
 
+
+/**
+ * Actualizar card de lavados por tipo de paquete
+ * Cuenta TransactionType=2 (lavado paquete + uso membresía), agrupados por paquete
+ */
+function updateLavadosPorTipo(servicios) {
+    const cl  = { express: 0, basico: 0, ultra: 0, delux: 0 }; // Compra Lavado
+    const um  = { express: 0, basico: 0, ultra: 0, delux: 0 }; // Uso Membresía
+    const ren = { express: 0, basico: 0, ultra: 0, delux: 0 }; // Renovación
+    const cm  = { express: 0, basico: 0, ultra: 0, delux: 0 }; // Compra Membresía
+    let   gar = 0;                                               // Garantía / Cortesía
+
+    servicios.forEach(s => {
+        const n = parseInt(s.pagos) || 0;
+        switch (s.servicio) {
+            case 'Lavado Express':               cl.express  += n; break;
+            case 'Lavado Básico':                cl.basico   += n; break;
+            case 'Lavado Ultra':                 cl.ultra    += n; break;
+            case 'Lavado Deluxe':                cl.delux    += n; break;
+            case 'Uso Membresía Express':  um.express += n; break;
+            case 'Uso Membresía Básico':   um.basico  += n; break;
+            case 'Uso Membresía Ultra':    um.ultra   += n; break;
+            case 'Uso Membresía Deluxe':   um.delux   += n; break;
+            case 'Uso Membresía':          um.express += n; break;
+            case 'Renovación Membresía Express': ren.express += n; break;
+            case 'Renovación Membresía Básico':  ren.basico  += n; break;
+            case 'Renovación Membresía Ultra':   ren.ultra   += n; break;
+            case 'Renovación Membresía Deluxe':  ren.delux   += n; break;
+            case 'Compra Membresía Express':     cm.express  += n; break;
+            case 'Compra Membresía Básico':      cm.basico   += n; break;
+            case 'Compra Membresía Ultra':       cm.ultra    += n; break;
+            case 'Compra Membresía Deluxe':      cm.delux    += n; break;
+            case 'Cortesía':                     gar         += n; break;
+        }
+    });
+
+    // Compra Lavado
+    setVal('cl_express', formatNumber(cl.express));
+    setVal('cl_basico',  formatNumber(cl.basico));
+    setVal('cl_ultra',   formatNumber(cl.ultra));
+    setVal('cl_delux',   formatNumber(cl.delux));
+    setVal('cl_total',   formatNumber(cl.express + cl.basico + cl.ultra + cl.delux));
+
+    // Uso Membresía
+    setVal('um_express', formatNumber(um.express));
+    setVal('um_basico',  formatNumber(um.basico));
+    setVal('um_ultra',   formatNumber(um.ultra));
+    setVal('um_delux',   formatNumber(um.delux));
+    setVal('um_total',   formatNumber(um.express + um.basico + um.ultra + um.delux));
+
+    // Renovación
+    setVal('ren_express', formatNumber(ren.express));
+    setVal('ren_basico',  formatNumber(ren.basico));
+    setVal('ren_ultra',   formatNumber(ren.ultra));
+    setVal('ren_delux',   formatNumber(ren.delux));
+    setVal('ren_total',   formatNumber(ren.express + ren.basico + ren.ultra + ren.delux));
+
+    // Compra Membresía
+    setVal('cm_express', formatNumber(cm.express));
+    setVal('cm_basico',  formatNumber(cm.basico));
+    setVal('cm_ultra',   formatNumber(cm.ultra));
+    setVal('cm_delux',   formatNumber(cm.delux));
+    setVal('cm_total',   formatNumber(cm.express + cm.basico + cm.ultra + cm.delux));
+
+    // Garantía
+    setVal('gar_cortesia', formatNumber(gar));
+    setVal('gar_total',    formatNumber(gar));
+}
 
 /**
  * Actualizar tabla de resumen detallado

@@ -220,6 +220,21 @@ class CajeroController extends Controller
 
 
 
+        /*######
+        7. Total lavados por tipo de paquete (compra + renovación)
+        #######*/
+        $packageTotals = Orders::query()
+            ->whereIn('OrderType', [1, 2])
+            ->whereBetween('orders.created_at', [$startDate, $endDate])
+            ->leftJoin('packages', 'orders.package_id', '=', 'packages._id')
+            ->groupBy('packages._id', 'packages.name')
+            ->select([
+                DB::raw("COALESCE(packages.name, 'Sin paquete') AS name"),
+                DB::raw('COUNT(*) AS total_lavados'),
+            ])
+            ->orderByDesc('total_lavados')
+            ->get();
+
         $DateVisual         = $catalogs->day_of_week[$startDateCarbon->dayOfWeek].', '.$startDateCarbon->format('d') .' de '. $catalogs->month[$startDateCarbon->month].' del '.$startDateCarbon->format('Y') .' '. $startDateCarbon->format('H:i:s') .' al '. $catalogs->day_of_week[$endDateCarbon->dayOfWeek].', '.$endDateCarbon->format('d') .' de '. $catalogs->month[$endDateCarbon->month].' del '.$endDateCarbon->format('Y') .' '. $endDateCarbon->format('H:i:s');
         
 
@@ -737,7 +752,7 @@ class CajeroController extends Controller
         // Obtener datos del clima para la fecha seleccionada (usando whereBetween)
         $weatherData = WeatherLog::whereBetween('created_at', [$startDate, $endDate])->orderBy('created_at', 'DESC')->get();
 
-        return view('cajero.cajero', compact('activePage', 'groupedSummary', 'totalSales',  'averageSale', 'mostUsedPaymentType', 'totalMembershipUses', 'packageData', 'packageType', 'package1timeData', 'totalTransactions',  'totalInvoices', 'startDate', 'endDate', 'catalogs',  'chartData', 'chartUsedPayment', 'packageChart', 'ordersByPeriod', 'totalTransactionsList', 'chartDataPie', 'DateVisual', 'timePeriodsData', 'combined',  'groupedSummaries', 'weatherData', 'totalOrdersType2', 'combinedData', 'totals', 'realTotalOrders', 'carreraTotalSales', 'interlogicTotalSales'));
+        return view('cajero.cajero', compact('activePage', 'groupedSummary', 'totalSales',  'averageSale', 'mostUsedPaymentType', 'totalMembershipUses', 'packageData', 'packageType', 'package1timeData', 'packageTotals', 'totalTransactions',  'totalInvoices', 'startDate', 'endDate', 'catalogs',  'chartData', 'chartUsedPayment', 'packageChart', 'ordersByPeriod', 'totalTransactionsList', 'chartDataPie', 'DateVisual', 'timePeriodsData', 'combined',  'groupedSummaries', 'weatherData', 'totalOrdersType2', 'combinedData', 'totals', 'realTotalOrders', 'carreraTotalSales', 'interlogicTotalSales'));
 
     }
 
@@ -803,7 +818,7 @@ class CajeroController extends Controller
        }else{
         return Carbon::now()->subDays(7)->format('Y-m-d\TH:i');
        }
-    }
+    } 
 
     private function getEndDate($end_date){
         if($end_date){

@@ -17,7 +17,7 @@
 @include('layout.nav-header')
 
   </header><!-- End Header -->
-
+ 
   
   <main id="main" class="main">
 
@@ -26,7 +26,7 @@
       <nav>
         <ol class="breadcrumb">
           <li class="breadcrumb-item"><a href="/dashboard">Portada</a></li>
-          <li class="breadcrumb-item active">Cajeros</li>
+          <li class="breadcrumb-item active">Cajerosss</li>
         </ol>
       </nav>
     </div><!-- End Page Title -->
@@ -208,6 +208,37 @@
 
               </div>
             </div><!-- End Sales Card -->
+
+            <!-- Lavados por tipo de paquete -->
+            <div class="col-lg-4 col-md-4">
+              <div class="card info-card">
+                <div class="card-body">
+                  <h5 class="card-title">Lavados por tipo de paquete</h5>
+                  <div class="table-responsive">
+                    <table class="table table-striped">
+                      <thead>
+                        <tr>
+                          <th>Paquete</th>
+                          <th class="text-end">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @foreach($packageTotals as $row)
+                          <tr>
+                            <td>{{ $row->name }}</td>
+                            <td class="text-end"><strong>{{ number_format($row->total_lavados) }}</strong></td>
+                          </tr>
+                        @endforeach
+                        <tr class="table-secondary">
+                          <td><strong>Total</strong></td>
+                          <td class="text-end"><strong>{{ number_format($packageTotals->sum('total_lavados')) }}</strong></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <!-- Lavados por Membresía -->
             <div class="col-lg-4 col-md-4">
