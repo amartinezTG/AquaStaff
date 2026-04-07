@@ -51,7 +51,7 @@
                   <div class="col-md-5">
                     <label class="col-sm-4 col-form-label">Fecha Final</label>
                     <input type="datetime-local" class="form-control" name="end_date" value="{{ $endDate }}">
-                  </div>  
+                  </div>   
 
                   <div class="col-md-2"><label class="col-sm-4 col-form-label">&nbsp;</label>
                     <button class="btn btn-warning w-100 submitBtn" tabindex="6" type="submit">Consultar</button>

@@ -53,6 +53,10 @@
                     <a class="nav-link {{ $activePage === 'cajero_transacciones' ? '' : 'collapsed' }}" href="/cajero_transacciones">
                         <i class="bi bi-receipt"></i><span>Transacciones</span></a>
                 </li>
+                <li>
+                    <a class="nav-link {{ $activePage === 'importacion' ? '' : 'collapsed' }}" href="/cajero/importacion">
+                        <i class="bi bi-cloud-upload"></i><span>Importación</span></a>
+                </li>
 
             </ul>
         </li>
@@ -82,9 +86,9 @@
                     </li>
                 </ul>
             </li>
-        @endif   
+        @endif
 
- 
+  
         <li class="nav-item">
             <a class="nav-link {{ $activePage === 'corte_caja' ? '' : 'collapsed' }}" href="/corte_caja">
                 <i class="bi bi-receipt"></i>

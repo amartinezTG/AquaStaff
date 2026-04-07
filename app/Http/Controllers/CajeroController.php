@@ -16,7 +16,9 @@ use App\Exports\TransactionsList;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class CajeroController extends Controller
 {
@@ -818,7 +820,7 @@ class CajeroController extends Controller
        }else{
         return Carbon::now()->subDays(7)->format('Y-m-d\TH:i');
        }
-    } 
+    }   
 
     private function getEndDate($end_date){
         if($end_date){
@@ -833,6 +835,209 @@ class CajeroController extends Controller
 
         return view('cajero.cajero_transacciones', compact('activePage'));
     }
+
+    // ─── IMPORTACIÓN PROCEPAGO ────────────────────────────────────────
+
+    public function importacionView()
+    {
+        $activePage = 'importacion';
+
+        // Resumen de importaciones anteriores
+        $importaciones = DB::table('procepago_pagos')
+            ->select(
+                'archivo_origen',
+                'importado_en',
+                DB::raw('MIN(fecha) as fecha_desde'),
+                DB::raw('MAX(fecha) as fecha_hasta'),
+                DB::raw('COUNT(*) as total'),
+                DB::raw('SUM(monto_total) as monto_total')
+            )
+            ->groupBy('archivo_origen', 'importado_en')
+            ->orderByDesc('importado_en')
+            ->limit(10)
+            ->get();
+
+        return view('cajero.importacion', compact('activePage', 'importaciones'));
+    }
+
+    public function importarProcepago(Request $request)
+    {
+        $request->validate([
+            'archivo' => 'required|file|mimes:xlsx,xls|max:20480',
+        ]);
+
+        try {
+            $archivo   = $request->file('archivo');
+            $nombre    = $archivo->getClientOriginalName();
+            $usuarioId = Auth::id();
+
+            $spreadsheet = IOFactory::load($archivo->getRealPath());
+            $ws          = $spreadsheet->getActiveSheet();
+
+            $headerFound  = false;
+            $colMap       = [];   // nombre_columna => índice 0-based
+            $insertados   = 0;
+            $omitidos     = 0;
+            $errores      = [];
+            $lote         = [];
+            $loteSize     = 200;
+            $filaActual   = 0;
+
+            foreach ($ws->getRowIterator() as $row) {
+                $filaActual++;
+                $cells = [];
+                foreach ($row->getCellIterator() as $cell) {
+                    // Leer valor calculado; si es INF/NAN lo convertimos a null
+                    try {
+                        $v = $cell->getCalculatedValue();
+                    } catch (\Throwable $e) {
+                        $v = $cell->getValue();
+                    }
+                    if (is_float($v) && (is_infinite($v) || is_nan($v))) {
+                        $v = null;
+                    }
+                    $cells[] = $v;
+                }
+
+                // Detectar fila de encabezado
+                if (!$headerFound) {
+                    if (isset($cells[0]) && strtoupper(trim((string)$cells[0])) === 'ID') {
+                        $headerFound = true;
+                        foreach ($cells as $idx => $colName) {
+                            $colMap[strtolower(trim((string)$colName))] = $idx;
+                        }
+                    }
+                    continue;
+                }
+
+                // Saltar filas vacías o de totales
+                $idVal = $cells[0] ?? null;
+                if ($idVal === null || $idVal === '' || !is_numeric($idVal)) {
+                    continue;
+                }
+
+                $pagaloId     = (int) $idVal;
+                $fecha        = trim((string)($cells[1] ?? ''));
+                $hora         = trim((string)($cells[2] ?? ''));
+                $sucursal     = trim((string)($cells[3] ?? ''));
+                $claveCajero  = trim((string)($cells[4] ?? ''));
+                $cajero       = trim((string)($cells[5] ?? ''));
+                $numOperacion = is_numeric($cells[6] ?? null) ? (int)$cells[6] : 0;
+                $referencia   = trim((string)($cells[7] ?? ''));
+                $recibo       = trim((string)($cells[8] ?? ''));
+                $servicio     = trim((string)($cells[9] ?? ''));
+                $formaPago    = strtoupper(trim((string)($cells[10] ?? '')));
+                $montoEfectivo = is_numeric($cells[11] ?? null) ? (float)$cells[11] : 0;
+                $montoTarjeta  = is_numeric($cells[12] ?? null) ? (float)$cells[12] : 0;
+                $ultimos4     = trim((string)($cells[13] ?? ''));
+                $autorizacion = trim((string)($cells[14] ?? ''));
+
+                // Normalizar N/A y ceros
+                $referencia   = in_array($referencia,   ['N/A','0','']) ? null : $referencia;
+                $recibo       = in_array($recibo,       ['N/A',''])     ? null : $recibo;
+                $ultimos4     = in_array($ultimos4,     ['N/A',''])     ? null : $ultimos4;
+                $autorizacion = in_array($autorizacion, ['N/A',''])     ? null : $autorizacion;
+
+                if (!$fecha || !$hora || !$claveCajero || !$servicio) {
+                    continue;
+                }
+
+                $lote[] = [
+                    'pagalo_id'      => $pagaloId,
+                    'num_operacion'  => $numOperacion,
+                    'referencia'     => $referencia,
+                    'recibo'         => $recibo,
+                    'autorizacion'   => $autorizacion,
+                    'ultimos_4'      => $ultimos4,
+                    'fecha'          => $fecha,
+                    'hora'           => $hora,
+                    'sucursal'       => $sucursal ?: null,
+                    'clave_cajero'   => $claveCajero,
+                    'cajero'         => $cajero ?: null,
+                    'servicio'       => $servicio,
+                    'forma_pago'     => in_array($formaPago, ['EFECTIVO','TARJETA']) ? $formaPago : 'EFECTIVO',
+                    'monto_efectivo' => $montoEfectivo,
+                    'monto_tarjeta'  => $montoTarjeta,
+                    'archivo_origen' => $nombre,
+                    'importado_en'   => now(),
+                    'importado_por'  => $usuarioId,
+                ];
+
+                // Insertar en lotes de 200
+                if (count($lote) >= $loteSize) {
+                    try {
+                        $antes = DB::table('procepago_pagos')->count();
+                        DB::table('procepago_pagos')->insertOrIgnore($lote);
+                        $despues   = DB::table('procepago_pagos')->count();
+                        $insertados += ($despues - $antes);
+                        $omitidos   += (count($lote) - ($despues - $antes));
+                    } catch (\Exception $e) {
+                        $errores[] = "Lote fila ~{$filaActual}: " . $e->getMessage();
+                    }
+                    $lote = [];
+                }
+            }
+
+            // Insertar lote restante
+            if (!empty($lote)) {
+                try {
+                    $antes = DB::table('procepago_pagos')->count();
+                    DB::table('procepago_pagos')->insertOrIgnore($lote);
+                    $despues    = DB::table('procepago_pagos')->count();
+                    $insertados += ($despues - $antes);
+                    $omitidos   += (count($lote) - ($despues - $antes));
+                } catch (\Exception $e) {
+                    $errores[] = "Lote final: " . $e->getMessage();
+                }
+            }
+
+            return response()->json([
+                'success'    => true,
+                'insertados' => $insertados,
+                'omitidos'   => $omitidos,
+                'errores'    => array_slice($errores, 0, 20),
+                'archivo'    => $nombre,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al procesar el archivo: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function importacionTable(Request $request)
+    {
+        $desde  = $request->input('fecha_inicio');
+        $hasta  = $request->input('fecha_final');
+        $cajero = $request->input('cajero');
+
+        $q = DB::table('procepago_pagos')
+            ->when($desde,  fn($q) => $q->where('fecha', '>=', $desde))
+            ->when($hasta,  fn($q) => $q->where('fecha', '<=', $hasta))
+            ->when($cajero, fn($q) => $q->where('clave_cajero', $cajero))
+            ->orderByDesc('fecha')
+            ->orderByDesc('hora')
+            ->get();
+
+        $data = $q->map(fn($r) => [
+            'pagalo_id'     => $r->pagalo_id,
+            'num_operacion' => $r->num_operacion,
+            'fecha'         => $r->fecha,
+            'hora'          => $r->hora,
+            'clave_cajero'  => $r->clave_cajero,
+            'servicio'      => $r->servicio,
+            'forma_pago'    => $r->forma_pago,
+            'monto_efectivo'=> $r->monto_efectivo,
+            'monto_tarjeta' => $r->monto_tarjeta,
+            'monto_total'   => $r->monto_total,
+            'autorizacion'  => $r->autorizacion,
+            'ultimos_4'     => $r->ultimos_4,
+            'archivo_origen'=> $r->archivo_origen,
+        ]);
+
+        return response()->json(['data' => $data]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
 
     public function CajerosTable(Request $request){
         $from  = $request->input('fecha_inicio'); // opcisonal
