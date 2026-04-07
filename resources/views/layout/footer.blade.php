@@ -7,6 +7,12 @@
   <script src="{{ asset('/assets/vendor/apexcharts/apexcharts.min.js') }}"></script>
   <script src="{{ asset('/assets/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
   <script src="{{ asset('/assets/vendor/chart.js/chart.umd.js') }}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script>
+    Chart.register(ChartDataLabels);
+    // Desactivar datalabels globalmente — cada gráfica lo activa explícitamente
+    Chart.defaults.plugins.datalabels = { display: false };
+  </script>
   <script src="{{ asset('/assets/vendor/echarts/echarts.min.js') }}"></script>
   <script src="{{ asset('/assets/vendor/quill/quill.js') }}"></script>
   <!--<script src="{{ asset('/assets/vendor/simple-datatables/simple-datatables.js') }}"></script>-->
@@ -15,7 +21,7 @@
 
   <!-- Template Main JS File -->
   <script src="{{ asset('/assets/js/main.js') }}"></script>
-
+ 
   <script src="https://www.google.com/recaptcha/api.js"></script>
   <script src="https://cdn.datatables.net/buttons/3.2.0/js/dataTables.buttons.js"></script>
   <script src="https://cdn.datatables.net/buttons/3.2.0/js/buttons.dataTables.js"></script>

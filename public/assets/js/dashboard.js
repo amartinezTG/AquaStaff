@@ -1,5 +1,5 @@
 // assets/js/dashboard.js
-
+ 
 // Variables globales para almacenar datos y gráficas
 let dashboardData = {};
 let hourlyChart, hourlyLavadosChart, membershipChart, cajerosChart, paymentMethodsChart;
@@ -17,7 +17,7 @@ const COLORS = {
     pink: '#e83e8c',
     indigo: '#6610f2'
 };
-
+ 
 // Configuración de Chart.js
 // Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 // Chart.defaults.font.size = 11;
@@ -213,25 +213,40 @@ function updateHourlyChart(hourlyData = null) {
                 pointBackgroundColor: color,
                 pointBorderColor: '#ffffff',
                 pointBorderWidth: 2,
-                pointRadius: 4
+                pointRadius: 5,
+                datalabels: {
+                    display: true,
+                    align: 'top',
+                    anchor: 'end',
+                    color: color,
+                    font: { size: 10, weight: '600' },
+                    formatter: v => v > 0 ? (isRevenue ? formatCurrency(v, true) : formatNumber(v)) : ''
+                }
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: { padding: { top: 24 } },
             plugins: {
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
                             const value = context.raw;
-                            return isRevenue ? 
+                            return isRevenue ?
                                 `Ingresos: ${formatCurrency(value)}` :
                                 `Órdenes: ${formatNumber(value)}`;
                         }
                     }
+                },
+                datalabels: {
+                    display: true,
+                    align: 'top',
+                    anchor: 'end',
+                    color: color,
+                    font: { size: 10, weight: '600' },
+                    formatter: v => v > 0 ? (isRevenue ? formatCurrency(v, true) : formatNumber(v)) : ''
                 }
             },
             scales: {
@@ -242,20 +257,11 @@ function updateHourlyChart(hourlyData = null) {
                             return isRevenue ? formatCurrency(value, true) : formatNumber(value);
                         }
                     },
-                    grid: {
-                        color: 'rgba(0,0,0,0.1)'
-                    }
+                    grid: { color: 'rgba(0,0,0,0.1)' }
                 },
-                x: {
-                    grid: {
-                        color: 'rgba(0,0,0,0.1)'
-                    }
-                }
+                x: { grid: { color: 'rgba(0,0,0,0.1)' } }
             },
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            }
+            interaction: { intersect: false, mode: 'index' }
         }
     });
 }
@@ -289,21 +295,38 @@ function updateHourlyLavadosChart(hourlyData = null) {
                 backgroundColor: 'rgba(15, 118, 110, 0.08)',
                 borderWidth: 2.5,
                 pointBackgroundColor: '#0f766e',
-                pointRadius: 3,
-                pointHoverRadius: 5,
+                pointRadius: 5,
+                pointHoverRadius: 6,
                 fill: true,
-                tension: 0.4
+                tension: 0.4,
+                datalabels: {
+                    display: true,
+                    align: 'top',
+                    anchor: 'end',
+                    color: '#0f766e',
+                    font: { size: 10, weight: '600' },
+                    formatter: v => v > 0 ? v : ''
+                }
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: { padding: { top: 24 } },
             plugins: {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
                         label: ctx => `Lavados: ${ctx.raw}`
                     }
+                },
+                datalabels: {
+                    display: true,
+                    align: 'top',
+                    anchor: 'end',
+                    color: '#0f766e',
+                    font: { size: 10, weight: '600' },
+                    formatter: v => v > 0 ? v : ''
                 }
             },
             scales: {
