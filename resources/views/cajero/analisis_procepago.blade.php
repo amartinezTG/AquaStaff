@@ -13,7 +13,7 @@
         </div>
         @include('layout.nav-header')
     </header>
- 
+  
     <main id="main" class="main">
         <style>
             .stat-card {
@@ -205,13 +205,19 @@
 
                             <!-- Tab: Monto diferente -->
                             <div id="tab-dif" style="display:none;">
-                                <p class="text-muted small mb-2">Transacciones que <strong>existen en ambos sistemas</strong> pero con monto distinto. Indican posible modificación posterior.</p>
+                                <p class="text-muted small mb-2">
+                                    Transacciones que <strong>existen en ambos sistemas</strong> pero el precio registrado en AquaAdmin no coincide con lo cobrado por Procepago.<br>
+                                    <span class="text-danger fw-semibold">Precio Aqua</span> = precio del servicio en AquaAdmin &nbsp;|&nbsp;
+                                    <span class="text-primary fw-semibold">Cobrado Aqua</span> = lo que el cliente entregó menos cambio &nbsp;|&nbsp;
+                                    <span class="text-success fw-semibold">Procepago</span> = lo cobrado por el TPV
+                                </p>
                                 <div class="table-responsive">
                                     <table id="tbl-dif" class="table table-bordered table-hover diff-table w-100">
                                         <thead><tr>
-                                            <th>Fecha</th><th>Hora</th><th>Cajero</th>
+                                            <th>Num Op.</th><th>Fecha</th><th>Hora</th><th>Cajero</th>
                                             <th>Servicio</th><th>Forma Pago</th>
-                                            <th>Total AquaAdmin</th><th>Total Procepago</th><th>Diferencia</th>
+                                            <th>Precio Aqua</th><th>Cobrado Aqua</th><th>Procepago</th>
+                                            <th>Dif. Precio</th><th>Dif. Cobrado</th>
                                         </tr></thead>
                                         <tbody></tbody>
                                     </table>
@@ -354,13 +360,16 @@
                     : '<span class="badge-tar">Tarjeta</span>';
                 document.querySelector('#tbl-dif tbody').insertAdjacentHTML('beforeend',
                     `<tr>
+                        <td class="text-center">${r.id}</td>
                         <td>${r.fecha}</td><td>${r.hora}</td>
                         <td class="text-center fw-bold">${r.cajero}</td>
                         <td>${r.servicio}</td>
                         <td class="text-center">${badge}</td>
-                        <td class="text-end">${fmt(r.total_aqua)}</td>
-                        <td class="text-end">${fmt(r.total_pp)}</td>
-                        <td class="text-end">${difCell(r.diferencia)}</td>
+                        <td class="text-end text-danger fw-bold">${fmt(r.precio_aqua)}</td>
+                        <td class="text-end text-primary">${fmt(r.cobrado_aqua)}</td>
+                        <td class="text-end text-success fw-bold">${fmt(r.total_pp)}</td>
+                        <td class="text-end">${difCell(r.dif_precio)}</td>
+                        <td class="text-end">${difCell(r.dif_cobrado)}</td>
                     </tr>`);
             });
             dtDif = $('#tbl-dif').DataTable(dtConfig([]));

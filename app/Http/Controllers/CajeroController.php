@@ -998,12 +998,12 @@ class CajeroController extends Controller
                 'errores'    => array_slice($errores, 0, 20),
                 'archivo'    => $nombre,
             ]);
-
+  
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al procesar el archivo: ' . $e->getMessage()], 500);
         }
     }
- 
+  
     public function analisisView()
     {
         $activePage = 'analisis_procepago';
@@ -1016,28 +1016,31 @@ class CajeroController extends Controller
         $hasta  = $request->input('fecha_final',  now()->toDateString());
         $cajero = $request->input('cajero', '');
 
-        // AquaAdmin: agrupar por _id (una fila por transaccion)
+        // AquaAdmin: agrupar por _id
+        // - whereNull('deleted_at'): excluye soft deletes
+        // - MAX(Total): precio del servicio registrado en AquaAdmin — se compara vs Procepago
+        //   para detectar cobros distintos al precio (ej: registrado $180, cobrado $800)
+        // - MAX(TotalPayed - `Change`): lo que el cliente pagó neto (referencia informativa)
+        // - MAX en vez de SUM: hay filas duplicadas exactas en algunos _id
         $ltSub = DB::table('local_transaction')
             ->select(
                 '_id',
-                DB::raw('DATE(TransationDate) as fecha'),
-                DB::raw('TIME(TransationDate) as hora'),
-                'Atm as cajero',
-                DB::raw('SUM(Total) as total_lt')
+                DB::raw('DATE(MIN(TransationDate)) as fecha'),
+                DB::raw('TIME(MIN(TransationDate)) as hora'),
+                DB::raw('MAX(Atm) as cajero'),
+                DB::raw('MAX(Total) as precio_aqua'),
+                DB::raw('MAX(TotalPayed - `Change`) as cobrado_aqua')
             )
             ->whereBetween('TransationDate', [$desde.' 00:00:00', $hasta.' 23:59:59'])
             ->whereIn('Atm', ['AQUA01','AQUA02'])
-            ->groupBy('_id', DB::raw('DATE(TransationDate)'), DB::raw('TIME(TransationDate)'), 'Atm');
-
-        if ($cajero) {
-            $ltSub->where('Atm', $cajero);
-        }
+            ->whereNull('deleted_at')
+            ->when($cajero, fn($q) => $q->where('Atm', $cajero))
+            ->groupBy('_id');
 
         // Procepago
-        $ppBase = DB::table('procepago_pagos')->whereBetween('fecha', [$desde, $hasta]);
-        if ($cajero) {
-            $ppBase->where('clave_cajero', $cajero);
-        }
+        $ppBase = DB::table('procepago_pagos')
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->when($cajero, fn($q) => $q->where('clave_cajero', $cajero));
 
         $lt = DB::query()->fromSub($ltSub, 'lt')->get()->keyBy('_id');
         $pp = (clone $ppBase)->get()->keyBy('num_operacion');
@@ -1049,53 +1052,64 @@ class CajeroController extends Controller
         $soloEnProcepago = [];
         $diferenciaMonto = [];
 
+        // En AquaAdmin con cobro pero sin registro en Procepago
         foreach ($ltIds->diff($ppIds) as $id) {
             $row = $lt[$id];
-            if ($row->total_lt > 0) {
+            if ($row->precio_aqua > 0) {
                 $soloEnAqua[] = [
-                    'id'         => $id,
-                    'fecha'      => $row->fecha,
-                    'hora'       => $row->hora,
-                    'cajero'     => $row->cajero,
-                    'total_aqua' => $row->total_lt,
-                    'total_pp'   => '-',
-                    'diferencia' => -$row->total_lt,
+                    'id'           => $id,
+                    'fecha'        => $row->fecha,
+                    'hora'         => $row->hora,
+                    'cajero'       => $row->cajero,
+                    'precio_aqua'  => $row->precio_aqua,
+                    'cobrado_aqua' => $row->cobrado_aqua,
+                    'total_pp'     => '-',
+                    'diferencia'   => -$row->precio_aqua,
                 ];
             }
         }
 
+        // En Procepago con cobro pero sin registro en AquaAdmin
         foreach ($ppIds->diff($ltIds) as $id) {
             $row = $pp[$id];
             if ($row->monto_total > 0) {
                 $soloEnProcepago[] = [
-                    'id'         => $id,
-                    'fecha'      => $row->fecha,
-                    'hora'       => $row->hora,
-                    'cajero'     => $row->clave_cajero,
-                    'servicio'   => $row->servicio,
-                    'forma_pago' => $row->forma_pago,
-                    'total_aqua' => '-',
-                    'total_pp'   => $row->monto_total,
-                    'diferencia' => $row->monto_total,
+                    'id'           => $id,
+                    'fecha'        => $row->fecha,
+                    'hora'         => $row->hora,
+                    'cajero'       => $row->clave_cajero,
+                    'servicio'     => $row->servicio,
+                    'forma_pago'   => $row->forma_pago,
+                    'precio_aqua'  => '-',
+                    'cobrado_aqua' => '-',
+                    'total_pp'     => $row->monto_total,
+                    'diferencia'   => $row->monto_total,
                 ];
             }
         }
 
+        // Existen en ambos — comparar precio registrado en Aqua vs cobrado en Procepago
         foreach ($ltIds->intersect($ppIds) as $id) {
             $rowLt = $lt[$id];
             $rowPp = $pp[$id];
-            $dif   = round($rowPp->monto_total - $rowLt->total_lt, 2);
-            if (abs($dif) > 0.01) {
+            // Diferencia entre precio del servicio en Aqua y lo cobrado por Procepago
+            $difPrecio   = round($rowPp->monto_total - $rowLt->precio_aqua, 2);
+            // Diferencia entre lo cobrado neto en Aqua y lo cobrado en Procepago
+            $difCobrado  = round($rowPp->monto_total - $rowLt->cobrado_aqua, 2);
+
+            if (abs($difPrecio) > 0.01) {
                 $diferenciaMonto[] = [
-                    'id'         => $id,
-                    'fecha'      => $rowLt->fecha,
-                    'hora'       => $rowLt->hora,
-                    'cajero'     => $rowLt->cajero,
-                    'servicio'   => $rowPp->servicio,
-                    'forma_pago' => $rowPp->forma_pago,
-                    'total_aqua' => $rowLt->total_lt,
-                    'total_pp'   => $rowPp->monto_total,
-                    'diferencia' => $dif,
+                    'id'           => $id,
+                    'fecha'        => $rowLt->fecha,
+                    'hora'         => $rowLt->hora,
+                    'cajero'       => $rowLt->cajero,
+                    'servicio'     => $rowPp->servicio,
+                    'forma_pago'   => $rowPp->forma_pago,
+                    'precio_aqua'  => $rowLt->precio_aqua,   // precio del servicio en AquaAdmin
+                    'cobrado_aqua' => $rowLt->cobrado_aqua,  // lo que pagó el cliente en Aqua
+                    'total_pp'     => $rowPp->monto_total,   // lo que cobró el TPV
+                    'dif_precio'   => $difPrecio,            // diferencia precio vs TPV
+                    'dif_cobrado'  => $difCobrado,           // diferencia cobrado vs TPV
                 ];
             }
         }
@@ -1103,13 +1117,13 @@ class CajeroController extends Controller
         return response()->json([
             'resumen' => [
                 'total_pp'           => round($pp->sum('monto_total'), 2),
-                'total_aqua'         => round($lt->sum('total_lt'), 2),
+                'total_aqua'         => round($lt->sum('precio_aqua'), 2),
                 'solo_en_aqua_n'     => count($soloEnAqua),
-                'solo_en_aqua_monto' => round(collect($soloEnAqua)->sum('total_aqua'), 2),
+                'solo_en_aqua_monto' => round(collect($soloEnAqua)->sum('precio_aqua'), 2),
                 'solo_en_pp_n'       => count($soloEnProcepago),
                 'solo_en_pp_monto'   => round(collect($soloEnProcepago)->sum('total_pp'), 2),
                 'dif_monto_n'        => count($diferenciaMonto),
-                'dif_monto_total'    => round(collect($diferenciaMonto)->sum('diferencia'), 2),
+                'dif_monto_total'    => round(collect($diferenciaMonto)->sum('dif_precio'), 2),
             ],
             'solo_en_aqua'      => collect($soloEnAqua)->sortBy('fecha')->values(),
             'solo_en_procepago' => collect($soloEnProcepago)->sortBy('fecha')->values(),
