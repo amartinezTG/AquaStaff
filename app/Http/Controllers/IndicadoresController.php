@@ -1,6 +1,6 @@
 <?php
 namespace App\Http\Controllers;
-
+ 
 use App\Models\GeneralCatalogs;
 use App\Models\LocalTransaction;
 use App\Models\SpecialOrders;
@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Dompdf\Options;
-
+ 
 class IndicadoresController extends Controller
 {
     public $catalogs;
@@ -149,6 +149,115 @@ class IndicadoresController extends Controller
     function indicadores_membresias(){
         $activePage = 'indicadores_membresias';
         return view('indicadores.indicadores_membresias', compact('activePage'));
+    }
+
+    function indicadores_clientes(){
+        $activePage = 'indicadores_clientes';
+        return view('indicadores.indicadores_clientes', compact('activePage'));
+    }
+
+    public function indicadores_clientes_table(Request $request){
+        try {
+            $sql = "
+                SELECT
+                    c._id,
+                    CONCAT(COALESCE(c.first_name,''), ' ', COALESCE(c.last_name,'')) AS cliente,
+                    c.first_name,
+                    c.last_name,
+                    c.tag,
+                    c.email,
+                    c.phone,
+                    c.plate,
+                    c.brand,
+                    c.model,
+                    c.color,
+                    c.is_recurrent,
+                    c.renewal_count,
+                    c.prosepago_id,
+                    c.banco,
+                    c.titular,
+                    cm.membership_id,
+                    cm.start_date,
+                    cm.end_date,
+                    cm.isBlocked,
+                    CASE cm.membership_id
+                        WHEN '612f057787e473107fda56aa' THEN 'Express'
+                        WHEN '61344ae637a5f00383106c7a' THEN 'Express'
+                        WHEN '612f067387e473107fda56b0' THEN 'Básico'
+                        WHEN '61344b5937a5f00383106c80' THEN 'Básico'
+                        WHEN '612f1c4f30b90803837e7969' THEN 'Ultra'
+                        WHEN '61344b9137a5f00383106c84' THEN 'Ultra'
+                        WHEN '61344bab37a5f00383106c88' THEN 'Delux'
+                        WHEN '612abcd1c4ce4c141237a356' THEN 'Delux'
+                        ELSE 'N/A'
+                    END AS tipo_membresia,
+                    CASE
+                        WHEN cm._id IS NOT NULL AND cm.end_date >= NOW() THEN 'Vigente'
+                        WHEN cm._id IS NOT NULL AND cm.end_date < NOW()  THEN 'Vencida'
+                        ELSE 'Sin membresía'
+                    END AS estatus_membresia,
+                    COALESCE(oa.total_lavados, 0) AS total_lavados,
+                    oa.ultimo_lavado
+                FROM clients c
+                LEFT JOIN (
+                    SELECT cm.*
+                    FROM client_membership cm
+                    INNER JOIN (
+                        SELECT client_id, MAX(start_date) AS max_start
+                        FROM client_membership
+                        GROUP BY client_id
+                    ) latest ON cm.client_id = latest.client_id AND cm.start_date = latest.max_start
+                ) cm ON cm.client_id = c._id
+                LEFT JOIN (
+                    SELECT UserId, COUNT(*) AS total_lavados, MAX(created_at) AS ultimo_lavado
+                    FROM orders
+                    WHERE OrderType = 1
+                    GROUP BY UserId
+                ) oa ON oa.UserId = c._id
+                ORDER BY cliente ASC
+            ";
+
+            $rows = DB::select($sql);
+
+            $data = array_map(function($row) {
+                return [
+                    '_id'               => $row->_id,
+                    'cliente'           => trim($row->cliente) ?: 'Sin nombre',
+                    'tag'               => $row->tag ?? '',
+                    'email'             => $row->email ?? '',
+                    'phone'             => $row->phone ?? '',
+                    'plate'             => $row->plate ?? '',
+                    'brand'             => $row->brand ?? '',
+                    'model'             => $row->model ?? '',
+                    'color'             => $row->color ?? '',
+                    'tipo_membresia'    => $row->tipo_membresia ?? 'N/A',
+                    'estatus_membresia' => $row->estatus_membresia ?? 'Sin membresía',
+                    'start_date'        => $row->start_date ? \Carbon\Carbon::parse($row->start_date)->format('Y-m-d') : '',
+                    'end_date'          => $row->end_date   ? \Carbon\Carbon::parse($row->end_date)->format('Y-m-d')   : '',
+                    'is_recurrent'      => $row->is_recurrent == 1 ? 'Sí' : 'No',
+                    'renewal_count'     => (int)($row->renewal_count ?? 0),
+                    'prosepago_id'      => $row->prosepago_id ?? '',
+                    'banco'             => $row->banco ?? '',
+                    'titular'           => $row->titular ?? '',
+                    'total_lavados'     => (int)$row->total_lavados,
+                    'ultimo_lavado'     => $row->ultimo_lavado ? \Carbon\Carbon::parse($row->ultimo_lavado)->format('Y-m-d') : '',
+                ];
+            }, $rows);
+
+            return response()->json([
+                'data'            => array_values($data),
+                'recordsTotal'    => count($data),
+                'recordsFiltered' => count($data),
+                'success'         => true,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+                'data'    => [],
+            ], 500);
+        }
     }
 
     public function indicadores_membresias_table(Request $request){

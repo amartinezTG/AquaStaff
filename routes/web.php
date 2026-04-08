@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 
-
+ 
 // Artisan::call('view:clear');
 /*
 |--------------------------------------------------------------------------
@@ -97,6 +97,8 @@ Route::middleware('auth')->controller(IndicadoresController::class)->group(funct
     Route::post('indicadores/indicadores_membresias_table',  'indicadores_membresias_table')->name('indicadores.indicadores_membresias_table');
     Route::match(['get', 'post'], 'indicadores-membresias',  'membresias')->name('indicadores-membresias');
     Route::match(['get', 'post'], 'indicadores_membresias',  'indicadores_membresias')->name('indicadores_membresias');
+    Route::get('indicadores/clientes', 'indicadores_clientes')->name('indicadores.clientes');
+    Route::post('indicadores/clientes/table', 'indicadores_clientes_table')->name('indicadores.clientes.table');
 });
  
 #################

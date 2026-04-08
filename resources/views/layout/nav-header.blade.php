@@ -81,11 +81,15 @@
                         <a class="nav-link {{ $activePage === 'indicadores_cajero' ? '' : 'collapsed' }}" href="/indicadores_cajero">
                             <i class="bi bi-receipt"></i><span>Indicadores Cajero</span></a>
                     </li>
-
+ 
                     <li>
                         <a class="nav-link {{ $activePage === 'membresias' ? '' : 'collapsed' }}"
-                            {{-- href="/indicadores-membresias"><i class="bi bi-receipt"></i><span>Membresias</span> --}}
-                            href="/indicadores_membresias"><i class="bi bi-receipt"></i><span>Membresías</span>
+                            href="/indicadores_membresias"><i class="bi bi-receipt"></i><span>Indicadores Membresías</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="nav-link {{ $activePage === 'indicadores_clientes' ? '' : 'collapsed' }}" href="{{ route('indicadores.clientes') }}">
+                            <i class="bi bi-people"></i><span>Clientes</span>
                         </a>
                     </li>
                 </ul>
