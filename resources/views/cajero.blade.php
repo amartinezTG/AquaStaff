@@ -6,7 +6,7 @@
   <header id="header" class="header fixed-top d-flex align-items-center">
 
     <div class="d-flex align-items-center justify-content-between">
-      <a href="index.php" class="logo d-flex align-items-center">
+      <a href="/dashboard" class="logo d-flex align-items-center">
         <img src="https://facturacion.aquacarclub.com/public/img/AQUA-CAR-CLUB-LOGO-N.png" alt="">
      
       </a>
@@ -25,7 +25,7 @@
       <h1>Cajeros</h1>
       <nav>
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="index.php">Portada</a></li>
+          <li class="breadcrumb-item"><a href="/dashboard">Portada</a></li>
           <li class="breadcrumb-item active">Cajeros</li>
         </ol>
       </nav>

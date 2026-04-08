@@ -20,12 +20,12 @@
 @include('layout.nav-bar')
 
   <main id="main" class="main">
-
+ 
     <div class="pagetitle">
       <h1>Reporte</h1>
       <nav>
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="index.php">Portada</a></li>
+          <li class="breadcrumb-item"><a href="/dashboard">Portada</a></li>
           <li class="breadcrumb-item active">Membresías </li>
         </ol>
       </nav>

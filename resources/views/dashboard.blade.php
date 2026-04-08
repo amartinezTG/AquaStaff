@@ -6,7 +6,7 @@
   <header id="header" class="header fixed-top d-flex align-items-center">
 
     <div class="d-flex align-items-center justify-content-between">
-      <a href="index.php" class="logo d-flex align-items-center">
+      <a href="/dashboard" class="logo d-flex align-items-center">
         <img src="https://facturacion.aquacarclub.com/public/img/AQUA-CAR-CLUB-LOGO-N.png" alt="">
       </a>
       <i class="bi bi-list toggle-sidebar-btn"></i>
@@ -19,7 +19,7 @@
   @include('layout.nav-bar')
 
   <main id="main" class="main">
-
+ 
     <div class="pagetitle">
       <h1>Reporte</h1>
       <nav>

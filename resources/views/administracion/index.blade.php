@@ -3,10 +3,10 @@
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <body class="toggle-sidebar">
-
+ 
     <header id="header" class="header fixed-top d-flex align-items-center">
         <div class="d-flex align-items-center justify-content-between">
-            <a href="index.php" class="logo d-flex align-items-center">
+            <a href="/dashboard" class="logo d-flex align-items-center">
                 <img src="/assets/img/AQUA-CAR-CLUB-LOGO-N.png" alt="">
             </a>
             <i class="bi bi-list toggle-sidebar-btn"></i>

@@ -6,7 +6,7 @@
   <header id="header" class="header fixed-top d-flex align-items-center">
 
     <div class="d-flex align-items-center justify-content-between">
-      <a href="index.php" class="logo d-flex align-items-center">
+      <a href="/dashboard" class="logo d-flex align-items-center">
         <img src="assets/client/AQCC_Isotipo-03.png" alt="">
         <span class="d-none d-lg-block" style="color:#4CB8B8;">AquaAdmin</span>
       </a>
@@ -20,12 +20,12 @@
   @include('layout.nav-bar')
 
   <main id="main" class="main">
-
+ s
     <div class="pagetitle">
       <h1>Reporte</h1>
       <nav>
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="index.php">Portada</a></li>
+          <li class="breadcrumb-item"><a href="/dashboard">Portada</a></li>
           <li class="breadcrumb-item active">Venging Machine </li>
         </ol>
       </nav>
