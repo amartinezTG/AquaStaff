@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 
 class FacturacionController extends Controller
 {
@@ -18,7 +19,7 @@ class FacturacionController extends Controller
     {
         $this->catalogs = new GeneralCatalogs();
     }
-
+  
     public function index()
     {
         $activePage = 'facturacion';
@@ -122,6 +123,8 @@ class FacturacionController extends Controller
         $ids         = $request->input('ids', []);
         $periodicidad = $request->input('periodicidad', '04');
 
+        Log::error('[FacturacionController] generarFactura iniciado', ['ids_count' => count($ids), 'periodicidad' => $periodicidad]);
+
         if (empty($ids)) {
             return response()->json(['error' => 'No se seleccionaron transacciones.'], 400);
         }
@@ -152,9 +155,10 @@ class FacturacionController extends Controller
             }
         }
 
-        // Obtener token
-        $tokenManager = app(\App\Services\TokenManager::class);
-        $token = $tokenManager->getToken();
+        // Obtener token desde FacturoPorTi producción
+        $token = $this->obtenerTokenProduccion();
+
+        Log::error('[FacturacionController] Token obtenido', ['token_length' => strlen($token ?? ''), 'token_inicio' => substr($token ?? '', 0, 20)]);
 
         if (!$token) {
             return response()->json(['error' => 'No se pudo obtener el token de autenticación.'], 500);
@@ -286,6 +290,14 @@ class FacturacionController extends Controller
 
                 $response = $this->callAPIWithToken('/servicios/timbrar/json', $orderJSON, $token);
 
+                Log::error('[FacturacionController] Respuesta API timbrado', [
+                    'invoiceName' => $invoiceName,
+                    'base'        => $base,
+                    'iva'         => $iva,
+                    'total'       => $total,
+                    'response'    => $response,
+                ]);
+
                 if (!empty($response['estatus']['detieneEjecucionProveedor'])) {
                     DB::rollBack();
                     return response()->json([
@@ -294,16 +306,25 @@ class FacturacionController extends Controller
                 }
 
                 if (($response['estatus']['codigo'] ?? '') === '000') {
+                    $cfdi     = $response['cfdiTimbrado']['respuesta'] ?? [];
+                    $uuid     = $cfdi['uuid']   ?? $cfdi['UUID']   ?? null;
+                    $serieCfdi = $cfdi['serie'] ?? $cfdi['Serie']  ?? 'AB';
+                    $folioCfdi = $cfdi['folio'] ?? $cfdi['Folio']  ?? null;
+                    $pdf      = $cfdi['pdf']     ?? null;
+                    $xml      = $cfdi['cfdixml'] ?? null;
+
                     $globalInvoice = GlobalInvoice::create([
                         'name'             => $invoiceName,
+                        'uuid'             => $uuid,
+                        'serie'            => $serieCfdi,
+                        'folio'            => $folioCfdi,
+                        'file_name'        => $invoiceName,
                         'total'            => $total,
                         'start_date_group' => $startDateGroup,
                         'end_date_group'   => $endDateGroup,
                         'paymentType'      => $paymentType,
+                        'periodicidad'     => $periodicidad,
                     ]);
-
-                    $pdf = $response['cfdiTimbrado']['respuesta']['pdf']     ?? null;
-                    $xml = $response['cfdiTimbrado']['respuesta']['cfdixml'] ?? null;
 
                     if ($pdf && $xml) {
                         $this->saveInvoiceFile($invoiceName, $pdf, $xml);
@@ -325,8 +346,11 @@ class FacturacionController extends Controller
                     ];
                 } else {
                     DB::rollBack();
-                    $errMsg = $response['estatus']['informacionTecnica'] ?? $response['estatus']['descripcion'] ?? 'Error desconocido';
-                    return response()->json(['error' => 'Error al timbrar: ' . $errMsg], 500);
+                    return response()->json([
+                        'error'            => 'Error al timbrar',
+                        'estatus'          => $response['estatus'] ?? null,
+                        'respuesta_completa' => $response,
+                    ], 500);
                 }
             }
 
@@ -351,15 +375,20 @@ class FacturacionController extends Controller
             SELECT
                 gi.id,
                 gi.name,
+                gi.uuid,
+                gi.serie,
+                gi.folio,
+                gi.file_name,
                 gi.total,
                 gi.start_date_group,
                 gi.end_date_group,
                 gi.paymentType,
+                gi.periodicidad,
                 gi.created_at,
                 COUNT(lt.local_transaction_id) AS num_transacciones
             FROM global_invoice gi
             LEFT JOIN local_transaction lt ON lt.integrate_cp = gi.id
-            GROUP BY gi.id
+            GROUP BY gi.id, gi.name, gi.uuid, gi.serie, gi.folio, gi.file_name, gi.total, gi.start_date_group, gi.end_date_group, gi.paymentType, gi.periodicidad, gi.created_at
             ORDER BY gi.created_at DESC
         ";
 
@@ -373,15 +402,20 @@ class FacturacionController extends Controller
 
         $data = array_map(function ($row) use ($paymentNames) {
             return [
-                'id'                => $row->id,
-                'name'              => $row->name,
-                'total'             => $row->total,
-                'start_date_group'  => $row->start_date_group,
-                'end_date_group'    => $row->end_date_group,
-                'payment_type'      => $row->paymentType,
+                'id'                  => $row->id,
+                'name'                => $row->name,
+                'uuid'                => $row->uuid,
+                'serie'               => $row->serie,
+                'folio'               => $row->folio,
+                'file_name'           => $row->file_name ?? $row->name,
+                'total'               => $row->total,
+                'start_date_group'    => $row->start_date_group,
+                'end_date_group'      => $row->end_date_group,
+                'payment_type'        => $row->paymentType,
                 'payment_type_nombre' => $paymentNames[$row->paymentType] ?? 'Desconocido',
-                'num_transacciones' => $row->num_transacciones,
-                'created_at'        => $row->created_at,
+                'periodicidad'        => $row->periodicidad,
+                'num_transacciones'   => $row->num_transacciones,
+                'created_at'          => $row->created_at,
             ];
         }, $rows);
 
@@ -390,7 +424,7 @@ class FacturacionController extends Controller
 
     /**
      * Descarga XML de factura global
-     */
+     */  
     public function downloadXml($name)
     {
         $path = storage_path('app/public/invoices/' . $name . '.xml');
@@ -399,7 +433,7 @@ class FacturacionController extends Controller
         }
         return response()->download($path, $name . '.xml', ['Content-Type' => 'text/xml']);
     }
-
+ 
     /**
      * Descarga PDF de factura global
      */
@@ -424,6 +458,41 @@ class FacturacionController extends Controller
         file_put_contents($xmlPath, $xml);
     }
 
+    private function obtenerTokenProduccion(): ?string
+    {
+        $cacheKey = 'facturoporti_prod_token';
+
+        if (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
+
+        $api      = $this->catalogs->api_data_reference['api'];
+        $username = $this->catalogs->api_data_reference['username'];
+        $password = $this->catalogs->api_data_reference['password'];
+
+        $response = Http::get($api . '/token/crear', [
+            'Usuario'  => $username,
+            'Password' => $password,
+        ]);
+
+        if ($response->successful()) {
+            $data = $response->json();
+            if (!empty($data['token'])) {
+                Cache::put($cacheKey, $data['token'], now()->addMinutes(59));
+                Log::info('[FacturacionController] Token producción obtenido.');
+                return $data['token'];
+            }
+            Log::error('[FacturacionController] Respuesta sin token', ['data' => $data]);
+        } else {
+            Log::error('[FacturacionController] Error HTTP al obtener token', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+        }
+
+        return null;
+    }
+
     private function callAPIWithToken(string $endpoint, array $data, string $token): array
     {
         $url = $this->catalogs->api_data_reference['api'] . $endpoint;
@@ -436,11 +505,11 @@ class FacturacionController extends Controller
 
         $response = Http::withHeaders($headers)->post($url, $data);
 
-        if ($response->unauthorized()) {
-            Log::warning('Token expirado en FacturacionController. Renovando...');
-            $tokenManager = app(\App\Services\TokenManager::class);
-            $tokenManager->clearCache();
-            $newToken = $tokenManager->getToken();
+        // Si token rechazado, renovar y reintentar una vez
+        if ($response->unauthorized() || $response->status() === 401) {
+            Log::warning('[FacturacionController] Token rechazado (401). Renovando...');
+            Cache::forget('facturoporti_prod_token');
+            $newToken = $this->obtenerTokenProduccion();
 
             if (!$newToken) {
                 return [
@@ -457,7 +526,7 @@ class FacturacionController extends Controller
         }
 
         if ($response->failed()) {
-            Log::error('Error HTTP en FacturacionController', [
+            Log::error('[FacturacionController] Error HTTP al llamar API', [
                 'status' => $response->status(),
                 'body'   => $response->body(),
             ]);

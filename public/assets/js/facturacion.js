@@ -26,7 +26,7 @@ function buscarTransacciones() {
  
     selectedIds.clear();
     actualizarSeleccionInfo();
- 
+  
     facturacionTable = $('#facturacion_table').DataTable({
         processing: true,
         serverSide: false,
@@ -37,7 +37,7 @@ function buscarTransacciones() {
         order: [[1, 'desc']],
         ajax: {
             url: '/facturacion/transacciones',
-            type: 'POST',
+            type: 'POST', 
             data: {
                 _token: $('meta[name="csrf-token"]').attr('content'),
                 fecha_inicio: fechaInicio,
@@ -275,7 +275,10 @@ function cargarHistorial() {
         },
         columns: [
             { data: 'id', className: 'text-center' },
-            { data: 'name', render: (d) => `<small class="fw-bold">${d}</small>` },
+            {
+                data: 'uuid',
+                render: (d) => d ? `<small style="font-size:.68rem;">${d}</small>` : '<span class="text-muted">—</span>'
+            },
             { data: 'payment_type_nombre' },
             {
                 data: 'total',
@@ -287,15 +290,16 @@ function cargarHistorial() {
             { data: 'end_date_group',   render: (d) => d ? d.substring(0, 10) : '' },
             { data: 'created_at',       render: (d) => d ? d.substring(0, 16).replace('T', ' ') : '' },
             {
-                data: 'name',
+                data: null,
                 orderable: false,
                 className: 'text-center',
-                render: function(d) {
+                render: function(d, t, row) {
+                    const fname = encodeURIComponent(row.file_name || row.name);
                     return `
-                        <a href="/facturacion/download/xml/${encodeURIComponent(d)}" class="btn btn-sm btn-outline-primary me-1" title="XML">
+                        <a href="/facturacion/download/xml/${fname}" class="btn btn-sm btn-outline-primary me-1" title="XML">
                             <i class="bi bi-file-code"></i> XML
                         </a>
-                        <a href="/facturacion/download/pdf/${encodeURIComponent(d)}" class="btn btn-sm btn-outline-danger" title="PDF">
+                        <a href="/facturacion/download/pdf/${fname}" class="btn btn-sm btn-outline-danger" title="PDF">
                             <i class="bi bi-file-pdf"></i> PDF
                         </a>`;
                 }

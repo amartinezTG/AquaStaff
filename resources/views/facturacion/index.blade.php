@@ -185,7 +185,7 @@
                             </div>
                         </div>
                     </div>
-
+ 
                     <!-- Selección info -->
                     <div id="seleccionInfo" class="alert alert-info py-2 mb-2" style="display:none; font-size:.82rem;">
                         <i class="bi bi-info-circle me-1"></i>
@@ -227,7 +227,7 @@
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>Nombre</th>
+                                        <th>UUID / Folio Fiscal</th>
                                         <th>Forma Pago</th>
                                         <th>Total</th>
                                         <th>Transacciones</th>
