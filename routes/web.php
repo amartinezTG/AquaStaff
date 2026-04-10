@@ -21,7 +21,7 @@ use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
- 
+  
  
 // Artisan::call('view:clear');
 /*
@@ -294,6 +294,7 @@ Route::middleware('auth')->controller(FacturacionController::class)->group(funct
     Route::post('/facturacion/historial', 'historial')->name('facturacion.historial');
     Route::get('/facturacion/download/xml/{name}', 'downloadXml')->name('facturacion.xml');
     Route::get('/facturacion/download/pdf/{name}', 'downloadPdf')->name('facturacion.pdf');
+    Route::post('/facturacion/cancelar/{id}', 'cancelarFactura')->name('facturacion.cancelar');
 });
 
 

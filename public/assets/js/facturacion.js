@@ -23,7 +23,7 @@ function buscarTransacciones() {
         facturacionTable.destroy();
         $('#facturacion_table tbody').empty();
     }
- 
+  
     selectedIds.clear();
     actualizarSeleccionInfo();
   
@@ -295,13 +295,23 @@ function cargarHistorial() {
                 className: 'text-center',
                 render: function(d, t, row) {
                     const fname = encodeURIComponent(row.file_name || row.name);
-                    return `
-                        <a href="/facturacion/download/xml/${fname}" class="btn btn-sm btn-outline-primary me-1" title="XML">
-                            <i class="bi bi-file-code"></i> XML
-                        </a>
-                        <a href="/facturacion/download/pdf/${fname}" class="btn btn-sm btn-outline-danger" title="PDF">
-                            <i class="bi bi-file-pdf"></i> PDF
-                        </a>`;
+                    let btns = '';
+
+                    if (row.cancelada_at) {
+                        btns += `<span class="badge bg-danger">Cancelada</span>`;
+                    } else {
+                        btns += `
+                            <a href="/facturacion/download/xml/${fname}" class="btn btn-sm btn-outline-primary me-1" title="XML">
+                                <i class="bi bi-file-code"></i> XML
+                            </a>
+                            <a href="/facturacion/download/pdf/${fname}" class="btn btn-sm btn-outline-danger me-1" title="PDF">
+                                <i class="bi bi-file-pdf"></i> PDF
+                            </a>
+                            <button class="btn btn-sm btn-danger" onclick="cancelarFactura(${row.id}, '${row.uuid || ''}')" title="Cancelar">
+                                <i class="bi bi-x-circle"></i>
+                            </button>`;
+                    }
+                    return btns;
                 }
             },
         ],
@@ -317,5 +327,50 @@ function cargarHistorial() {
             },
         ],
         initComplete: function() { Swal.close(); }
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CANCELAR FACTURA GLOBAL
+// ─────────────────────────────────────────────────────────────────────────────
+
+function cancelarFactura(id, uuid) {
+    const uuidInfo = uuid ? `<br><small class="text-muted">UUID: ${uuid}</small>` : '<br><small class="text-warning">Sin UUID registrado — puede fallar.</small>';
+
+    Swal.fire({
+        title: '¿Cancelar factura?',
+        html: `Esta acción cancelará la factura en el SAT con motivo <strong>02</strong> (error sin relación) y liberará las transacciones para que puedan refacturarse.${uuidInfo}`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cancelar',
+        cancelButtonText:  'No',
+        confirmButtonColor: '#dc3545',
+    }).then(result => {
+        if (!result.isConfirmed) return;
+
+        Swal.fire({ title: 'Cancelando...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+
+        $.ajax({
+            url:  `/facturacion/cancelar/${id}`,
+            type: 'POST',
+            data: { _token: $('meta[name="csrf-token"]').attr('content') },
+            success: function(resp) {
+                Swal.fire({ icon: 'success', title: 'Cancelada', text: resp.message });
+                // Recargar historial
+                historialTable.destroy();
+                historialTable = null;
+                cargarHistorial();
+            },
+            error: function(xhr) {
+                Swal.close();
+                const resp = xhr.responseJSON || {};
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al cancelar',
+                    html: `<b>${resp.error || 'Error desconocido'}</b>` +
+                          (resp.detalle ? `<br><pre style="font-size:.7rem;text-align:left;max-height:200px;overflow:auto;">${JSON.stringify(resp.detalle, null, 2)}</pre>` : ''),
+                });
+            }
+        });
     });
 }

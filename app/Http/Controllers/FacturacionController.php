@@ -156,13 +156,16 @@ class FacturacionController extends Controller
         }
 
         // Obtener token desde FacturoPorTi producción
-        $token = $this->obtenerTokenProduccion();
+        $tokenResult = $this->obtenerTokenProduccion();
 
-        Log::error('[FacturacionController] Token obtenido', ['token_length' => strlen($token ?? ''), 'token_inicio' => substr($token ?? '', 0, 20)]);
-
-        if (!$token) {
-            return response()->json(['error' => 'No se pudo obtener el token de autenticación.'], 500);
+        if (!$tokenResult['token']) {
+            return response()->json([
+                'error'       => 'No se pudo obtener el token de autenticación.',
+                'debug_token' => $tokenResult['error'],
+            ], 500);
         }
+
+        $token = $tokenResult['token'];
 
         $generatedInvoices = [];
 
@@ -384,11 +387,12 @@ class FacturacionController extends Controller
                 gi.end_date_group,
                 gi.paymentType,
                 gi.periodicidad,
+                gi.cancelada_at,
                 gi.created_at,
                 COUNT(lt.local_transaction_id) AS num_transacciones
             FROM global_invoice gi
             LEFT JOIN local_transaction lt ON lt.integrate_cp = gi.id
-            GROUP BY gi.id, gi.name, gi.uuid, gi.serie, gi.folio, gi.file_name, gi.total, gi.start_date_group, gi.end_date_group, gi.paymentType, gi.periodicidad, gi.created_at
+            GROUP BY gi.id, gi.name, gi.uuid, gi.serie, gi.folio, gi.file_name, gi.total, gi.start_date_group, gi.end_date_group, gi.paymentType, gi.periodicidad, gi.cancelada_at, gi.cancel_motivo, gi.created_at
             ORDER BY gi.created_at DESC
         ";
 
@@ -416,10 +420,109 @@ class FacturacionController extends Controller
                 'periodicidad'        => $row->periodicidad,
                 'num_transacciones'   => $row->num_transacciones,
                 'created_at'          => $row->created_at,
+                'cancelada_at'        => $row->cancelada_at ?? null,
             ];
         }, $rows);
 
         return response()->json(['data' => $data]);
+    }   
+
+    /**
+     * Cancela una factura global — solo role 1
+     */
+    public function cancelarFactura(Request $request, $id)
+    {
+        if (auth()->user()->role !== 1) {
+            return response()->json(['error' => 'No tienes permisos para cancelar facturas.'], 403);
+        }
+
+        $globalInvoice = GlobalInvoice::find($id);
+
+        if (!$globalInvoice) {
+            return response()->json(['error' => 'Factura no encontrada.'], 404);
+        }
+
+        if ($globalInvoice->cancelada_at) {
+            return response()->json(['error' => 'Esta factura ya fue cancelada.'], 400);
+        }
+
+        if (!$globalInvoice->uuid) {
+            return response()->json(['error' => 'Esta factura no tiene UUID registrado y no puede cancelarse vía API.'], 400);
+        }
+
+        // Construir payload de cancelación para FacturoPorTi
+        $cancelJSON = [
+            'DatosGenerales' => [
+                'CSD'          => $this->catalogs->api_data_reference['CSD'],
+                'LlavePrivada' => $this->catalogs->api_data_reference['CSDKey'],
+                'CSDPassword'  => $this->catalogs->api_data_reference['CSDPassword'],
+            ],
+            'RFC'    => $this->catalogs->api_data_reference['RFC'],
+            'UUID'   => $globalInvoice->uuid,
+            'Motivo' => '02', // Comprobante emitido con errores sin relación
+        ];
+
+        $tokenResult = $this->obtenerTokenProduccion();
+
+        if (!$tokenResult['token']) {
+            return response()->json([
+                'error'       => 'No se pudo obtener el token de autenticación.',
+                'debug_token' => $tokenResult['error'],
+            ], 500);
+        }
+
+        $token = $tokenResult['token'];
+
+        $response = $this->callAPIWithToken('/servicios/cancelar', $cancelJSON, $token);
+
+        Log::info('[FacturacionController] Respuesta cancelación', ['id' => $id, 'response' => $response]);
+
+        // FacturoPorTi regresa estatus.codigo = '000' si canceló correctamente
+        $codigo = $response['estatus']['codigo']
+               ?? $response['EstatusCancelacion']
+               ?? $response['codigo']
+               ?? null;
+
+        $exito = $codigo === '000' || $codigo === '201' || isset($response['acuse']);
+
+        if (!$exito) {
+            $msg = $response['estatus']['descripcion']
+                ?? $response['descripcion']
+                ?? $response['mensaje']
+                ?? 'Error desconocido al cancelar.';
+            return response()->json([
+                'error'    => 'Error al cancelar: ' . $msg,
+                'detalle'  => $response,
+            ], 500);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Marcar factura como cancelada
+            $globalInvoice->update([
+                'cancelada_at'  => now(),
+                'cancel_motivo' => '02',
+            ]);
+
+            // Liberar transacciones para que puedan refacturarse
+            DB::table('local_transaction')
+                ->where('integrate_cp', $globalInvoice->id)
+                ->update([
+                    'integrate_cp'      => null,
+                    'integrate_cp_date' => null,
+                ]);
+
+            DB::commit();
+            return response()->json([
+                'message'          => 'Factura cancelada correctamente.',
+                'num_liberadas'    => DB::table('local_transaction')->where('integrate_cp', null)->count(), // informativo
+                'cancelada_at'     => $globalInvoice->cancelada_at,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('[FacturacionController] Error al actualizar BD tras cancelación', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Factura cancelada en SAT pero error al actualizar BD: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -458,58 +561,67 @@ class FacturacionController extends Controller
         file_put_contents($xmlPath, $xml);
     }
 
-    private function obtenerTokenProduccion(): ?string
+    private function obtenerTokenProduccion(): array
     {
         $cacheKey = 'facturoporti_prod_token';
 
         if (Cache::has($cacheKey)) {
-            return Cache::get($cacheKey);
+            return ['token' => Cache::get($cacheKey), 'error' => null];
         }
 
         $api      = $this->catalogs->api_data_reference['api'];
         $username = $this->catalogs->api_data_reference['username'];
         $password = $this->catalogs->api_data_reference['password'];
 
-        $response = Http::get($api . '/token/crear', [
-            'Usuario'  => $username,
-            'Password' => $password,
+        // Usar curl con SSL_VERIFYPEER false (igual que AquaFacturacion)
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL            => $api . '/token/crear?Usuario=' . $username . '&Password=' . $password,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING       => '',
+            CURLOPT_MAXREDIRS      => 10,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST  => 'GET',
+            CURLOPT_SSL_VERIFYPEER => false,
         ]);
+        $body     = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
 
-        if ($response->successful()) {
-            $data = $response->json();
-            if (!empty($data['token'])) {
-                Cache::put($cacheKey, $data['token'], now()->addMinutes(59));
-                Log::info('[FacturacionController] Token producción obtenido.');
-                return $data['token'];
-            }
-            Log::error('[FacturacionController] Respuesta sin token', ['data' => $data]);
-        } else {
-            Log::error('[FacturacionController] Error HTTP al obtener token', [
-                'status' => $response->status(),
-                'body'   => $response->body(),
-            ]);
+        $data = json_decode($body, true);
+
+        if (!empty($data['token'])) {
+            // Sin tiempo de expiración — el token de FacturoPorTi no expira
+            Cache::forever($cacheKey, $data['token']);
+            return ['token' => $data['token'], 'error' => null];
         }
 
-        return null;
+        return [
+            'token' => null,
+            'error' => [
+                'api'      => $api,
+                'username' => $username,
+                'status'   => $httpCode,
+                'body'     => $body,
+                'json'     => $data,
+            ]
+        ];
     }
 
     private function callAPIWithToken(string $endpoint, array $data, string $token): array
     {
-        $url = $this->catalogs->api_data_reference['api'] . $endpoint;
+        $url  = $this->catalogs->api_data_reference['api'] . $endpoint;
+        $json = json_encode($data);
 
-        $headers = [
-            'Authorization' => 'Bearer ' . trim($token),
-            'Accept'        => 'application/json',
-            'Content-Type'  => 'application/json',
-        ];
+        $result = $this->curlPost($url, $json, $token);
 
-        $response = Http::withHeaders($headers)->post($url, $data);
-
-        // Si token rechazado, renovar y reintentar una vez
-        if ($response->unauthorized() || $response->status() === 401) {
+        // Si token rechazado (401), renovar y reintentar una vez
+        if (($result['status'] ?? 0) === 401) {
             Log::warning('[FacturacionController] Token rechazado (401). Renovando...');
             Cache::forget('facturoporti_prod_token');
-            $newToken = $this->obtenerTokenProduccion();
+            $newTokenResult = $this->obtenerTokenProduccion();
+            $newToken = $newTokenResult['token'];
 
             if (!$newToken) {
                 return [
@@ -521,17 +633,40 @@ class FacturacionController extends Controller
                 ];
             }
 
-            $headers['Authorization'] = 'Bearer ' . trim($newToken);
-            $response = Http::withHeaders($headers)->post($url, $data);
+            $result = $this->curlPost($url, $json, $newToken);
         }
 
-        if ($response->failed()) {
-            Log::error('[FacturacionController] Error HTTP al llamar API', [
-                'status' => $response->status(),
-                'body'   => $response->body(),
-            ]);
+        $decoded = json_decode($result['body'], true);
+
+        if ($decoded === null) {
+            Log::error('[FacturacionController] Respuesta no es JSON', ['body' => $result['body']]);
         }
 
-        return $response->json() ?? [];
+        return $decoded ?? [];
+    }
+
+    private function curlPost(string $url, string $jsonBody, string $token): array
+    {
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING       => '',
+            CURLOPT_MAXREDIRS      => 10,
+            CURLOPT_TIMEOUT        => 60,
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST  => 'POST',
+            CURLOPT_POSTFIELDS     => $jsonBody,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Bearer ' . trim($token),
+                'Accept: application/json',
+                'Content-Type: application/json',
+            ],
+        ]);
+        $body   = curl_exec($curl);
+        $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+        return ['status' => $status, 'body' => $body];
     }
 }
