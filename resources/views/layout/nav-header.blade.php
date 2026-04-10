@@ -86,7 +86,7 @@
                         <a class="nav-link {{ $activePage === 'membresias' ? '' : 'collapsed' }}"
                             href="/indicadores_membresias"><i class="bi bi-receipt"></i><span>Indicadores Membresías</span>
                         </a>
-                    </li>
+                    </li> 
                     <li>
                         <a class="nav-link {{ $activePage === 'indicadores_clientes' ? '' : 'collapsed' }}" href="{{ route('indicadores.clientes') }}">
                             <i class="bi bi-people"></i><span>Clientes</span>
@@ -141,10 +141,21 @@
 
         @if (auth()->user()->role == 1 or auth()->user()->role == 2)
             <li class="nav-item">
-                <a class="nav-link {{ $activePage === 'compaq' ? '' : 'collapsed' }}" href="/compaq">
-                    <i class="bi bi-code-square"></i>
-                    <span>Facturación</span>
+                <a class="nav-link collapsed" data-bs-target="#facturacion-nav" data-bs-toggle="collapse" href="#">
+                    <i class="bi bi-receipt"></i><span>Facturación</span><i class="bi bi-chevron-down ms-auto"></i>
                 </a>
+                <ul id="facturacion-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
+                    <li>
+                        <a class="nav-link {{ $activePage === 'facturacion' ? '' : 'collapsed' }}" href="/facturacion">
+                            <i class="bi bi-file-earmark-text"></i><span>Factura Global</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="nav-link {{ $activePage === 'compaq' ? '' : 'collapsed' }}" href="/compaq">
+                            <i class="bi bi-code-square"></i><span>Compaq (anterior)</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
         @endif
 
