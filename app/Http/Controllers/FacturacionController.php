@@ -120,8 +120,11 @@ class FacturacionController extends Controller
      */
     public function generarFactura(Request $request)
     {
-        $ids         = $request->input('ids', []);
+        $ids          = $request->input('ids', []);
         $periodicidad = $request->input('periodicidad', '04');
+        $fechaEmision = $request->input('fecha_emision')
+            ? Carbon::parse($request->input('fecha_emision'), 'America/Mexico_City')
+            : Carbon::now('America/Mexico_City');
 
         Log::error('[FacturacionController] generarFactura iniciado', ['ids_count' => count($ids), 'periodicidad' => $periodicidad]);
 
@@ -255,7 +258,7 @@ class FacturacionController extends Controller
                             'Meses'        => Carbon::parse($startDateGroup)->format('m'),
                             'Año'          => intval(Carbon::parse($startDateGroup)->format('Y')),
                         ],
-                        'Fecha'           => Carbon::now('America/Mexico_City')->format('Y-m-d\TH:i:s'),
+                        'Fecha'           => $fechaEmision->format('Y-m-d\TH:i:s'),
                         'Serie'           => 'AB',
                         'Folio'           => '100',
                         'MetodoPago'      => 'PUE',
@@ -425,7 +428,7 @@ class FacturacionController extends Controller
         }, $rows);
 
         return response()->json(['data' => $data]);
-    }   
+    }     
 
     /**
      * Cancela una factura global — solo role 1
@@ -450,16 +453,16 @@ class FacturacionController extends Controller
             return response()->json(['error' => 'Esta factura no tiene UUID registrado y no puede cancelarse vía API.'], 400);
         }
 
-        // Construir payload de cancelación para FacturoPorTi
+        // Construir payload de cancelación para FacturoPorTi (/servicios/cancelar/csd)
         $cancelJSON = [
-            'DatosGenerales' => [
-                'CSD'          => $this->catalogs->api_data_reference['CSD'],
-                'LlavePrivada' => $this->catalogs->api_data_reference['CSDKey'],
-                'CSDPassword'  => $this->catalogs->api_data_reference['CSDPassword'],
-            ],
-            'RFC'    => $this->catalogs->api_data_reference['RFC'],
-            'UUID'   => $globalInvoice->uuid,
-            'Motivo' => '02', // Comprobante emitido con errores sin relación
+            'rfcEmisor'   => $this->catalogs->api_data_reference['RFC'],
+            'rfcReceptor' => 'XAXX010101000',
+            'uuid'        => $globalInvoice->uuid,
+            'total'       => (float) $globalInvoice->total,
+            'motivo'      => '02',
+            'certificado' => $this->catalogs->api_data_reference['CSD'],
+            'llavePrivada'=> $this->catalogs->api_data_reference['CSDKey'],
+            'password'    => $this->catalogs->api_data_reference['CSDPassword'],
         ];
 
         $tokenResult = $this->obtenerTokenProduccion();
@@ -473,26 +476,20 @@ class FacturacionController extends Controller
 
         $token = $tokenResult['token'];
 
-        $response = $this->callAPIWithToken('/servicios/cancelar', $cancelJSON, $token);
+        $response = $this->callAPIWithToken('/servicios/cancelar/csd', $cancelJSON, $token);
 
         Log::info('[FacturacionController] Respuesta cancelación', ['id' => $id, 'response' => $response]);
 
-        // FacturoPorTi regresa estatus.codigo = '000' si canceló correctamente
-        $codigo = $response['estatus']['codigo']
-               ?? $response['EstatusCancelacion']
-               ?? $response['codigo']
-               ?? null;
-
-        $exito = $codigo === '000' || $codigo === '201' || isset($response['acuse']);
+        // FacturoPorTi /servicios/cancelar/csd responde con: codigo, mensaje, acuse, estatusCancelacion
+        $codigo = $response['codigo'] ?? null;
+        // '000' = ok, o puede que ya esté en proceso de cancelación (acuse presente)
+        $exito  = $codigo === '000' || isset($response['acuse']);
 
         if (!$exito) {
-            $msg = $response['estatus']['descripcion']
-                ?? $response['descripcion']
-                ?? $response['mensaje']
-                ?? 'Error desconocido al cancelar.';
+            $msg = $response['mensaje'] ?? 'Error desconocido al cancelar.';
             return response()->json([
-                'error'    => 'Error al cancelar: ' . $msg,
-                'detalle'  => $response,
+                'error'   => 'Error al cancelar: ' . $msg,
+                'detalle' => $response,
             ], 500);
         }
 

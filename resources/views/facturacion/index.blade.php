@@ -112,7 +112,7 @@
                                 <div class="col-6 col-md-2">
                                     <label class="form-label fw-bold mb-1" style="font-size:.8rem;">Fecha inicio</label>
                                     <input type="date" id="fechaInicio" class="form-control form-control-sm"
-                                        value="{{ date('Y-m-d') }}">
+                                        value="{{ now()->startOfMonth()->toDateString() }}">
                                 </div>
                                 <div class="col-6 col-md-2">
                                     <label class="form-label fw-bold mb-1" style="font-size:.8rem;">Fecha fin</label>
@@ -140,6 +140,11 @@
                                         <option value="02">Semanal</option>
                                         <option value="03">Quincenal</option>
                                     </select>
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label class="form-label fw-bold mb-1" style="font-size:.8rem;">Fecha emisión</label>
+                                    <input type="datetime-local" id="fechaEmision" class="form-control form-control-sm"
+                                        value="{{ now('America/Mexico_City')->format('Y-m-d\TH:i') }}">
                                 </div>
                                 <div class="col-6 col-md-2 d-flex gap-2">
                                     <button class="btn btn-primary btn-sm w-100" onclick="buscarTransacciones()">
@@ -184,7 +189,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div>  
  
                     <!-- Selección info -->
                     <div id="seleccionInfo" class="alert alert-info py-2 mb-2" style="display:none; font-size:.82rem;">

@@ -23,7 +23,7 @@ function buscarTransacciones() {
         facturacionTable.destroy();
         $('#facturacion_table tbody').empty();
     }
-  
+   
     selectedIds.clear();
     actualizarSeleccionInfo();
   
@@ -31,8 +31,9 @@ function buscarTransacciones() {
         processing: true,
         serverSide: false,
         destroy: true,
-        paging: true,
-        pageLength: 100,
+        paging: false,
+        scrollY: '60vh',
+        scrollCollapse: true,
         deferRender: true,
         order: [[1, 'desc']],
         ajax: {
@@ -127,20 +128,22 @@ function buscarTransacciones() {
         actualizarSeleccionInfo();
     });
 
-    // Seleccionar todos los pendientes visibles
+    // Seleccionar todos los pendientes (todos los registros cargados)
     document.getElementById('selectAll').onchange = function() {
         const checked = this.checked;
-        $('#facturacion_table tbody .row-check').each(function() {
-            const id    = parseInt($(this).data('id'));
-            const total = parseFloat($(this).data('total'));
-            if (checked) {
-                this.checked = true;
-                selectedIds.add(id);
-            } else {
-                this.checked = false;
-                selectedIds.delete(id);
-            }
-        });
+        if (checked) {
+            // Iterar sobre todos los datos del DataTable, no solo el DOM visible
+            facturacionTable.rows().data().each(function(row) {
+                if (!row.bloqueada) {
+                    selectedIds.add(row.local_transaction_id);
+                }
+            });
+            // Marcar checkboxes visibles en el DOM
+            $('#facturacion_table tbody .row-check').prop('checked', true);
+        } else {
+            selectedIds.clear();
+            $('#facturacion_table tbody .row-check').prop('checked', false);
+        }
         actualizarSeleccionInfo();
     };
 }
@@ -197,11 +200,20 @@ function limpiarSeleccion() {
 function generarFactura() {
     if (selectedIds.size === 0) return;
 
-    const periodicidad = document.getElementById('periodicidad').value;
+    const periodicidad  = document.getElementById('periodicidad').value;
+    const fechaEmision  = document.getElementById('fechaEmision').value;
+
+    if (!fechaEmision) {
+        Swal.fire({ icon: 'warning', title: 'Fecha de emisión requerida', text: 'Selecciona la fecha y hora de emisión.' });
+        return;
+    }
+
+    const fechaDisplay = fechaEmision.replace('T', ' ');
 
     Swal.fire({
         title: '¿Generar Factura Global?',
-        html: `Se facturarán <strong>${selectedIds.size}</strong> transacción(es) con periodicidad <strong>${periodicidad}</strong>.`,
+        html: `Se facturarán <strong>${selectedIds.size}</strong> transacción(es) con periodicidad <strong>${periodicidad}</strong>.<br>
+               <small class="text-muted">Fecha emisión: <strong>${fechaDisplay}</strong></small>`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Sí, generar',
@@ -216,9 +228,10 @@ function generarFactura() {
             url:  '/facturacion/generar',
             type: 'POST',
             data: {
-                _token:       $('meta[name="csrf-token"]').attr('content'),
-                ids:          Array.from(selectedIds),
-                periodicidad: periodicidad,
+                _token:        $('meta[name="csrf-token"]').attr('content'),
+                ids:           Array.from(selectedIds),
+                periodicidad:  periodicidad,
+                fecha_emision: fechaEmision,
             },
             success: function(resp) {
                 Swal.close();

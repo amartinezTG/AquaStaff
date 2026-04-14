@@ -13,7 +13,7 @@
         </div>
         @include('layout.nav-header')
     </header>
-   
+     
     <main id="main" class="main">
         <style>
             .stat-card {
@@ -236,8 +236,12 @@
         let dtAqua, dtPP, dtDif;
         let _data = null;
 
-        const fmt = v => v === null || v === '-' ? '-' :
-            '$' + parseFloat(v).toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
+        const fmt = v => {
+            if (v === null || v === '-' || v === undefined) return '-';
+            const n = parseFloat(v);
+            if (isNaN(n)) return '-';
+            return '$' + n.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
+        };
 
         const difCell = v => {
             if (v === null || v === '-') return '-';

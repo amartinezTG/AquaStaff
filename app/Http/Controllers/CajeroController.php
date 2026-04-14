@@ -20,12 +20,15 @@ use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
+
 class CajeroController extends Controller
 {
+    protected $catalogs;
+    
     public function __construct(GeneralCatalogs $catalogs){
         $this->catalogs = $catalogs;
     }
-
+ 
     public function exportCsv(Request $request){
         $startDate = $this->getStartDate($request->start_date);
         $endDate   = $this->getEndDate($request->end_date);
@@ -41,7 +44,7 @@ class CajeroController extends Controller
 
         return Excel::download(new SalesTraffic($startDate, $endDate), 'ventas_trafico-' . Carbon::now()->format('Y-m-d H-i-s') . '.xlsx');
     }
-
+ 
     public function exportTransactionsList(Request $request, $startDate, $endDate)
     {
         $catalogs = new GeneralCatalogs();
@@ -990,7 +993,7 @@ class CajeroController extends Controller
                     $errores[] = "Lote final: " . $e->getMessage();
                 }
             }
-
+ 
             return response()->json([
                 'success'    => true,
                 'insertados' => $insertados,
@@ -1042,11 +1045,24 @@ class CajeroController extends Controller
             ->whereBetween('fecha', [$desde, $hasta])
             ->when($cajero, fn($q) => $q->where('clave_cajero', $cajero));
 
-        $lt = DB::query()->fromSub($ltSub, 'lt')->get()->keyBy('_id');
-        $pp = (clone $ppBase)->get()->keyBy('num_operacion');
+        $lt = DB::query()->fromSub($ltSub, 'lt')->get()->keyBy(fn($r) => (string) $r->_id);
+        $pp = (clone $ppBase)->get()->keyBy(fn($r) => (string) $r->num_operacion);
 
         $ltIds = $lt->keys();
         $ppIds = $pp->keys();
+
+        // DEBUG — retornar muestra para diagnosticar el cruce
+        if ($request->input('debug') === '1') {
+            return response()->json([
+                'lt_count'    => $ltIds->count(),
+                'pp_count'    => $ppIds->count(),
+                'lt_sample'   => $lt->take(5)->values(),
+                'pp_sample'   => $pp->take(5)->values(),
+                'intersect_n' => $ltIds->intersect($ppIds)->count(),
+                'solo_lt_n'   => $ltIds->diff($ppIds)->count(),
+                'solo_pp_n'   => $ppIds->diff($ltIds)->count(),
+            ]);
+        }
 
         $soloEnAqua      = [];
         $soloEnProcepago = [];
@@ -1116,14 +1132,14 @@ class CajeroController extends Controller
 
         return response()->json([
             'resumen' => [
-                'total_pp'           => round($pp->sum('monto_total'), 2),
-                'total_aqua'         => round($lt->sum('precio_aqua'), 2),
+                'total_pp'           => round((float) $pp->sum('monto_total'), 2),
+                'total_aqua'         => round((float) $lt->sum('precio_aqua'), 2),
                 'solo_en_aqua_n'     => count($soloEnAqua),
-                'solo_en_aqua_monto' => round(collect($soloEnAqua)->sum('precio_aqua'), 2),
+                'solo_en_aqua_monto' => round((float) collect($soloEnAqua)->sum('precio_aqua'), 2),
                 'solo_en_pp_n'       => count($soloEnProcepago),
-                'solo_en_pp_monto'   => round(collect($soloEnProcepago)->sum('total_pp'), 2),
+                'solo_en_pp_monto'   => round((float) collect($soloEnProcepago)->sum('total_pp'), 2),
                 'dif_monto_n'        => count($diferenciaMonto),
-                'dif_monto_total'    => round(collect($diferenciaMonto)->sum('dif_precio'), 2),
+                'dif_monto_total'    => round((float) collect($diferenciaMonto)->sum('dif_precio'), 2),
             ],
             'solo_en_aqua'      => collect($soloEnAqua)->sortBy('fecha')->values(),
             'solo_en_procepago' => collect($soloEnProcepago)->sortBy('fecha')->values(),
