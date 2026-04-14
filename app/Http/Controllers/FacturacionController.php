@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+ 
 use App\Models\GeneralCatalogs;
 use App\Models\GlobalInvoice;
 use Carbon\Carbon;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
-
+ 
 class FacturacionController extends Controller
 {
     protected $catalogs;
@@ -25,7 +25,7 @@ class FacturacionController extends Controller
         $activePage = 'facturacion';
         return view('facturacion.index', compact('activePage'));
     }
- 
+  
     /**
      * Devuelve transacciones para el DataTable via AJAX POST
      */
@@ -46,16 +46,19 @@ class FacturacionController extends Controller
                 lt.Total,
                 lt.CadenaFacturacion,
                 lt.fiscal_invoice,
-                lt.integrate_cp,
-                lt.integrate_cp_date,
+                lt.global_invoice_id,
+                lt.global_invoice_date,
                 gi.name AS factura_global_nombre,
+                fa.rfc AS facturado_rfc,
+                fa.company_name AS facturado_nombre,
                 CASE
-                    WHEN lt.fiscal_invoice IS NOT NULL THEN 'individual'
-                    WHEN lt.integrate_cp  IS NOT NULL  THEN 'global'
+                    WHEN lt.fiscal_invoice IS NOT NULL                                  THEN 'individual'
+                    WHEN lt.global_invoice_id IS NOT NULL AND gi.cancelada_at IS NULL   THEN 'global'
                     ELSE 'pendiente'
                 END AS estatus_factura
             FROM local_transaction lt
-            LEFT JOIN global_invoice gi ON lt.integrate_cp = gi.id
+            LEFT JOIN global_invoice gi ON lt.global_invoice_id = gi.id
+            LEFT JOIN fiscal_accounts fa ON lt.fiscal_account_id = fa.id
             WHERE lt.TransationDate BETWEEN ? AND ?
               AND lt.deleted_at IS NULL
               AND lt.Total > 0
@@ -108,6 +111,8 @@ class FacturacionController extends Controller
                 'cadena_facturacion'    => $row->CadenaFacturacion,
                 'estatus_factura'       => $row->estatus_factura,
                 'factura_global_nombre' => $row->factura_global_nombre,
+                'facturado_rfc'         => $row->facturado_rfc,
+                'facturado_nombre'      => $row->facturado_nombre,
                 'bloqueada'             => ($row->estatus_factura !== 'pendiente'),
             ];
         }, $rows);
@@ -122,6 +127,7 @@ class FacturacionController extends Controller
     {
         $ids          = $request->input('ids', []);
         $periodicidad = $request->input('periodicidad', '04');
+        $concepto     = strtoupper(trim($request->input('concepto', 'VENTA GLOBAL SERVICIOS DE LAVADO')));
         $fechaEmision = $request->input('fecha_emision')
             ? Carbon::parse($request->input('fecha_emision'), 'America/Mexico_City')
             : Carbon::now('America/Mexico_City');
@@ -134,7 +140,7 @@ class FacturacionController extends Controller
 
         $transactions = DB::table('local_transaction')
             ->whereIn('local_transaction_id', $ids)
-            ->whereNull('integrate_cp')
+            ->whereNull('global_invoice_id')
             ->whereNull('fiscal_invoice')
             ->whereNull('deleted_at')
             ->get();
@@ -276,7 +282,7 @@ class FacturacionController extends Controller
                             'Serie'            => '0000012345',
                             'Unidad'           => 'Servicio',
                             'CodigoProducto'   => '84111506',
-                            'producto'         => 'VENTA GLOBAL SERVICIOS DE LAVADO',
+                            'producto'         => $concepto,
                             'PrecioUnitario'   => $base,
                             'Importe'          => $base,
                             'ObjetoDeImpuesto' => '02',
@@ -338,10 +344,10 @@ class FacturacionController extends Controller
 
                     DB::table('local_transaction')
                         ->whereIn('local_transaction_id', $group->pluck('local_transaction_id'))
-                        ->whereNull('integrate_cp')
+                        ->whereNull('global_invoice_id')
                         ->update([
-                            'integrate_cp'      => $globalInvoice->id,
-                            'integrate_cp_date' => now(),
+                            'global_invoice_id'   => $globalInvoice->id,
+                            'global_invoice_date' => now(),
                         ]);
 
                     $generatedInvoices[] = [
@@ -394,7 +400,7 @@ class FacturacionController extends Controller
                 gi.created_at,
                 COUNT(lt.local_transaction_id) AS num_transacciones
             FROM global_invoice gi
-            LEFT JOIN local_transaction lt ON lt.integrate_cp = gi.id
+            LEFT JOIN local_transaction lt ON lt.global_invoice_id = gi.id
             GROUP BY gi.id, gi.name, gi.uuid, gi.serie, gi.folio, gi.file_name, gi.total, gi.start_date_group, gi.end_date_group, gi.paymentType, gi.periodicidad, gi.cancelada_at, gi.cancel_motivo, gi.created_at
             ORDER BY gi.created_at DESC
         ";
@@ -503,16 +509,16 @@ class FacturacionController extends Controller
 
             // Liberar transacciones para que puedan refacturarse
             DB::table('local_transaction')
-                ->where('integrate_cp', $globalInvoice->id)
+                ->where('global_invoice_id', $globalInvoice->id)
                 ->update([
-                    'integrate_cp'      => null,
-                    'integrate_cp_date' => null,
+                    'global_invoice_id'   => null,
+                    'global_invoice_date' => null,
                 ]);
 
             DB::commit();
             return response()->json([
                 'message'          => 'Factura cancelada correctamente.',
-                'num_liberadas'    => DB::table('local_transaction')->where('integrate_cp', null)->count(), // informativo
+                'num_liberadas'    => DB::table('local_transaction')->whereNull('global_invoice_id')->count(), // informativo
                 'cancelada_at'     => $globalInvoice->cancelada_at,
             ]);
         } catch (\Exception $e) {

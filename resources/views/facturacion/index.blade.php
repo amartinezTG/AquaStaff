@@ -189,7 +189,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>  
+                    </div>    
  
                     <!-- Selección info -->
                     <div id="seleccionInfo" class="alert alert-info py-2 mb-2" style="display:none; font-size:.82rem;">
@@ -213,6 +213,7 @@
                                         <th>Forma Pago</th>
                                         <th>Total</th>
                                         <th>Estatus</th>
+                                        <th>Factura Global</th>
                                         <th>Cadena Fact.</th>
                                     </tr>
                                 </thead>
