@@ -11,6 +11,7 @@ function buscarTransacciones() {
     const fechaFinal  = document.getElementById('fechaFinal').value;
     const paymentType = document.getElementById('paymentType').value;
     const cajero      = document.getElementById('cajeroFiltro').value.trim();
+    const estatus     = document.getElementById('estatusFiltro').value;
 
     if (!fechaInicio || !fechaFinal) {
         Swal.fire({ icon: 'warning', title: 'Fechas requeridas', text: 'Selecciona fecha de inicio y fin.' });
@@ -23,7 +24,7 @@ function buscarTransacciones() {
         facturacionTable.destroy();
         $('#facturacion_table tbody').empty();
     }
-      
+
     selectedIds.clear();
     actualizarSeleccionInfo();
   
@@ -31,9 +32,10 @@ function buscarTransacciones() {
         processing: true,
         serverSide: false,
         destroy: true,
-        paging: false,
+        paging: true,
         scrollY: '60vh',
         scrollCollapse: true,
+        scroller: true,
         deferRender: true,
         order: [[1, 'desc']],
         ajax: {
@@ -48,10 +50,11 @@ function buscarTransacciones() {
             },
             dataSrc: function(json) {
                 Swal.close();
-                const data = json.data || [];
-                actualizarResumen(data);
+                const all  = json.data || [];
+                actualizarResumen(all);
                 document.getElementById('summaryCards').style.display = 'flex';
-                return data;
+                // Filtrar por estatus si se seleccionó uno
+                return estatus ? all.filter(r => r.estatus_factura === estatus) : all;
             },
             error: function() {
                 Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar las transacciones.' });
@@ -112,8 +115,8 @@ function buscarTransacciones() {
                 render: (d) => d ? `<small class="text-muted" style="font-size:.68rem;word-break:break-all;">${d.substring(0,40)}...</small>` : ''
             },
         ],
-        rowCallback: function(row, data) {
-            if (data.bloqueada) $(row).addClass('bloqueada');
+        createdRow: function(row, data) {
+            if (data.bloqueada) row.classList.add('bloqueada');
         },
         language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
         dom: 'Blfrtip',
@@ -219,84 +222,82 @@ function limpiarSeleccion() {
 function generarFactura() {
     if (selectedIds.size === 0) return;
 
-    const periodicidad  = document.getElementById('periodicidad').value;
-    const fechaEmision  = document.getElementById('fechaEmision').value;
-    const paymentType   = document.getElementById('paymentType').value;
-
-    if (!fechaEmision) {
-        Swal.fire({ icon: 'warning', title: 'Fecha de emisión requerida', text: 'Selecciona la fecha y hora de emisión.' });
-        return;
-    }
+    const periodicidad = document.getElementById('periodicidad').value;
+    const paymentType  = document.getElementById('paymentType').value;
 
     // Sugerencias por tipo de pago
     const sugerencias = {
-        '0': [ // Efectivo
-            'VENTA GLOBAL SERVICIOS DE LAVADO EN EFECTIVO',
-            'SERVICIOS DE LAVADO Y DETALLADO PAGADOS EN EFECTIVO',
-            'INGRESOS POR SERVICIOS DE LAVADO — PAGO EN EFECTIVO',
-        ],
-        '1': [ // Débito
-            'VENTA GLOBAL SERVICIOS DE LAVADO CON TARJETA DE DÉBITO',
-            'SERVICIOS DE LAVADO Y DETALLADO CON DÉBITO',
-            'INGRESOS POR SERVICIOS DE LAVADO — TARJETA DE DÉBITO',
-        ],
-        '2': [ // Crédito
-            'VENTA GLOBAL SERVICIOS DE LAVADO CON TARJETA DE CRÉDITO',
-            'SERVICIOS DE LAVADO Y DETALLADO CON CRÉDITO',
-            'INGRESOS POR SERVICIOS DE LAVADO — TARJETA DE CRÉDITO',
-        ],
-        '': [ // Todos
-            'VENTA GLOBAL SERVICIOS DE LAVADO',
-            'SERVICIOS DE LAVADO Y DETALLADO AUTOMÓVILES',
-            'INGRESOS POR SERVICIOS DE LAVADO Y DETALLADO',
-        ],
+        '0': 'INGRESOS POR SERVICIOS DE LAVADO EN EFECTIVO',
+        '1': 'INGRESOS POR SERVICIOS DE LAVADO CON TARJETA DE DEBITO',
+        '2': 'INGRESOS POR SERVICIOS DE LAVADO CON TARJETA DE CREDITO',
+        '':  'INGRESOS POR SERVICIOS DE LAVADO',
     };
 
-    const opciones = sugerencias[paymentType] ?? sugerencias[''];
-    const fechaDisplay = fechaEmision.replace('T', ' ');
-
-    const chipsBtns = opciones.map((op, i) =>
-        `<button type="button" class="btn btn-sm btn-outline-secondary mb-1 me-1 chip-concepto" style="font-size:.75rem;" onclick="document.getElementById('swal-concepto').value='${op}'">${op}</button>`
-    ).join('');
+    const conceptoDefault = sugerencias[paymentType] ?? sugerencias[''];
+    const ahora = new Date();
+    const pad   = n => String(n).padStart(2, '0');
+    const fechaDefault = `${ahora.getFullYear()}-${pad(ahora.getMonth()+1)}-${pad(ahora.getDate())}T${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`;
 
     Swal.fire({
         title: 'Generar Factura Global',
-        width: 640,
+        width: 660,
         html: `
             <div class="text-start" style="font-size:.85rem;">
-                <div class="mb-2">
+                <div class="mb-3 p-2 rounded" style="background:#f8f9fa;">
                     <span class="text-muted">Transacciones:</span> <strong>${selectedIds.size}</strong>
                     &nbsp;|&nbsp;
                     <span class="text-muted">Periodicidad:</span> <strong>${periodicidad}</strong>
-                    &nbsp;|&nbsp;
-                    <span class="text-muted">Emisión:</span> <strong>${fechaDisplay}</strong>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold mb-1">Fecha de emisión</label>
+                    <input type="datetime-local" id="swal-fecha" class="form-control form-control-sm" value="${fechaDefault}">
                 </div>
                 <hr class="my-2">
                 <label class="fw-bold mb-1">Concepto del CFDI</label>
-                <div class="mb-2">${chipsBtns}</div>
+                <div class="mb-2 d-flex flex-wrap gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size:.72rem;"
+                        onclick="document.getElementById('swal-concepto').value='INGRESOS POR SERVICIOS DE LAVADO EN EFECTIVO'">
+                        Efectivo
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size:.72rem;"
+                        onclick="document.getElementById('swal-concepto').value='INGRESOS POR SERVICIOS DE LAVADO CON TARJETA DE DEBITO'">
+                        Tarjeta Débito
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size:.72rem;"
+                        onclick="document.getElementById('swal-concepto').value='INGRESOS POR SERVICIOS DE LAVADO CON TARJETA DE CREDITO'">
+                        Tarjeta Crédito
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size:.72rem;"
+                        onclick="document.getElementById('swal-concepto').value='INGRESOS POR SERVICIOS DE LAVADO'">
+                        General
+                    </button>
+                </div>
                 <textarea id="swal-concepto" class="form-control" rows="2" maxlength="255"
-                    placeholder="Escribe o selecciona un concepto..."
                     style="font-size:.82rem; text-transform:uppercase;"
-                >${opciones[0]}</textarea>
+                >${conceptoDefault}</textarea>
                 <div class="text-muted mt-1" style="font-size:.72rem;">Máx. 255 caracteres</div>
             </div>`,
-        icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Sí, generar',
         cancelButtonText:  'Cancelar',
         confirmButtonColor: '#198754',
         preConfirm: () => {
+            const fecha   = document.getElementById('swal-fecha').value;
             const concepto = document.getElementById('swal-concepto').value.trim().toUpperCase();
+            if (!fecha) {
+                Swal.showValidationMessage('La fecha de emisión es requerida.');
+                return false;
+            }
             if (!concepto) {
                 Swal.showValidationMessage('El concepto es requerido.');
                 return false;
             }
-            return concepto;
+            return { fecha, concepto };
         }
     }).then(result => {
         if (!result.isConfirmed) return;
 
-        const concepto = result.value;
+        const { fecha: fechaEmision, concepto } = result.value;
 
         Swal.fire({ title: 'Generando factura...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 

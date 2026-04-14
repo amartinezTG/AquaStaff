@@ -1,6 +1,8 @@
 @include('layout.shared')
 @include('layout.includes')
+<link rel="stylesheet" href="https://cdn.datatables.net/scroller/2.4.3/css/scroller.bootstrap5.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.datatables.net/scroller/2.4.3/js/dataTables.scroller.min.js"></script>
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <body class="toggle-sidebar">
@@ -142,9 +144,13 @@
                                     </select>
                                 </div>
                                 <div class="col-6 col-md-2">
-                                    <label class="form-label fw-bold mb-1" style="font-size:.8rem;">Fecha emisión</label>
-                                    <input type="datetime-local" id="fechaEmision" class="form-control form-control-sm"
-                                        value="{{ now('America/Mexico_City')->format('Y-m-d\TH:i') }}">
+                                    <label class="form-label fw-bold mb-1" style="font-size:.8rem;">Estatus</label>
+                                    <select id="estatusFiltro" class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                        <option value="pendiente" selected>Sin facturar</option>
+                                        <option value="global">En factura global</option>
+                                        <option value="individual">Facturada individualmente</option>
+                                    </select>
                                 </div>
                                 <div class="col-6 col-md-2 d-flex gap-2">
                                     <button class="btn btn-primary btn-sm w-100" onclick="buscarTransacciones()">
@@ -189,8 +195,8 @@
                                 </div>
                             </div>
                         </div>
-                    </div>    
- 
+                    </div>  
+  
                     <!-- Selección info -->
                     <div id="seleccionInfo" class="alert alert-info py-2 mb-2" style="display:none; font-size:.82rem;">
                         <i class="bi bi-info-circle me-1"></i>
