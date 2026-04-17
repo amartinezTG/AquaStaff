@@ -230,7 +230,7 @@ class LocalTransaction extends Model
     public static function pagosCajero(?string $from = null, ?string $until = null)
     {
 
-        $sql = "SELECT 
+        $sql = "SELECT  
             t1._id,t1.local_transaction_id,
             DATE(t1.TransationDate) AS fecha,
             TIME(DATE_ADD(t1.TransationDate, INTERVAL 1 HOUR)) AS hora,  -- aquí le sumamos 1 hora

@@ -1,0 +1,239 @@
+================================================================================
+  ANÁLISIS DE DISCREPANCIA — MEMBRESÍAS ACTIVAS
+  AquaCar Club — AquaStaff
+  Fecha del análisis: 16 de abril de 2026
+================================================================================
+
+PROBLEMA REPORTADO
+------------------
+La vista Dashboard muestra 889 membresías activas, mientras que la vista
+Indicadores > Clientes muestra 874. Diferencia: 15 registros.
+
+Nota: los números cambian en tiempo real conforme vencen membresías. Al momento
+del análisis técnico los valores eran 865 (dashboard) vs 850 (indicadores),
+manteniendo la misma diferencia de 15.
+
+
+CAUSA RAÍZ
+----------
+Son dos fuentes de datos que miden cosas distintas:
+
+1. DASHBOARD — cuenta registros en client_membership
+   Query:
+     SELECT COUNT(*) FROM client_membership WHERE end_date >= NOW()
+
+   Incluye TODOS los registros activos, incluso aquellos cuyo client_id
+   no existe en la tabla "clients" (registros huérfanos).
+
+2. INDICADORES / CLIENTES — cuenta clientes únicos desde la tabla clients
+   Query base:
+     FROM clients c
+     LEFT JOIN client_membership cm ON cm.client_id = c._id
+     ...
+
+   Al partir de "clients", los registros huérfanos desaparecen porque
+   no tienen fila correspondiente en esa tabla.
+
+
+CONCLUSIÓN
+----------
+Las 15 membresías "faltantes" en Indicadores/Clientes son registros HUÉRFANOS:
+tienen membresía activa en client_membership pero su client_id NO existe
+en la tabla clients.
+
+Causa probable: clientes creados en el sistema externo (Interlogic) que
+generaron el registro de client_membership vía sincronización, pero el
+registro del cliente en "clients" no llegó a sincronizarse o falló durante
+la importación.
+
+
+DETALLE DE LAS 15 MEMBRESÍAS HUÉRFANAS ACTIVAS
+-----------------------------------------------
+(Estado al 16 de abril de 2026)
+
+ #  | client_id                        | Tipo    | Inicio     | Vence      | Prosepago ID | cm._id
+----|----------------------------------|---------|------------|------------|--------------|----------------------------------
+ 1  | 69d81dc919f058135be692ad         | Express | 2026-04-08 | 2026-05-09 | 50973929     | 69d81dc919f058135be692ac
+ 2  | 69d92ef119f058135be6b30b         | Ultra   | 2026-04-09 | 2026-05-10 | 50997666     | 69d92ef119f058135be6b30a
+ 3  | 69da5b6619f058135be6dac0         | Delux   | 2026-04-10 | 2026-05-11 | 51028785     | 69da5b6619f058135be6dabf
+ 4  | 69d9ab5219f058135be6ca45         | Express | 2026-04-10 | 2026-05-11 | 51020083     | 69d9ab5219f058135be6ca44
+ 5  | 69dbcc6a19f058135be71a83         | Express | 2026-04-11 | 2026-05-12 | 51064759     | 69dbcc6a19f058135be71a82
+ 6  | 69dbe12019f058135be72265         | Ultra   | 2026-04-11 | 2026-05-12 | 51067728     | 69dbe12019f058135be72264
+ 7  | 69dafb1e19f058135be70790         | Delux   | 2026-04-11 | 2026-05-12 | 51054547     | 69dafb1e19f058135be7078f
+ 8  | 69dfaa3519f058135be7df17         | Express | 2026-04-14 | 2026-05-15 | 51158099     | 69dfaa3519f058135be7df16
+ 9  | 69e00b9d19f058135be80a39         | Express | 2026-04-14 | 2026-05-15 | 58230261     | 69e00b9d19f058135be80a38
+10  | 69e16bda19f058135be86545         | Delux   | 2026-04-15 | 2026-05-16 | 58265949     | 69e16bda19f058135be86544
+11  | 69e12faf19f058135be84d49         | Express | 2026-04-15 | 2026-05-16 | 58255523     | 69e12faf19f058135be84d48
+12  | 69e123d219f058135be849e9         | Express | 2026-04-15 | 2026-05-16 | 58253896     | 69e123d219f058135be849e8
+13  | 69e132ee19f058135be84e16         | Delux   | 2026-04-15 | 2026-05-16 | 58256080     | 69e132ee19f058135be84e15
+14  | 69e127db19f058135be84b1b         | Delux   | 2026-04-15 | 2026-05-16 | 58254465     | 69e127db19f058135be84b1a
+15  | 69e0479d19f058135be81e86         | Delux   | 2026-04-15 | 2026-05-16 | 58240362     | 69e0479d19f058135be81e85
+
+Resumen por tipo:
+  Express : 6
+  Ultra   : 2
+  Delux   : 7
+  TOTAL   : 15
+
+Todas creadas entre el 8 y el 15 de abril de 2026.
+
+
+================================================================================
+  QUERIES PARA VERIFICACIÓN MANUAL EN BASE DE DATOS
+================================================================================
+
+-- -----------------------------------------------------------------------
+-- QUERY 1: Reproducir el número del DASHBOARD
+-- Cuenta todos los registros activos en client_membership sin importar
+-- si el cliente existe en la tabla clients.
+-- -----------------------------------------------------------------------
+SELECT COUNT(*) AS total_dashboard
+FROM client_membership
+WHERE end_date >= NOW();
+
+
+-- -----------------------------------------------------------------------
+-- QUERY 2: Reproducir el número de INDICADORES / CLIENTES
+-- Cuenta clientes únicos con membresía vigente, partiendo de la tabla
+-- clients con JOIN al registro más reciente de client_membership.
+-- -----------------------------------------------------------------------
+SELECT COUNT(*) AS total_indicadores_clientes
+FROM clients c
+LEFT JOIN (
+    SELECT cm.*
+    FROM client_membership cm
+    INNER JOIN (
+        SELECT client_id, MAX(start_date) AS max_start
+        FROM client_membership
+        GROUP BY client_id
+    ) latest ON cm.client_id = latest.client_id
+          AND cm.start_date = latest.max_start
+) cm ON cm.client_id = c._id
+WHERE cm._id IS NOT NULL
+  AND cm.end_date >= NOW();
+
+
+-- -----------------------------------------------------------------------
+-- QUERY 3: Listar las membresías HUÉRFANAS activas
+-- Son las que explican la diferencia entre ambas vistas.
+-- Tienen registro en client_membership pero SIN cliente en clients.
+-- -----------------------------------------------------------------------
+SELECT
+    cm.client_id,
+    cm._id              AS cm_id,
+    cm.prosepago_id,
+    CASE cm.membership_id
+        WHEN '612f057787e473107fda56aa' THEN 'Express'
+        WHEN '61344ae637a5f00383106c7a' THEN 'Express'
+        WHEN '612f067387e473107fda56b0' THEN 'Básico'
+        WHEN '61344b5937a5f00383106c80' THEN 'Básico'
+        WHEN '612f1c4f30b90803837e7969' THEN 'Ultra'
+        WHEN '61344b9137a5f00383106c84' THEN 'Ultra'
+        WHEN '61344bab37a5f00383106c88' THEN 'Delux'
+        WHEN '612abcd1c4ce4c141237a356' THEN 'Delux'
+        ELSE 'N/A'
+    END                 AS tipo_membresia,
+    DATE(cm.start_date) AS inicio,
+    DATE(cm.end_date)   AS vencimiento
+FROM client_membership cm
+LEFT JOIN clients c ON c._id = cm.client_id
+WHERE cm.end_date >= NOW()
+  AND c._id IS NULL
+ORDER BY cm.start_date;
+
+
+-- -----------------------------------------------------------------------
+-- QUERY 4: Resumen comparativo en una sola ejecución
+-- Muestra los tres números lado a lado para diagnóstico rápido.
+-- -----------------------------------------------------------------------
+SELECT
+    (
+        SELECT COUNT(*)
+        FROM client_membership
+        WHERE end_date >= NOW()
+    ) AS total_dashboard,
+    (
+        SELECT COUNT(*)
+        FROM clients c
+        LEFT JOIN (
+            SELECT cm.*
+            FROM client_membership cm
+            INNER JOIN (
+                SELECT client_id, MAX(start_date) AS max_start
+                FROM client_membership
+                GROUP BY client_id
+            ) latest ON cm.client_id = latest.client_id
+                  AND cm.start_date = latest.max_start
+        ) cm ON cm.client_id = c._id
+        WHERE cm._id IS NOT NULL AND cm.end_date >= NOW()
+    ) AS total_indicadores,
+    (
+        SELECT COUNT(*)
+        FROM client_membership cm
+        LEFT JOIN clients c ON c._id = cm.client_id
+        WHERE cm.end_date >= NOW()
+          AND c._id IS NULL
+    ) AS total_huerfanas;
+
+
+-- -----------------------------------------------------------------------
+-- QUERY 5: Verificar si los client_id huérfanos tienen transacciones
+-- Útil para saber si son clientes reales que fallaron en la sincronización.
+-- -----------------------------------------------------------------------
+SELECT
+    lt.UserId       AS client_id,
+    COUNT(*)        AS total_transacciones,
+    MIN(DATE(lt.TransationDate)) AS primera_transaccion,
+    MAX(DATE(lt.TransationDate)) AS ultima_transaccion
+FROM local_transaction lt
+WHERE lt.UserId IN (
+    '69d81dc919f058135be692ad',
+    '69d92ef119f058135be6b30b',
+    '69da5b6619f058135be6dac0',
+    '69d9ab5219f058135be6ca45',
+    '69dbcc6a19f058135be71a83',
+    '69dbe12019f058135be72265',
+    '69dafb1e19f058135be70790',
+    '69dfaa3519f058135be7df17',
+    '69e00b9d19f058135be80a39',
+    '69e16bda19f058135be86545',
+    '69e12faf19f058135be84d49',
+    '69e123d219f058135be849e9',
+    '69e132ee19f058135be84e16',
+    '69e127db19f058135be84b1b',
+    '69e0479d19f058135be81e86'
+)
+AND lt.deleted_at IS NULL
+GROUP BY lt.UserId;
+
+
+================================================================================
+  RECOMENDACIONES
+================================================================================
+
+1. CORTO PLAZO — Investigar los 15 huérfanos
+   Ejecutar el Query 5 para ver si tienen transacciones en local_transaction.
+   Si las tienen, son clientes reales que fallaron en la sincronización de
+   la tabla clients y deben ser creados manualmente o forzar re-sync.
+
+2. MEDIANO PLAZO — Unificar el conteo del Dashboard
+   Cambiar el query de DashboardController::active_memberships() para que
+   solo cuente clientes que existen en la tabla clients:
+
+   // Antes:
+   $totalMemberships = DB::table('client_membership')
+       ->where('end_date', '>=', DB::raw('NOW()'))
+       ->count();
+
+   // Después:
+   $totalMemberships = DB::table('client_membership as cm')
+       ->join('clients as c', 'c._id', '=', 'cm.client_id')
+       ->where('cm.end_date', '>=', DB::raw('NOW()'))
+       ->count();
+
+3. LARGO PLAZO — Agregar restricción de integridad
+   Agregar un CHECK o validación en el proceso de sincronización que
+   impida crear registros en client_membership si el client_id no existe
+   en clients. Esto evita que el problema se repita.
+
+================================================================================
