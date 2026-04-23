@@ -32,7 +32,7 @@ class LocalTransaction extends Model
 
                 -- Pago (TransactionType=2 y Total <> 0)
                     SUM(CASE WHEN t1.TransactionType = 2 AND t1.Total <> 0 THEN 1 ELSE 0 END) AS lavados_paquete,
-                    SUM(CASE WHEN t1.TransactionType = 2 AND t1.Total <> 0 AND t1.Package = '612f057787e473107fda56aa' THEN 1 ELSE 0 END) AS lavados_express,
+                    SUM(CASE WHEN t1.TransactionType = 2 AND t1.Total <> 0 AND t1.Package in ( '612f057787e473107fda56aa','61344ae637a5f00383106c7a') THEN 1 ELSE 0 END) AS lavados_express,
                     SUM(CASE WHEN t1.TransactionType = 2 AND t1.Total <> 0 AND t1.Package = '612f067387e473107fda56b0' THEN 1 ELSE 0 END) AS lavados_basico,
                     SUM(CASE WHEN t1.TransactionType = 2 AND t1.Total <> 0 AND t1.Package IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 1 ELSE 0 END) AS lavados_ultra,
                     SUM(CASE WHEN t1.TransactionType = 2 AND t1.Total <> 0 AND t1.Total <> 150 AND t1.Total <> 50  AND t1.Package IN( '612abcd1c4ce4c141237a356','61344bab37a5f00383106c88') THEN 1 ELSE 0 END) AS lavados_deluxe,
