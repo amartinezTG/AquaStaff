@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arquitectura de Software — AquaStaff</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 11pt;
+      color: #1a1a2e;
+      background: #fff;
+      line-height: 1.6;
+    }
+
+    /* ── Cover Page ── */
+    .cover {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f3460 0%, #16213e 60%, #1a1a2e 100%);
+      color: #fff;
+      text-align: center;
+      padding: 60px 40px;
+      page-break-after: always;
+    }
+
+    .cover .logo-circle {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: #e94560;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin-bottom: 32px;
+      box-shadow: 0 8px 32px rgba(233,69,96,0.4);
+    }
+
+    .cover h1 {
+      font-size: 32pt;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+
+    .cover h2 {
+      font-size: 16pt;
+      font-weight: 300;
+      color: #a8b2d8;
+      margin-bottom: 48px;
+    }
+
+    .cover .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 40px;
+      margin-top: 32px;
+      text-align: left;
+    }
+
+    .cover .meta-item label {
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #a8b2d8;
+      display: block;
+    }
+
+    .cover .meta-item span {
+      font-size: 11pt;
+      font-weight: 600;
+    }
+
+    .cover .divider {
+      width: 60px;
+      height: 3px;
+      background: #e94560;
+      margin: 24px auto;
+      border-radius: 2px;
+    }
+
+    /* ── Layout ── */
+    .content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 48px 64px;
+    }
+
+    /* ── TOC ── */
+    .toc {
+      background: #f8f9fc;
+      border-left: 4px solid #0f3460;
+      border-radius: 0 8px 8px 0;
+      padding: 28px 32px;
+      margin-bottom: 48px;
+      page-break-after: always;
+    }
+
+    .toc h2 {
+      font-size: 14pt;
+      color: #0f3460;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .toc ol {
+      padding-left: 20px;
+    }
+
+    .toc li {
+      padding: 3px 0;
+      color: #333;
+    }
+
+    .toc li a {
+      color: #0f3460;
+      text-decoration: none;
+    }
+
+    .toc li a:hover {
+      color: #e94560;
+    }
+
+    .toc .toc-sub {
+      list-style: none;
+      padding-left: 20px;
+      margin-top: 4px;
+    }
+
+    .toc .toc-sub li {
+      font-size: 9.5pt;
+      color: #666;
+    }
+
+    /* ── Section headers ── */
+    .section-title {
+      margin-top: 48px;
+      margin-bottom: 20px;
+      page-break-before: always;
+    }
+
+    .section-title:first-of-type {
+      page-break-before: avoid;
+    }
+
+    .section-title .number {
+      display: inline-block;
+      background: #0f3460;
+      color: #fff;
+      font-size: 9pt;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 4px;
+      margin-right: 10px;
+      vertical-align: middle;
+      letter-spacing: 0.5px;
+    }
+
+    .section-title h2 {
+      display: inline;
+      font-size: 18pt;
+      font-weight: 700;
+      color: #0f3460;
+      vertical-align: middle;
+    }
+
+    .section-title::after {
+      content: '';
+      display: block;
+      height: 2px;
+      background: linear-gradient(to right, #0f3460, transparent);
+      margin-top: 8px;
+    }
+
+    h3 {
+      font-size: 13pt;
+      color: #16213e;
+      margin: 28px 0 12px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #e0e4ef;
+    }
+
+    h4 {
+      font-size: 11pt;
+      color: #0f3460;
+      margin: 20px 0 8px;
+      font-weight: 600;
+    }
+
+    p {
+      margin-bottom: 12px;
+      color: #333;
+    }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 10pt;
+    }
+
+    thead tr {
+      background: #0f3460;
+      color: #fff;
+    }
+
+    thead th {
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 9pt;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    tbody tr:nth-child(even) { background: #f4f6fc; }
+    tbody tr:nth-child(odd)  { background: #fff; }
+
+    tbody td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #e8ebf4;
+      vertical-align: top;
+    }
+
+    tbody tr:hover { background: #eef1fb; }
+
+    /* ── Code blocks ── */
+    pre {
+      background: #1a1a2e;
+      color: #a8b2d8;
+      padding: 20px 24px;
+      border-radius: 8px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9pt;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin: 16px 0 24px;
+      border-left: 3px solid #e94560;
+    }
+
+    code {
+      background: #eef1fb;
+      color: #c0392b;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9.5pt;
+    }
+
+    pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+    }
+
+    /* ── Lists ── */
+    ul, ol {
+      padding-left: 22px;
+      margin-bottom: 14px;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-left: 4px solid #e94560;
+      background: #fff5f7;
+      padding: 14px 18px;
+      border-radius: 0 6px 6px 0;
+      margin: 16px 0;
+      font-size: 10pt;
+    }
+
+    .callout.info {
+      border-color: #0f3460;
+      background: #f0f4ff;
+    }
+
+    .callout strong {
+      color: #c0392b;
+    }
+
+    .callout.info strong {
+      color: #0f3460;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 8pt;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .badge-get    { background: #d4edda; color: #155724; }
+    .badge-post   { background: #cce5ff; color: #004085; }
+    .badge-put    { background: #fff3cd; color: #856404; }
+    .badge-delete { background: #f8d7da; color: #721c24; }
+
+    /* ── Footer ── */
+    .doc-footer {
+      margin-top: 64px;
+      padding-top: 20px;
+      border-top: 2px solid #e0e4ef;
+      text-align: center;
+      font-size: 9pt;
+      color: #888;
+    }
+
+    /* ── Print styles ── */
+    @media print {
+      body { font-size: 10pt; }
+      .cover { min-height: auto; padding: 80px 40px; }
+      .content { padding: 32px 40px; }
+      pre { white-space: pre-wrap; word-break: break-all; }
+      a { color: inherit !important; text-decoration: none !important; }
+      .toc { page-break-after: always; }
+
+      @page {
+        margin: 15mm 18mm 20mm;
+        size: A4;
+      }
+
+      @page :first {
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     COVER PAGE
+════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="logo-circle">⚙</div>
+  <h1>AquaStaff</h1>
+  <h2>Documento de Arquitectura de Software</h2>
+  <div class="divider"></div>
+  <div class="meta-grid">
+    <div class="meta-item"><label>Versión</label><span>2.0</span></div>
+    <div class="meta-item"><label>Fecha</label><span>Abril 2026</span></div>
+    <div class="meta-item"><label>Sistema</label><span>AquaStaff — Gestión Interna</span></div>
+    <div class="meta-item"><label>Empresa</label><span>Aqua Car Club</span></div>
+    <div class="meta-item"><label>Framework</label><span>Laravel 10 / PHP 8</span></div>
+    <div class="meta-item"><label>Servidor</label><span>IIS — Windows Server</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     CONTENT
+════════════════════════════════════════════ -->
+<div class="content">
+
+  <!-- TABLE OF CONTENTS -->
+  <div class="toc">
+    <h2>Tabla de Contenidos</h2>
+    <ol>
+      <li><a href="#sec1">Descripción General del Sistema</a></li>
+      <li><a href="#sec2">Casos de Uso</a></li>
+      <li><a href="#sec3">Diagramas de Flujo del Proceso</a></li>
+      <li><a href="#sec4">Componentes Principales</a>
+        <ul class="toc-sub">
+          <li>Frontend · Backend · Servidor Web</li>
+        </ul>
+      </li>
+      <li><a href="#sec5">Arquitectura de Software</a>
+        <ul class="toc-sub">
+          <li>Diagrama de Capas · Flujo de Información</li>
+        </ul>
+      </li>
+      <li><a href="#sec6">Modelo de Datos</a></li>
+      <li><a href="#sec7">Diseño</a></li>
+      <li><a href="#sec8">Documentación de Servicios</a></li>
+      <li><a href="#sec9">Integración FacturoPorTi (CFDI 4.0)</a></li>
+      <li><a href="#sec10">Escalabilidad y Mantenimiento</a></li>
+      <li><a href="#sec11">Pruebas</a></li>
+    </ol>
+  </div>
+
+
+  <!-- ─── 1. DESCRIPCIÓN GENERAL ─── -->
+  <div id="sec1" class="section-title">
+    <span class="number">01</span><h2>Descripción General del Sistema</h2>
+  </div>
+
+  <p>
+    <strong>AquaStaff</strong> es el sistema de gestión interno de <strong>Aqua Car Club</strong>, una cadena de autolavados de membresía ubicada en Chihuahua, México. Opera bajo un modelo de negocio híbrido: membresías recurrentes y servicios de pago por uso (paquetes).
+  </p>
+  <p>
+    El sistema es una aplicación web construida en <strong>Laravel 10 (PHP 8)</strong>, desplegada en un servidor <strong>Windows Server con IIS</strong>. Se accede exclusivamente por personal interno (staff) autenticado mediante roles.
+  </p>
+
+  <table>
+    <thead><tr><th>Módulo</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Dashboard</strong></td><td>Métricas de ventas en tiempo real, tráfico por hora, membresías activas</td></tr>
+      <tr><td><strong>Cajero</strong></td><td>Registro y consulta de transacciones, importación de archivos TPV Procepago</td></tr>
+      <tr><td><strong>Membresías</strong></td><td>Gestión y análisis de membresías activas y renovaciones</td></tr>
+      <tr><td><strong>Indicadores</strong></td><td>Reportes operativos y financieros con exportación a Excel/PDF</td></tr>
+      <tr><td><strong>Corte de Caja</strong></td><td>Arqueos de caja por sucursal con exportación PDF/Excel</td></tr>
+      <tr><td><strong>Caja Chica</strong></td><td>Registro de gastos menores</td></tr>
+      <tr><td><strong>Facturación Global</strong></td><td>Generación de CFDI 4.0 agrupados por tipo de pago (FacturoPorTi)</td></tr>
+      <tr><td><strong>Facturación Individual</strong></td><td>Generación de CFDI 4.0 individuales para transacciones sin folio físico</td></tr>
+      <tr><td><strong>Inventarios</strong></td><td>Control de productos y transferencias entre sucursales</td></tr>
+      <tr><td><strong>Promociones</strong></td><td>Creación y seguimiento de promociones vigentes</td></tr>
+      <tr><td><strong>Administración</strong></td><td>Auditoría de transacciones, detección de huecos, monitor de sincronización</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout info">
+    <strong>Proyecto hermano:</strong> <em>AquaFacturacion</em> es el portal público para que los clientes generen su factura individual vía web. Comparte la misma base de datos MySQL y el mismo servidor IIS. Los archivos PDF/XML generados en AquaStaff se escriben también en el directorio de AquaFacturacion (dual-write).
+  </div>
+
+
+  <!-- ─── 2. CASOS DE USO ─── -->
+  <div id="sec2" class="section-title">
+    <span class="number">02</span><h2>Casos de Uso</h2>
+  </div>
+
+  <h3>CU-01 · Autenticación de Staff</h3>
+  <p>El usuario ingresa su correo y contraseña. El sistema verifica credenciales contra la tabla <code>staff_users</code> y establece la sesión con su rol asignado.</p>
+  <table>
+    <thead><tr><th>Rol</th><th>ID</th><th>Acceso</th></tr></thead>
+    <tbody>
+      <tr><td>SUPERADMIN</td><td>1</td><td>Todo el sistema</td></tr>
+      <tr><td>ADMINISTRATOR</td><td>2</td><td>Todo excepto configuración avanzada</td></tr>
+      <tr><td>MANAGER</td><td>3</td><td>Cajero, Membresías, Indicadores, Corte de Caja, Inventarios</td></tr>
+    </tbody>
+  </table>
+
+  <h3>CU-02 · Consulta de Dashboard</h3>
+  <p>Al ingresar, el sistema muestra métricas del día actual: total de transacciones, ventas, membresías vendidas, comparativa vs día anterior, desglose por hora, distribución por tipo de pago.</p>
+
+  <h3>CU-03 · Consulta de Transacciones (Cajero)</h3>
+  <p>El personal consulta el historial de transacciones filtrando por rango de fechas, tipo de transacción, forma de pago y cajero. Exportación disponible en Excel/CSV.</p>
+
+  <h3>CU-04 · Importación de Archivo Procepago</h3>
+  <p>Se carga el archivo Excel del TPV Procepago. El sistema parsea las filas e inserta los registros en <code>procepago_pagos</code>. Posteriormente se ejecuta análisis de conciliación para detectar discrepancias con <code>local_transaction</code>.</p>
+
+  <h3>CU-05 · Generación de Factura Global</h3>
+  <p>El contador selecciona un rango de fechas. El sistema agrupa transacciones no facturadas por tipo de pago y cajero, calcula base + IVA 8%, y genera un CFDI 4.0 vía API FacturoPorTi. Guarda UUID, serie, folio, PDF y XML.</p>
+
+  <h3>CU-06 · Generación de Factura Individual</h3>
+  <p>El staff selecciona transacciones individuales (renovaciones, compras de membresía) que no tienen <code>CadenaFacturacion</code> (folio físico). Ingresa o busca la cuenta fiscal del cliente, ajusta la fecha de emisión dentro de las 72 horas requeridas por el SAT, y genera el CFDI individual. Los archivos se guardan en ambos proyectos simultáneamente.</p>
+
+  <h3>CU-07 · Corte de Caja</h3>
+  <p>Al cierre del día, el cajero registra los totales de efectivo, tarjeta, cortesías y gastos por sucursal. El sistema genera el arqueo y permite exportarlo en PDF o Excel.</p>
+
+  <h3>CU-08 · Gestión de Membresías</h3>
+  <p>Consulta de membresías activas, ventas del período, distribución por tipo de paquete. Análisis de clientes recurrentes vs nuevos.</p>
+
+  <h3>CU-09 · Indicadores Operativos</h3>
+  <p>Generación de reportes mensuales con totales por cajero, por tipo de membresía, ingresos por proveedor (CARRERA / INTERLOGIC). Exportación a Excel y PDF.</p>
+
+  <h3>CU-10 · Gestión de Inventario</h3>
+  <p>Registro de productos, transferencias entre sucursales con seguimiento de estado (pendiente → entregado). Log de movimientos de inventario.</p>
+
+  <h3>CU-11 · Auditoría de Transacciones</h3>
+  <p>El sistema detecta huecos (gaps) en la secuencia de <code>local_transaction._id</code> por día, indicando posibles transacciones eliminadas o no sincronizadas. Exportación de reporte en CSV.</p>
+
+  <h3>CU-12 · Monitor de Sincronización</h3>
+  <p>Visualización del estado de sincronización del <code>transactions_log</code> entre proveedores y la base de datos central.</p>
+
+
+  <!-- ─── 3. DIAGRAMAS DE FLUJO ─── -->
+  <div id="sec3" class="section-title">
+    <span class="number">03</span><h2>Diagramas de Flujo del Proceso</h2>
+  </div>
+
+  <h3>3.1 Generación de Factura Global</h3>
+<pre>
+Contador selecciona rango de fechas
+         ↓
+Sistema consulta local_transaction
+(sin global_invoice_id, PaymentType ≠ 3 Cortesía)
+         ↓
+Agrupa por PaymentType + Atm (cajero)
+         ↓
+Obtiene token FacturoPorTi (cache forever)
+         ↓
+Para cada grupo:
+  Calcula  Base = Total / 1.08
+  Calcula  IVA  = Total - Base
+  Construye JSON CFDI 4.0
+  POST /servicios/timbrar/json
+         ↓
+¿Éxito?
+  SÍ → Guarda GlobalInvoice (UUID, serie, folio)
+       Actualiza local_transaction.global_invoice_id
+       Guarda PDF/XML en storage/app/public/invoices/
+  NO → Retorna error al frontend (código + mensaje SAT)
+</pre>
+
+  <h3>3.2 Generación de Factura Individual</h3>
+<pre>
+Staff filtra transacciones (por fecha, tipo, cajero, estatus)
+         ↓
+Selecciona una o varias transacciones
+         ↓
+Abre modal: ingresa RFC o busca cuenta fiscal
+Sistema autocompleta datos desde fiscal_accounts (debounce 300ms)
+         ↓
+Staff verifica fecha de emisión
+  Default = ahora - 3 minutos
+  Validación JS: máximo 72 horas hacia atrás, no futuro (regla SAT)
+         ↓
+Confirma y envía al servidor
+         ↓
+Obtiene token FacturoPorTi (mismo cache compartido)
+         ↓
+Para cada transacción seleccionada:
+  Nombre archivo = CadenaFacturacion ?: 'IND_' + local_transaction_id
+  Construye CFDI individual (receptor = cuenta fiscal del cliente)
+  POST /servicios/timbrar/json
+         ↓
+¿Éxito?
+  SÍ → Actualiza local_transaction.fiscal_invoice = UUID
+       Guarda PDF/XML → AquaStaff storage/app/public/pdfs|xmls/
+       Guarda copia   → AquaFacturacion storage/app/public/pdfs|xmls/
+  NO → Retorna error al frontend
+</pre>
+
+  <h3>3.3 Importación y Conciliación Procepago</h3>
+<pre>
+Administrador carga archivo Excel (.xlsx) del TPV
+         ↓
+CajeroController::importarProcepago()
+Lee filas con PhpSpreadsheet
+         ↓
+Valida columnas (folio, monto, fecha, referencia)
+Inserta batch en procepago_pagos
+         ↓
+Análisis de conciliación (opcional):
+  JOIN local_transaction vs procepago_pagos
+  por num_operacion / _id
+         ↓
+Retorna discrepancias:
+  ● Transacciones en local pero no en Procepago
+  ● Montos diferentes entre ambos sistemas
+  ● Transacciones en Procepago pero no en local
+</pre>
+
+
+  <!-- ─── 4. COMPONENTES PRINCIPALES ─── -->
+  <div id="sec4" class="section-title">
+    <span class="number">04</span><h2>Componentes Principales</h2>
+  </div>
+
+  <h3>4.1 Frontend</h3>
+  <table>
+    <thead><tr><th>Tecnología</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Bootstrap 5</strong></td><td>Layout responsive, componentes UI</td></tr>
+      <tr><td><strong>jQuery 3.x</strong></td><td>AJAX, manipulación DOM</td></tr>
+      <tr><td><strong>DataTables + Scroller</strong></td><td>Tablas con paginación, búsqueda y scroll virtual</td></tr>
+      <tr><td><strong>SweetAlert2</strong></td><td>Modales de confirmación y formularios</td></tr>
+      <tr><td><strong>Chart.js</strong></td><td>Gráficas en dashboard e indicadores</td></tr>
+      <tr><td><strong>Bootstrap Icons</strong></td><td>Iconografía</td></tr>
+    </tbody>
+  </table>
+
+  <p>Las vistas están organizadas en <code>resources/views/</code> con layouts reutilizables:</p>
+  <ul>
+    <li><code>layout/shared.blade.php</code> — Head, CSS global, meta</li>
+    <li><code>layout/nav-header.blade.php</code> — Sidebar con menú por roles</li>
+    <li><code>layout/includes.blade.php</code> — Scripts comunes</li>
+    <li><code>layout/footer.blade.php</code> / <code>footer_files.blade.php</code> — Scripts de cierre</li>
+  </ul>
+
+  <h3>4.2 Backend</h3>
+  <table>
+    <thead><tr><th>Capa</th><th>Detalle</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Framework</strong></td><td>Laravel 10 (PHP 8.x)</td></tr>
+      <tr><td><strong>ORM</strong></td><td>Eloquent — relaciones, scopes, soft deletes</td></tr>
+      <tr><td><strong>Autenticación</strong></td><td>Laravel Auth con modelo <code>StaffUser</code></td></tr>
+      <tr><td><strong>Cache</strong></td><td>Laravel Cache — token FacturoPorTi cacheado indefinidamente (<code>facturoporti_prod_token</code>)</td></tr>
+      <tr><td><strong>Exportación</strong></td><td>Maatwebsite/Laravel-Excel para Excel; DomPDF para PDF</td></tr>
+      <tr><td><strong>Cola de trabajos</strong></td><td>No implementada — generación síncrona</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.3 Servidor Web</h3>
+  <table>
+    <thead><tr><th>Componente</th><th>Detalle</th></tr></thead>
+    <tbody>
+      <tr><td><strong>OS</strong></td><td>Windows Server</td></tr>
+      <tr><td><strong>Web Server</strong></td><td>IIS (Internet Information Services)</td></tr>
+      <tr><td><strong>PHP</strong></td><td>PHP 8.x via FastCGI</td></tr>
+      <tr><td><strong>Base de Datos</strong></td><td>MySQL 8.x — 127.0.0.1:3306</td></tr>
+      <tr><td><strong>Almacenamiento</strong></td><td><code>storage/app/public/</code> — PDF y XML de facturas</td></tr>
+      <tr><td><strong>Convivencia</strong></td><td>AquaStaff y AquaFacturacion en mismo servidor y misma BD</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- ─── 5. ARQUITECTURA ─── -->
+  <div id="sec5" class="section-title">
+    <span class="number">05</span><h2>Arquitectura de Software</h2>
+  </div>
+
+  <h3>5.1 Diagrama de Capas</h3>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│                     CLIENTE (Browser)                        │
+│     Bootstrap 5 · jQuery · DataTables · SweetAlert2         │
+└────────────────────────┬────────────────────────────────────┘
+                         │  HTTPS
+┌────────────────────────▼────────────────────────────────────┐
+│                  IIS — Windows Server                        │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │                  Laravel 10 (PHP 8)                   │  │
+│  │                                                       │  │
+│  │  routes/web.php → Controllers → Views (Blade)         │  │
+│  │               ↕                                       │  │
+│  │          Models (Eloquent)                            │  │
+│  │               ↕                                       │  │
+│  │         MySQL Database (local)                        │  │
+│  │                                                       │  │
+│  │  Storage: storage/app/public/{pdfs,xmls,invoices}     │  │
+│  └───────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │       AquaFacturacion (proyecto hermano)              │  │
+│  │  Portal público CFDI · misma BD · mismo storage       │  │
+│  └───────────────────────────────────────────────────────┘  │
+└──────────────────────────┬──────────────────────────────────┘
+                           │  REST API (HTTPS)
+┌──────────────────────────▼──────────────────────────────────┐
+│            FacturoPorTi API (CFDI 4.0 SAT)                  │
+│   https://api.facturoporti.com.mx                           │
+│   • GET  /token/crear                                       │
+│   • POST /servicios/timbrar/json                            │
+│   • POST /servicios/cancelar/csd                            │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+  <h3>5.2 Flujo de Información</h3>
+<pre>
+Transacciones POS (CARRERA / INTERLOGIC)
+           ↓
+    local_transaction (MySQL)
+           ↓
+    ┌──────┴────────────────────┐
+    │                           │
+  Reportes                 Facturación
+  (Dashboard, Cajero,           ↓
+   Indicadores,         FacturoPorTi API
+   Corte de Caja)               ↓
+                      GlobalInvoice / fiscal_invoice
+                                ↓
+                      PDF + XML → storage
+                                ↓
+                      AquaFacturacion (descarga cliente)
+</pre>
+
+
+  <!-- ─── 6. MODELO DE DATOS ─── -->
+  <div id="sec6" class="section-title">
+    <span class="number">06</span><h2>Modelo de Datos</h2>
+  </div>
+
+  <h3>local_transaction</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td><code>_id</code></td><td>BIGINT PK</td><td>ID de transacción del POS</td></tr>
+      <tr><td><code>TransationDate</code></td><td>DATETIME</td><td>Fecha y hora de la transacción</td></tr>
+      <tr><td><code>TransactionType</code></td><td>TINYINT</td><td>0=Compra Membresía · 1=Renovación · 2=Paquete</td></tr>
+      <tr><td><code>Total</code></td><td>DECIMAL</td><td>Monto total con IVA</td></tr>
+      <tr><td><code>PaymentType</code></td><td>TINYINT</td><td>0=Efectivo · 1=Débito · 2=Crédito · 3=Cortesía</td></tr>
+      <tr><td><code>Atm</code></td><td>VARCHAR</td><td>Identificador del cajero/ATM</td></tr>
+      <tr><td><code>CadenaFacturacion</code></td><td>VARCHAR</td><td>Folio del ticket físico (NULL en renovaciones)</td></tr>
+      <tr><td><code>global_invoice_id</code></td><td>BIGINT FK</td><td>Factura global asociada</td></tr>
+      <tr><td><code>fiscal_invoice</code></td><td>VARCHAR</td><td>UUID del CFDI individual</td></tr>
+      <tr><td><code>fiscal_account_id</code></td><td>BIGINT FK</td><td>Cuenta fiscal del cliente</td></tr>
+      <tr><td><code>deleted_at</code></td><td>TIMESTAMP</td><td>Soft delete</td></tr>
+    </tbody>
+  </table>
+
+  <h3>global_invoice</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>BIGINT PK</td><td>Autoincremental</td></tr>
+      <tr><td><code>uuid</code></td><td>VARCHAR</td><td>UUID del CFDI (SAT)</td></tr>
+      <tr><td><code>serie</code></td><td>VARCHAR</td><td>Serie de la factura</td></tr>
+      <tr><td><code>folio</code></td><td>VARCHAR</td><td>Folio de la factura</td></tr>
+      <tr><td><code>file_name</code></td><td>VARCHAR</td><td>Nombre del archivo PDF/XML</td></tr>
+      <tr><td><code>total</code></td><td>DECIMAL</td><td>Total facturado</td></tr>
+      <tr><td><code>start_date_group</code></td><td>DATE</td><td>Fecha inicio del período facturado</td></tr>
+      <tr><td><code>end_date_group</code></td><td>DATE</td><td>Fecha fin del período facturado</td></tr>
+      <tr><td><code>paymentType</code></td><td>TINYINT</td><td>Tipo de pago del grupo</td></tr>
+      <tr><td><code>periodicidad</code></td><td>VARCHAR</td><td>Periodicidad SAT (04=Mensual)</td></tr>
+      <tr><td><code>cancelada_at</code></td><td>TIMESTAMP</td><td>Fecha de cancelación</td></tr>
+      <tr><td><code>cancel_motivo</code></td><td>VARCHAR</td><td>Motivo de cancelación SAT</td></tr>
+    </tbody>
+  </table>
+
+  <h3>fiscal_accounts</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>BIGINT PK</td><td>Autoincremental</td></tr>
+      <tr><td><code>account_id</code></td><td>VARCHAR</td><td>ID de cuenta externa (portal AquaFacturacion)</td></tr>
+      <tr><td><code>rfc</code></td><td>VARCHAR</td><td>RFC del receptor</td></tr>
+      <tr><td><code>company_name</code></td><td>VARCHAR</td><td>Razón social</td></tr>
+      <tr><td><code>fiscal_regime</code></td><td>VARCHAR</td><td>Régimen fiscal SAT</td></tr>
+      <tr><td><code>cfdi_use</code></td><td>VARCHAR</td><td>Uso del CFDI</td></tr>
+      <tr><td><code>zip_code</code></td><td>VARCHAR</td><td>Código postal fiscal</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Relaciones Clave</h3>
+<pre>
+local_transaction ──FK──► global_invoice      (global_invoice_id)
+local_transaction ──FK──► fiscal_accounts     (fiscal_account_id)
+local_transaction ──── ► fiscal_invoice       (UUID CFDI individual)
+client_membership ──FK──► clients             (client_id)
+client_membership ──FK──► memberships         (membership_id)
+transfers         ──FK──► products            (product_id)
+transfers         ──FK──► facilities          (facility_id)
+</pre>
+
+
+  <!-- ─── 7. DISEÑO ─── -->
+  <div id="sec7" class="section-title">
+    <span class="number">07</span><h2>Diseño</h2>
+  </div>
+
+  <h3>7.1 Convenciones de Código</h3>
+  <table>
+    <thead><tr><th>Elemento</th><th>Convención</th></tr></thead>
+    <tbody>
+      <tr><td>Controladores</td><td>PascalCase con sufijo <code>Controller</code></td></tr>
+      <tr><td>Modelos</td><td>PascalCase singular</td></tr>
+      <tr><td>Vistas</td><td>snake_case, organizadas por módulo en subdirectorios</td></tr>
+      <tr><td>Rutas</td><td>kebab-case, agrupadas por módulo con prefijo y middleware</td></tr>
+      <tr><td>JS por módulo</td><td><code>public/assets/js/[modulo].js</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.2 Patrones Utilizados</h3>
+  <table>
+    <thead><tr><th>Patrón</th><th>Implementación</th></tr></thead>
+    <tbody>
+      <tr><td><strong>MVC</strong></td><td>Laravel MVC estándar</td></tr>
+      <tr><td><strong>Cache-aside</strong></td><td>Token FacturoPorTi cacheado indefinidamente (<code>facturoporti_prod_token</code>)</td></tr>
+      <tr><td><strong>Dual-write</strong></td><td>Facturas individuales escritas en AquaStaff y AquaFacturacion simultáneamente</td></tr>
+      <tr><td><strong>Soft deletes</strong></td><td><code>local_transaction.deleted_at</code></td></tr>
+      <tr><td><strong>Upsert</strong></td><td><code>fiscal_accounts</code> buscada/creada por RFC al facturar individualmente</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- ─── 8. DOCUMENTACIÓN DE SERVICIOS ─── -->
+  <div id="sec8" class="section-title">
+    <span class="number">08</span><h2>Documentación de Servicios</h2>
+  </div>
+
+  <h3>8.1 Dashboard</h3>
+  <table>
+    <thead><tr><th>Ruta</th><th>Método</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td>/dashboard</td><td><span class="badge badge-get">GET</span></td><td>Vista principal con métricas del día</td></tr>
+      <tr><td>/dashboard/info_dashboard</td><td><span class="badge badge-post">POST</span></td><td>AJAX: resumen diario, horario, membresías, cajeros</td></tr>
+      <tr><td>/dashboard/active_memberships</td><td><span class="badge badge-get">GET</span></td><td>Conteo de membresías activas por paquete</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.2 Cajero</h3>
+  <table>
+    <thead><tr><th>Ruta</th><th>Método</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td>/cajero</td><td><span class="badge badge-get">GET</span></td><td>Vista principal con resumen de transacciones</td></tr>
+      <tr><td>/cajero_transacciones</td><td><span class="badge badge-get">GET</span></td><td>Listado de transacciones</td></tr>
+      <tr><td>/cajero/CajerosTable</td><td><span class="badge badge-post">POST</span></td><td>AJAX: tabla de transacciones por cajero</td></tr>
+      <tr><td>/cajero/membership-packages</td><td><span class="badge badge-get">GET</span></td><td>Desglose de paquetes de membresía</td></tr>
+      <tr><td>/cajero/importacion</td><td><span class="badge badge-get">GET</span></td><td>Vista de importación Procepago</td></tr>
+      <tr><td>/cajero/importacion</td><td><span class="badge badge-post">POST</span></td><td>Procesa y almacena archivo Excel Procepago</td></tr>
+      <tr><td>/cajero/importacion/table</td><td><span class="badge badge-post">POST</span></td><td>AJAX: tabla de registros importados</td></tr>
+      <tr><td>/cajero/analisis-procepago</td><td><span class="badge badge-get">GET</span></td><td>Vista de análisis de conciliación</td></tr>
+      <tr><td>/cajero/analisis-procepago</td><td><span class="badge badge-post">POST</span></td><td>AJAX: datos de conciliación vs local</td></tr>
+      <tr><td>/exportar-csv/{startDate}/{endDate}</td><td><span class="badge badge-get">GET</span></td><td>Export Excel de indicadores</td></tr>
+      <tr><td>/exportar-trafico-ventas/{startDate}/{endDate}</td><td><span class="badge badge-get">GET</span></td><td>Export Excel tráfico por hora</td></tr>
+      <tr><td>/exportar-listado-transacciones/{startDate}/{endDate}</td><td><span class="badge badge-get">GET</span></td><td>Export lista transacciones INTERLOGIC</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.3 Membresías</h3>
+  <table>
+    <thead><tr><th>Ruta</th><th>Método</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td>/membresias</td><td><span class="badge badge-get">GET</span></td><td>Vista de membresías con filtros</td></tr>
+      <tr><td>/exportar-membresias-ventas/{startDate}/{endDate}</td><td><span class="badge badge-get">GET</span></td><td>Export Excel tráfico de membresías</td></tr>
+      <tr><td>/membresias/cajero</td><td><span class="badge badge-get">GET</span></td><td>Vista de membresías por cajero</td></tr>
+      <tr><td>/membresias/membresias_cajero_table</td><td><span class="badge badge-post">POST</span></td><td>AJAX: tabla de membresías por cajero</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.4 Indicadores</h3>
+  <table>
+    <thead><tr><th>Ruta</th><th>Método</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td>/indicadores</td><td><span class="badge badge-get">GET</span></td><td>Vista de indicadores mensuales</td></tr>
+      <tr><td>/indicadores/indicadores_table</td><td><span class="badge badge-post">POST</span></td><td>AJAX: datos de indicadores</td></tr>
+      <tr><td>/indicadores_cajero</td><td><span class="badge badge-get">GET</span></td><td>Indicadores por cajero</td></tr>
+      <tr><td>/indicadores/indicadores_pagos_table</td><td><span class="badge badge-post">POST</span></td><td>AJAX: desglose por tipo de pago</td></tr>
+      <tr><td>/indicadores/indicadores_membresias_table</td><td><span class="badge badge-post">POST</span></td><td>AJAX: distribución de membresías</td></tr>
+      <tr><td>/indicadores-membresias</td><td><span class="badge badge-get">GET</span></td><td>Vista de indicadores de membresías</td></tr>
+      <tr><td>/indicadores/clientes</td><td><span class="badge badge-get">GET</span></td><td>Análisis de clientes</td></tr>
+      <tr><td>/indicadores/clientes/table</td><td><span class="badge badge-post">POST</span></td><td>AJAX: tabla de clientes</td></tr>
+      <tr><td>/exportar-indicadores/</td><td><span class="badge badge-get">GET</span></td><td>Export Excel indicadores operativos</td></tr>
+      <tr><td>/exportar-membresias</td><td><span class="badge badge-get">GET</span></td><td>Export Excel membresías</td></tr>
+      <tr><td>/indicadores_operativos_pdf/</td><td><span class="badge badge-get">GET</span></td><td>Export PDF indicadores operativos</td></tr>
+      <tr><td>/exportar_membresias_pdf/</td><td><span class="badge badge-get">GET</span></td><td>Export PDF membresías</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.5 Corte de Caja</h3>
+  <table>
+    <thead><tr><th>Ruta</th><th>Método</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td>/corte_caja</td><td><span class="badge badge-get">GET</span></td><td>Vista de cortes registrados</td></tr>
+      <tr><td>/corte_caja_sucursal</td><td><span class="badge badge-get">GET</span></td><td>Formulario nuevo corte de caja</td></tr>
+      <tr><td>/corte_caja_sucursal</td><td><span class="badge badge-post">POST</span></td><td>Guardar corte de caja</td></tr>
+      <tr><td>/validar-fecha-corte</td><td><span class="badge badge-post">POST</span></td><td>Validar que no exista corte duplicado</td></tr>
+      <tr><td>/detalle_corte/{corte_id}</td><td><span class="badge badge-get">GET</span></td><td>Detalle de un corte específico</td></tr>
+      <tr><td>/editar_corte/{corte_id}</td><td><span class="badge badge-get">GET</span></td><td>Formulario de edición de corte</td></tr>
+      <tr><td>/actualizar_corte/{corte_id}</td><td><span class="badge badge-put">PUT</span></td><td>Actualizar corte</td></tr>
+      <tr><td>/exportar_corte/{corte_id}</td><td><span class="badge badge-get">GET</span></td><td>Export Excel del corte</td></tr>
+      <tr><td>/detalle_corte_export/{corte_id}</td><td><span class="badge badge-get">GET</span></td><td>Export Excel detalle del corte</td></tr>
+      <tr><td>/exportar-corte-pdf/{corte_id}</td><td><span class="badge badge-get">GET</span></td><td>Export PDF del corte</td></tr>
+      <tr><td>/detalle_corte_pdf/{corte_id}</td><td><span class="badge badge-get">GET</span></td><td>Generar PDF detalle del corte</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.6 Caja Chica</h3>
+  <table>
+    <thead><tr><th>Ruta</th><th>Método</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td>/caja_chica</td><td><span class="badge badge-get">GET</span></td><td>Vista de caja chica</td></tr>
+      <tr><td>/caja_chica_sucursal</td><td><span class="badge badge-get">GET</span></td><td>Formulario de caja chica</td></tr>
+      <tr><td>/caja_chica_sucursal</td><td><span class="badge badge-post">POST</span></td><td>Guardar registro de caja chica</td></tr>
+      <tr><td>/detalle_caja_chica/{caja_id}</td><td><span class="badge badge-get">GET</span></td><td>Detalle de un registro de caja chica</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.7 Facturación Global</h3>
+  <table>
+    <thead><tr><th>Ruta</th><th>Método</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td>/facturacion</td><td><span class="badge badge-get">GET</span></td><td>Vista de facturación global</td></tr>
+      <tr><td>/facturacion/transacciones</td><td><span class="badge badge-post">POST</span></td><td>AJAX: transacciones disponibles para facturar</td></tr>
+      <tr><td>/facturacion/generar</td><td><span class="badge badge-post">POST</span></td><td>Genera CFDI global vía FacturoPorTi</td></tr>
+      <tr><td>/facturacion/historial</td><td><span class="badge badge-post">POST</span></td><td>AJAX: historial de facturas generadas</td></tr>
+      <tr><td>/facturacion/download/xml/{name}</td><td><span class="badge badge-get">GET</span></td><td>Descarga XML de factura global</td></tr>
+      <tr><td>/facturacion/download/pdf/{name}</td><td><span class="badge badge-get">GET</span></td><td>Descarga PDF de factura global</td></tr>
+      <tr><td>/facturacion/cancelar/{id}</td><td><span class="badge badge-post">POST</span></td><td>Cancela CFDI global vía SAT</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.8 Facturación Individual</h3>
+  <div class="callout">
+    <strong>Nota técnica:</strong> Identifica la transacción por <code>local_transaction_id</code> en lugar de <code>CadenaFacturacion</code>. Nombre de archivo: <code>CadenaFacturacion ?: 'IND_' + local_transaction_id</code>. Archivos guardados en AquaStaff y AquaFacturacion simultáneamente (dual-write).
+  </div>
+  <table>
+    <thead><tr><th>Ruta</th><th>Método</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td>/facturacion-individual</td><td><span class="badge badge-get">GET</span></td><td>Vista de facturación individual</td></tr>
+      <tr><td>/facturacion-individual/transacciones</td><td><span class="badge badge-post">POST</span></td><td>AJAX: transacciones sin CFDI individual</td></tr>
+      <tr><td>/facturacion-individual/buscar-cuenta</td><td><span class="badge badge-get">GET</span></td><td>Autocomplete de cuenta fiscal por RFC</td></tr>
+      <tr><td>/facturacion-individual/generar</td><td><span class="badge badge-post">POST</span></td><td>Genera CFDI individual vía FacturoPorTi</td></tr>
+      <tr><td>/facturacion-individual/download/pdf/{fileName}</td><td><span class="badge badge-get">GET</span></td><td>Descarga PDF de factura individual</td></tr>
+      <tr><td>/facturacion-individual/download/xml/{fileName}</td><td><span class="badge badge-get">GET</span></td><td>Descarga XML de factura individual</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.9 Inventarios y Productos</h3>
+  <table>
+    <thead><tr><th>Ruta</th><th>Método</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td>/inventarios</td><td><span class="badge badge-get">GET</span></td><td>Vista de inventarios</td></tr>
+      <tr><td>/productos</td><td><span class="badge badge-get">GET</span></td><td>Listado de productos</td></tr>
+      <tr><td>/agregar_producto</td><td><span class="badge badge-get">GET</span></td><td>Formulario agregar producto</td></tr>
+      <tr><td>/editar_producto/{product_id}</td><td><span class="badge badge-get">GET</span></td><td>Formulario editar producto</td></tr>
+      <tr><td>/eliminar_producto/{product_id}</td><td><span class="badge badge-get">GET</span></td><td>Eliminar producto</td></tr>
+      <tr><td>/producto_agregar</td><td><span class="badge badge-post">POST</span></td><td>Guardar producto nuevo o editado</td></tr>
+      <tr><td>/transferencias</td><td><span class="badge badge-get">GET</span></td><td>Listado de transferencias</td></tr>
+      <tr><td>/crear_transferencia</td><td><span class="badge badge-get">GET</span></td><td>Formulario nueva transferencia</td></tr>
+      <tr><td>/submit_transfer_form</td><td><span class="badge badge-post">POST</span></td><td>Guardar nueva transferencia</td></tr>
+      <tr><td>/transfer_detail/{transfer_id}</td><td><span class="badge badge-get">GET</span></td><td>Detalle de transferencia</td></tr>
+      <tr><td>/submit_transfer_logs</td><td><span class="badge badge-post">POST</span></td><td>Guardar logs de transferencia</td></tr>
+      <tr><td>/submit_transfer_update</td><td><span class="badge badge-post">POST</span></td><td>Actualizar estado de transferencia</td></tr>
+      <tr><td>/search/products</td><td><span class="badge badge-get">GET</span></td><td>Búsqueda de productos (AJAX)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.10 Usuarios y Autenticación</h3>
+  <table>
+    <thead><tr><th>Ruta</th><th>Método</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td>/login</td><td><span class="badge badge-get">GET</span></td><td>Vista de inicio de sesión</td></tr>
+      <tr><td>/login</td><td><span class="badge badge-post">POST</span></td><td>Procesar login</td></tr>
+      <tr><td>/logout</td><td><span class="badge badge-get">GET</span></td><td>Cerrar sesión</td></tr>
+      <tr><td>/usuarios</td><td><span class="badge badge-get">GET</span></td><td>Listado de usuarios staff</td></tr>
+      <tr><td>/usuario</td><td><span class="badge badge-get">GET</span></td><td>Formulario nuevo usuario</td></tr>
+      <tr><td>/usuario</td><td><span class="badge badge-post">POST</span></td><td>Guardar nuevo usuario</td></tr>
+      <tr><td>/editar_usuario/{usuario_id}</td><td><span class="badge badge-get">GET</span></td><td>Formulario editar usuario</td></tr>
+      <tr><td>/eliminar_usuario/{user_id}</td><td><span class="badge badge-get">GET</span></td><td>Eliminar usuario</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.11 Administración y Configuración</h3>
+  <table>
+    <thead><tr><th>Ruta</th><th>Método</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td>/tipo_de_cambio</td><td><span class="badge badge-get">GET</span></td><td>Vista tipo de cambio actual</td></tr>
+      <tr><td>/tipo_de_cambio/actualizar</td><td><span class="badge badge-post">POST</span></td><td>Actualizar tipo de cambio MXN/USD</td></tr>
+      <tr><td>/administracion/</td><td><span class="badge badge-get">GET</span></td><td>Vista principal de auditoría</td></tr>
+      <tr><td>/administracion/transaction-gaps-summary</td><td><span class="badge badge-post">POST</span></td><td>Resumen de huecos en transacciones por día</td></tr>
+      <tr><td>/administracion/transaction-gaps-detail</td><td><span class="badge badge-post">POST</span></td><td>Detalle de huecos específicos</td></tr>
+      <tr><td>/administracion/export-transaction-gaps</td><td><span class="badge badge-get">GET</span></td><td>Export CSV de reporte de huecos</td></tr>
+      <tr><td>/administracion/quick-stats</td><td><span class="badge badge-get">GET</span></td><td>Estadísticas rápidas (últimos 7 días)</td></tr>
+      <tr><td>/administracion/sync-monitor</td><td><span class="badge badge-get">GET</span></td><td>Vista monitor de sincronización</td></tr>
+      <tr><td>/administracion/sync-monitor/table</td><td><span class="badge badge-post">POST</span></td><td>AJAX: tabla de estado de sincronización</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.12 Promociones</h3>
+  <table>
+    <thead><tr><th>Ruta</th><th>Método</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td>/promociones</td><td><span class="badge badge-get">GET</span></td><td>Listado de promociones</td></tr>
+      <tr><td>/promociones/tabla</td><td><span class="badge badge-post">POST</span></td><td>AJAX: tabla de promociones</td></tr>
+      <tr><td>/promociones/store</td><td><span class="badge badge-post">POST</span></td><td>Crear nueva promoción</td></tr>
+      <tr><td>/promociones/{id}</td><td><span class="badge badge-put">PUT</span></td><td>Actualizar promoción</td></tr>
+      <tr><td>/promociones/{id}/pdf</td><td><span class="badge badge-get">GET</span></td><td>Generar PDF de promoción</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- ─── 9. INTEGRACIÓN FACTUROPORTI ─── -->
+  <div id="sec9" class="section-title">
+    <span class="number">09</span><h2>Integración FacturoPorTi (CFDI 4.0)</h2>
+  </div>
+
+  <h3>Credenciales del Emisor</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Valor</th></tr></thead>
+    <tbody>
+      <tr><td>Empresa</td><td>AQUA CAR CLUB</td></tr>
+      <tr><td>RFC</td><td>ACC220922GT0</td></tr>
+      <tr><td>Régimen Fiscal</td><td>601 — General de Ley Personas Morales</td></tr>
+      <tr><td>Código Postal</td><td>32030 (Chihuahua)</td></tr>
+      <tr><td>IVA aplicable</td><td>8% (zona fronteriza)</td></tr>
+      <tr><td>API URL Producción</td><td>https://api.facturoporti.com.mx</td></tr>
+      <tr><td>API URL Sandbox</td><td>https://testapi.facturoporti.com.mx</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Endpoints API</h3>
+  <table>
+    <thead><tr><th>Endpoint</th><th>Método</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td>/token/crear?Usuario=X&amp;Password=Y</td><td><span class="badge badge-get">GET</span></td><td>Obtener Bearer token (cacheado indefinidamente)</td></tr>
+      <tr><td>/servicios/timbrar/json</td><td><span class="badge badge-post">POST</span></td><td>Timbrar CFDI (generar factura)</td></tr>
+      <tr><td>/servicios/cancelar/csd</td><td><span class="badge badge-post">POST</span></td><td>Cancelar CFDI ante el SAT</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Regla SAT 72 Horas</h3>
+  <div class="callout">
+    <strong>Importante:</strong> El SAT requiere que la <code>Fecha</code> de emisión del CFDI no sea más de <strong>72 horas anterior</strong> al momento del timbrado. Para transacciones antiguas (renovaciones de meses previos), el staff debe establecer la fecha de emisión al momento actual — nunca a la fecha de la transacción original.
+  </div>
+
+  <h3>Cálculo IVA 8% (Zona Fronteriza)</h3>
+<pre>
+Base = Total / 1.08
+IVA  = Total - Base
+
+Ejemplo:
+  Total = $216.00
+  Base  = $200.00
+  IVA   = $16.00
+</pre>
+
+
+  <!-- ─── 10. ESCALABILIDAD ─── -->
+  <div id="sec10" class="section-title">
+    <span class="number">10</span><h2>Escalabilidad y Mantenimiento</h2>
+  </div>
+
+  <h3>Puntos de Extensión</h3>
+  <table>
+    <thead><tr><th>Área</th><th>Oportunidad</th></tr></thead>
+    <tbody>
+      <tr><td>Nuevas sucursales</td><td>Agregar filtro de sucursal en <code>local_transaction.Atm</code></td></tr>
+      <tr><td>Nuevos tipos de membresía</td><td>Actualizar <code>GeneralCatalogs::membership_types</code></td></tr>
+      <tr><td>Nuevas formas de pago</td><td>Actualizar <code>PaymentType</code> enum y lógica de agrupación</td></tr>
+      <tr><td>Portal público</td><td>AquaFacturacion puede extenderse para más tipos de factura individual</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Consideraciones de Mantenimiento</h3>
+  <table>
+    <thead><tr><th>Elemento</th><th>Acción</th></tr></thead>
+    <tbody>
+      <tr><td>Token FacturoPorTi expirado</td><td>Ejecutar <code>php artisan cache:clear</code> para forzar renovación</td></tr>
+      <tr><td>Rutas de archivos</td><td>Global: <code>storage/app/public/invoices/</code> · Individual: <code>pdfs/</code> y <code>xmls/</code></td></tr>
+      <tr><td>Dual-write path</td><td>Si AquaFacturacion cambia ubicación, actualizar <code>base_path('../AquaFacturacion/...')</code> en <code>FacturacionIndividualController</code></td></tr>
+      <tr><td>IVA</td><td>Actualmente fijo al 8% (zona fronteriza). Actualizar en <code>GeneralCatalogs</code> si cambia la tasa</td></tr>
+      <tr><td>Monitor de sincronización</td><td>Revisar <code>/administracion/sync-monitor</code> periódicamente para detectar transacciones no sincronizadas</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Dependencias Críticas</h3>
+  <table>
+    <thead><tr><th>Dependencia</th><th>Impacto en fallo</th></tr></thead>
+    <tbody>
+      <tr><td>FacturoPorTi API</td><td>Sin generación ni cancelación de CFDI</td></tr>
+      <tr><td>MySQL local</td><td>Sistema inoperativo completo</td></tr>
+      <tr><td>IIS / PHP</td><td>Sistema inoperativo completo</td></tr>
+      <tr><td>Procepago (TPV)</td><td>Sin importación de archivos de conciliación</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- ─── 11. PRUEBAS ─── -->
+  <div id="sec11" class="section-title">
+    <span class="number">11</span><h2>Pruebas</h2>
+  </div>
+
+  <div class="callout info">
+    <strong>Entorno sandbox FacturoPorTi:</strong> Cambiar la URL a <code>https://testapi.facturoporti.com.mx</code> en <code>GeneralCatalogs::api_data_reference['url']</code> para pruebas de integración sin timbrar ante el SAT.
+  </div>
+
+  <h3>Casos de Prueba Críticos</h3>
+  <table>
+    <thead><tr><th>Caso</th><th>Descripción</th><th>Resultado Esperado</th></tr></thead>
+    <tbody>
+      <tr><td>Factura global — período completo</td><td>Generar factura de todas las transacciones del mes</td><td>CFDI timbrado, UUID guardado, archivos generados</td></tr>
+      <tr><td>Factura individual — renovación sin folio</td><td>Seleccionar renovación sin <code>CadenaFacturacion</code></td><td>Nombre <code>IND_XXXXXXX</code>, CFDI generado, archivo accesible en AquaFacturacion</td></tr>
+      <tr><td>Fecha emisión &gt; 72 horas</td><td>Ingresar fecha de hace 73 horas en modal</td><td>Bloqueo en JS con mensaje explicativo</td></tr>
+      <tr><td>RFC no existente</td><td>Buscar RFC que no está en <code>fiscal_accounts</code></td><td>Campos vacíos, staff ingresa datos manualmente</td></tr>
+      <tr><td>Cancelación de CFDI</td><td>Cancelar factura global existente</td><td>Estado actualizado, motivo SAT registrado</td></tr>
+      <tr><td>Hueco en transacciones</td><td>Transacción no sincronizada del día anterior</td><td>Auditoría detecta y reporta el hueco en el reporte</td></tr>
+      <tr><td>Importación Procepago</td><td>Cargar archivo Excel del TPV</td><td>Registros insertados, análisis de conciliación disponible</td></tr>
+    </tbody>
+  </table>
+
+  <!-- FOOTER -->
+  <div class="doc-footer">
+    <p>AquaStaff · Documento de Arquitectura de Software · Versión 2.0 · Abril 2026</p>
+    <p>Este documento cubre el módulo de Facturación Individual (IND), corrección de regla SAT 72 horas y dual-write entre AquaStaff y AquaFacturacion.</p>
+  </div>
+
+</div>
+</body>
+</html>

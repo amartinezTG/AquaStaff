@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\StaffUserController;
 use App\Http\Controllers\CajeroController;
 use App\Http\Controllers\FacturacionController;
+use App\Http\Controllers\FacturacionIndividualController;
 use App\Http\Controllers\FiscalAccountsController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\UsersController;
@@ -21,7 +22,7 @@ use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
-  
+   
  
 // Artisan::call('view:clear');
 /*
@@ -295,6 +296,15 @@ Route::middleware('auth')->controller(FacturacionController::class)->group(funct
     Route::get('/facturacion/download/xml/{name}', 'downloadXml')->name('facturacion.xml');
     Route::get('/facturacion/download/pdf/{name}', 'downloadPdf')->name('facturacion.pdf');
     Route::post('/facturacion/cancelar/{id}', 'cancelarFactura')->name('facturacion.cancelar');
+});
+
+Route::middleware('auth')->controller(FacturacionIndividualController::class)->group(function () {
+    Route::get('/facturacion-individual', 'index')->name('facturacion.individual');
+    Route::post('/facturacion-individual/transacciones', 'transacciones')->name('facturacion.individual.transacciones');
+    Route::get('/facturacion-individual/buscar-cuenta', 'buscarCuentaFiscal')->name('facturacion.individual.buscar');
+    Route::post('/facturacion-individual/generar', 'generarFactura')->name('facturacion.individual.generar');
+    Route::get('/facturacion-individual/download/pdf/{fileName}', 'downloadPdf')->name('facturacion.individual.pdf');
+    Route::get('/facturacion-individual/download/xml/{fileName}', 'downloadXml')->name('facturacion.individual.xml');
 });
 
 

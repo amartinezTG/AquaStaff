@@ -81,7 +81,7 @@
                         <a class="nav-link {{ $activePage === 'indicadores_cajero' ? '' : 'collapsed' }}" href="/indicadores_cajero">
                             <i class="bi bi-receipt"></i><span>Indicadores Cajero</span></a>
                     </li>
- 
+  
                     <li>
                         <a class="nav-link {{ $activePage === 'membresias' ? '' : 'collapsed' }}"
                             href="/indicadores_membresias"><i class="bi bi-receipt"></i><span>Indicadores Membresías</span>
@@ -148,6 +148,11 @@
                     <li>
                         <a class="nav-link {{ $activePage === 'facturacion' ? '' : 'collapsed' }}" href="/facturacion">
                             <i class="bi bi-file-earmark-text"></i><span>Factura Global</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="nav-link {{ $activePage === 'facturacion_individual' ? '' : 'collapsed' }}" href="/facturacion-individual">
+                            <i class="bi bi-person-lines-fill"></i><span>Factura Individual</span>
                         </a>
                     </li>
                     <li>
