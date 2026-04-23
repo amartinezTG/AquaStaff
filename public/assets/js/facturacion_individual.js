@@ -5,7 +5,7 @@ let rfcSearchTimer  = null;
 // ─────────────────────────────────────────────────────────────────────────────
 // BUSCAR TRANSACCIONES
 // ─────────────────────────────────────────────────────────────────────────────
- 
+  
 function buscarTransacciones() {
     const fechaInicio      = document.getElementById('fechaInicio').value;
     const fechaFinal       = document.getElementById('fechaFinal').value;
@@ -112,6 +112,7 @@ function buscarTransacciones() {
                                 <div class="mt-1">
                                     <a href="/facturacion-individual/download/pdf/${fname}" class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size:.68rem;" title="PDF">PDF</a>
                                     <a href="/facturacion-individual/download/xml/${fname}" class="btn btn-sm btn-outline-primary py-0 px-1" style="font-size:.68rem;" title="XML">XML</a>
+                                    <button onclick="cancelarFacturaIndividual(${row.local_transaction_id})" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size:.68rem;" title="Cancelar factura">Cancelar</button>
                                 </div>`;
                     }
                     if (row.estatus_factura === 'global') {
@@ -368,6 +369,9 @@ function abrirModalFacturar() {
                 }, 300);
             });
         },
+        willClose: () => {
+            document.getElementById('rfc-suggestions').innerHTML = '';
+        },
         preConfirm: () => {
             const rfc           = document.getElementById('swal-rfc').value.trim().toUpperCase();
             const companyName   = document.getElementById('swal-razon').value.trim().toUpperCase();
@@ -467,6 +471,45 @@ function abrirModalFacturar() {
             error: function (xhr) {
                 Swal.close();
                 const msg = xhr.responseJSON?.error || 'Error al generar las facturas.';
+                Swal.fire({ icon: 'error', title: 'Error', text: msg });
+            }
+        });
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CANCELAR FACTURA INDIVIDUAL
+// ─────────────────────────────────────────────────────────────────────────────
+
+function cancelarFacturaIndividual(localTransactionId) {
+    Swal.fire({
+        icon: 'warning',
+        title: '¿Cancelar factura?',
+        html: `<p style="font-size:.85rem;">Se enviará la solicitud de cancelación al SAT.<br>Esta acción <strong>no se puede deshacer</strong>.</p>`,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cancelar',
+        cancelButtonText: 'No',
+        confirmButtonColor: '#dc3545',
+    }).then(result => {
+        if (!result.isConfirmed) return;
+
+        Swal.fire({
+            title: 'Cancelando...',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        $.ajax({
+            url: '/facturacion-individual/cancelar/' + localTransactionId,
+            type: 'POST',
+            data: { _token: $('meta[name="csrf-token"]').attr('content') },
+            success: function (resp) {
+                Swal.fire({ icon: 'success', title: 'Cancelada', text: resp.message })
+                    .then(() => buscarTransacciones());
+            },
+            error: function (xhr) {
+                const msg = xhr.responseJSON?.error || 'Error al cancelar la factura.';
                 Swal.fire({ icon: 'error', title: 'Error', text: msg });
             }
         });

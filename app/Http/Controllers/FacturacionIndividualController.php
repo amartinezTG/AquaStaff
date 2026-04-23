@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
- 
+  
 class FacturacionIndividualController extends Controller
 { 
     protected $catalogs;
@@ -395,6 +395,79 @@ class FacturacionIndividualController extends Controller
             Log::error('[FacturacionIndividual] Excepción', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error interno: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Cancela un CFDI individual — solo role 1
+     */
+    public function cancelarFactura(Request $request, $localTransactionId)
+    {
+        if (auth()->user()->role !== 1) {
+            return response()->json(['error' => 'No tienes permisos para cancelar facturas.'], 403);
+        }
+
+        $tx = DB::table('local_transaction')
+            ->leftJoin('fiscal_accounts as fa', 'local_transaction.fiscal_account_id', '=', 'fa.id')
+            ->where('local_transaction.local_transaction_id', $localTransactionId)
+            ->whereNull('local_transaction.deleted_at')
+            ->whereNotNull('local_transaction.fiscal_invoice')
+            ->select(
+                'local_transaction.local_transaction_id',
+                'local_transaction.fiscal_invoice',
+                'local_transaction.Total',
+                'fa.rfc as receptor_rfc'
+            )
+            ->first();
+
+        if (!$tx) {
+            return response()->json(['error' => 'Transacción no encontrada o sin factura individual.'], 404);
+        }
+
+        $cancelJSON = [
+            'rfcEmisor'   => $this->catalogs->api_data_reference['RFC'],
+            'rfcReceptor' => $tx->receptor_rfc ?? 'XAXX010101000',
+            'uuid'        => $tx->fiscal_invoice,
+            'total'       => (float) $tx->Total,
+            'motivo'      => '02',
+            'certificado' => $this->catalogs->api_data_reference['CSD'],
+            'llavePrivada'=> $this->catalogs->api_data_reference['CSDKey'],
+            'password'    => $this->catalogs->api_data_reference['CSDPassword'],
+        ];
+
+        $tokenResult = $this->obtenerToken();
+        if (!$tokenResult['token']) {
+            return response()->json([
+                'error'       => 'No se pudo obtener el token de autenticación.',
+                'debug_token' => $tokenResult['error'],
+            ], 500);
+        }
+
+        $response = $this->callAPIWithToken('/servicios/cancelar/csd', $cancelJSON, $tokenResult['token']);
+
+        Log::info('[FacturacionIndividual] Respuesta cancelación', [
+            'local_transaction_id' => $localTransactionId,
+            'response'             => $response,
+        ]);
+
+        $codigo = $response['codigo'] ?? null;
+        $exito  = $codigo === '000' || isset($response['acuse']);
+
+        if (!$exito) {
+            $msg = $response['mensaje'] ?? 'Error desconocido al cancelar.';
+            return response()->json([
+                'error'   => 'Error al cancelar: ' . $msg,
+                'detalle' => $response,
+            ], 500);
+        }
+
+        DB::table('local_transaction')
+            ->where('local_transaction_id', $localTransactionId)
+            ->update([
+                'fiscal_invoice'    => null,
+                'fiscal_account_id' => null,
+            ]);
+
+        return response()->json(['message' => 'Factura individual cancelada correctamente.']);
     }
 
     /**

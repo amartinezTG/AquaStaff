@@ -17,7 +17,7 @@ use App\Http\Controllers\TipoDeCambioController;
 use App\Http\Controllers\IndicadoresController;
 use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\PromocionesController;
-  
+   
 use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -305,6 +305,7 @@ Route::middleware('auth')->controller(FacturacionIndividualController::class)->g
     Route::post('/facturacion-individual/generar', 'generarFactura')->name('facturacion.individual.generar');
     Route::get('/facturacion-individual/download/pdf/{fileName}', 'downloadPdf')->name('facturacion.individual.pdf');
     Route::get('/facturacion-individual/download/xml/{fileName}', 'downloadXml')->name('facturacion.individual.xml');
+    Route::post('/facturacion-individual/cancelar/{id}', 'cancelarFactura')->name('facturacion.individual.cancelar');
 });
 
 

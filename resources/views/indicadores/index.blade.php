@@ -255,8 +255,12 @@
                 <div class="col-12">
                     <div class="card " style="border-left: 5px solid #2399b7ff;">
                         <div class="col-12">
-
+ 
                             <div class="card-body p-4" >
+                                <p class="text-muted mb-3" style="font-size:.82rem;">
+                                    <i class="bi bi-info-circle me-1" style="color:#2399b7;"></i>
+                                    Resumen diario de operaciones en el periodo seleccionado. Incluye lavados por tipo de paquete, uso de membresías, movimientos de compra/renovación e ingresos totales con y sin IVA.
+                                </p>
                                 <div class="table-responsive">
                                     <table id="indicadores_table" class="table table-bordered  table-hover  table-striped dt-responsive nowrap w-100 dataTable no-footer dtr-inline" style="position: relative; width: 1575px;">
                                         <thead>

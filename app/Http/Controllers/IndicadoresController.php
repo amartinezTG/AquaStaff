@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Dompdf\Options;
- 
+  
 class IndicadoresController extends Controller
 {
     public $catalogs;
@@ -47,12 +47,14 @@ class IndicadoresController extends Controller
         $data  = [];
         if ($rows) {
             foreach ($rows as $key => $row) {
-                $lavados_deluxe_membresia = $row['lavados_deluxe_membresia'] + $row['QrMembresiaDeluxe'] ?? 0;
-                $lavados_ultra_membresia = $row['lavados_ultra_membresia'] + $row['QrMembresiaUltra'] ?? 0;
-                $lavados_basico_membresia = $row['lavados_basico_membresia'] + $row['QrMembresiaBasico'] ?? 0;
-                $lavados_express_membresia = $row['lavados_express_membresia'] + $row['QrMembresiaExpress'] ?? 0;
+                $lavados_deluxe_membresia  = ($row['lavados_deluxe_membresia']  ?? 0) + ($row['QrMembresiaDeluxe']  ?? 0);
+                $lavados_ultra_membresia   = ($row['lavados_ultra_membresia']   ?? 0) + ($row['QrMembresiaUltra']   ?? 0);
+                $lavados_basico_membresia  = ($row['lavados_basico_membresia']  ?? 0) + ($row['QrMembresiaBasico']  ?? 0);
+                $lavados_express_membresia = ($row['lavados_express_membresia'] ?? 0) + ($row['QrMembresiaExpress'] ?? 0);
 
-                 
+                $lavados_membresia_total = $lavados_express_membresia + $lavados_basico_membresia
+                                         + $lavados_ultra_membresia  + $lavados_deluxe_membresia;
+
                 $data[] = array(
                     'fecha'                     => $row['fecha'],
                     'total_eventos'             => $row['total_eventos'],
@@ -64,7 +66,7 @@ class IndicadoresController extends Controller
                     'promo150'                   => $row['promo150'],
                     'promo50'                   => $row['promo50'],
                     'suma_total_tipo2'          => $row['suma_total_tipo2'],
-                    'lavados_membresia'         => $row['lavados_membresia'],
+                    'lavados_membresia'         => $lavados_membresia_total,
                     'lavados_express_membresia' => $lavados_express_membresia,
                     'lavados_basico_membresia'  => $lavados_basico_membresia,
                     'lavados_ultra_membresia'   => $lavados_ultra_membresia,
