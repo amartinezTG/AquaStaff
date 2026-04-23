@@ -2,6 +2,7 @@
 @include('layout.includes')
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <body class="toggle-sidebar">
 
 
@@ -250,8 +251,8 @@
                     </div>
                 </div>
             </div>
-
-            <div class="row">
+ 
+            <div  class="row">
                 <div class="col-12">
                     <div class="card " style="border-left: 5px solid #2399b7ff;">
                         <div class="col-12">
@@ -268,13 +269,14 @@
                                             <th rowspan="2">Fecha</th>
                                             <th rowspan="2">Total Lavados</th>
 
-                                            <th colspan="8" class="text-center">Paquetes (pago)</th>
+                                            <th colspan="6" class="text-center">Paquetes (pago)</th>
                                             <th colspan="5" class="text-center">Membresías (uso)</th>
                                             <th colspan="4" class="text-center">Mov. Membresía</th>
- 
+
                                             <th rowspan="2">Garantia</th>
                                             <th rowspan="2">$ Total día</th>
-                                            <th rowspan="2">$ Total Sin IVA </th>
+                                            <th rowspan="2">$ Total Sin IVA</th>
+                                            <th rowspan="2">Comentario</th>
                                             </tr>
                                             <tr>
                                             <!-- Paquetes (pago) -->
@@ -283,8 +285,6 @@
                                             <th>Basico</th>
                                             <th>Ultra</th>
                                             <th>Deluxe</th>
-                                            <th>Promo 150</th>
-                                            <th>Promo 50</th>
                                             <th>$ Paquetes</th>
 
                                             <!-- Membresías (uso) -->
@@ -311,8 +311,6 @@
                                                 <th></th><!-- lavados_basico -->
                                                 <th></th><!-- lavados_ultra -->
                                                 <th></th><!-- lavados_deluxe -->
-                                                <th></th><!-- promo150 -->
-                                                <th></th><!-- promo50 -->
                                                 <th></th><!-- suma_total_tipo2 -->
                                                 <th></th><!-- lavados_membresia -->
                                                 <th></th><!-- lavados_express_membresia -->
@@ -326,6 +324,7 @@
                                                 <th></th><!-- lavados_cortesia -->
                                                 <th></th><!-- suma_total_dia -->
                                                 <th></th><!-- suma_total_dia_iva -->
+                                                <th></th><!-- comentario -->
                                             </tr>
                                         </tfoot>
                                         </table>

@@ -22,8 +22,7 @@ use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
-   
- 
+
 // Artisan::call('view:clear');
 /*
 |--------------------------------------------------------------------------
@@ -100,6 +99,9 @@ Route::middleware('auth')->controller(IndicadoresController::class)->group(funct
     Route::match(['get', 'post'], 'indicadores_membresias',  'indicadores_membresias')->name('indicadores_membresias');
     Route::get('indicadores/clientes', 'indicadores_clientes')->name('indicadores.clientes');
     Route::post('indicadores/clientes/table', 'indicadores_clientes_table')->name('indicadores.clientes.table');
+    Route::get('indicadores/comentarios', 'getComentarios')->name('indicadores.comentarios.get');
+    Route::post('indicadores/comentarios', 'upsertComentario')->name('indicadores.comentarios.upsert');
+    Route::delete('indicadores/comentarios/{fecha}', 'deleteComentario')->name('indicadores.comentarios.delete');
 });
  
 #################

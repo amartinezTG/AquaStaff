@@ -37,12 +37,12 @@ class IndicadoresController extends Controller
         $activePage = 'Indicadores';
         return view('indicadores.index', compact('activePage'));
     }
-
+ 
     public function indicadores_table(Request $request){
 
         $from  = $request->input('fecha_inicio'); // opcional
         $until = $request->input('fecha_final');  // opcional
-
+ 
         $rows = LocalTransaction::resumenPorDia($from, $until);
         $data  = [];
         if ($rows) {
@@ -85,6 +85,54 @@ class IndicadoresController extends Controller
             }
             echo json_encode(array("data" => $data));
         }
+    }
+
+    public function getComentarios(Request $request)
+    {
+        $fechas = $request->input('fechas', []);
+        if (empty($fechas)) {
+            return response()->json([]);
+        }
+        $rows = DB::table('indicador_comentarios')
+            ->whereIn('fecha', $fechas)
+            ->get(['fecha', 'comentario', 'user_id', 'updated_at']);
+
+        $map = [];
+        foreach ($rows as $r) {
+            $map[$r->fecha] = [
+                'comentario' => $r->comentario,
+                'user_id'    => $r->user_id,
+                'updated_at' => $r->updated_at,
+            ];
+        }
+        return response()->json($map);
+    }
+
+    public function upsertComentario(Request $request)
+    {
+        $fecha     = $request->input('fecha');
+        $comentario = trim($request->input('comentario', ''));
+
+        if (!$fecha || !$comentario) {
+            return response()->json(['error' => 'Fecha y comentario son requeridos.'], 400);
+        }
+
+        DB::table('indicador_comentarios')->updateOrInsert(
+            ['fecha' => $fecha],
+            [
+                'comentario' => $comentario,
+                'user_id'    => auth()->id(),
+                'updated_at' => now(),
+            ]
+        );
+
+        return response()->json(['message' => 'Comentario guardado.']);
+    }
+
+    public function deleteComentario($fecha)
+    {
+        DB::table('indicador_comentarios')->where('fecha', $fecha)->delete();
+        return response()->json(['message' => 'Comentario eliminado.']);
     }
 
     public function indicadores_pagos_table(Request $request){

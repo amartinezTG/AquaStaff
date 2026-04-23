@@ -18,7 +18,7 @@ function indicadoresTable(){
             pageLength: 100,
             order: [
                 [0, 'desc']
-            ],
+            ],  
             buttons: [
                 {
                     extend: 'excelHtml5',
@@ -88,7 +88,7 @@ function indicadoresTable(){
             rowId: 'fecha',
                 columns: [
                 // === Deben coincidir EXACTAMENTE con los alias del SELECT ===
-                { data: 'fecha'}, // ya viene como 'YYYY-MM-DD'
+                { data: 'fecha' },
                 { data: 'total_eventos'},
 
                 { data: 'lavados_paquete'},
@@ -96,8 +96,6 @@ function indicadoresTable(){
                 { data: 'lavados_basico'},
                 { data: 'lavados_ultra'},
                 { data: 'lavados_deluxe'},
-                 { data: 'promo150'},
-                { data: 'promo50'},
                 { data: 'suma_total_tipo2', render: $.fn.dataTable.render.number(',', '.', 2)},
 
                 { data: 'lavados_membresia'},
@@ -113,16 +111,34 @@ function indicadoresTable(){
                 { data: 'sum__renovacion_membresia', render: $.fn.dataTable.render.number(',', '.', 2)}, // ojo: doble underscore según tu alias
                 { data: 'lavados_cortesia'},
 
-                { data: 'suma_total_dia' ,render: $.fn.dataTable.render.number(',', '.', 2)},
-                { data: 'suma_total_dia_iva' ,render: $.fn.dataTable.render.number(',', '.', 2)},
+                { data: 'suma_total_dia', render: $.fn.dataTable.render.number(',', '.', 2)},
+                { data: 'suma_total_dia_iva', render: $.fn.dataTable.render.number(',', '.', 2)},
+                {
+                    data: 'fecha', orderable: false,
+                    render: function(d) {
+                        const texto = _comentariosCache[d] || '';
+                        const color = texto ? '#2399b7' : '#ccc';
+                        const title = texto ? texto : 'Sin comentario';
+                        return `<button class="btn-comentario" onclick="abrirComentario('${d}')"
+                                    data-fecha="${d}" title="${title}"
+                                    style="background:none;border:none;padding:0;cursor:pointer;font-size:.9rem;">
+                                    <i class="bi bi-chat-text" style="color:${color};"></i>
+                                </button>
+                                ${texto ? `<span style="font-size:.72rem;color:#555;max-width:120px;display:inline-block;vertical-align:middle;white-space:normal;line-height:1.2;">${texto.length > 50 ? texto.substring(0,50)+'…' : texto}</span>` : ''}`;
+                    }
+                },
                 ],
             createdRow: function (row, data, dataIndex) {
             },
             footerCallback: function (row, data, start, end, display) {
                 var api = this.api();
 
-                // Columnas numéricas enteras (índice de columna)
-                var intCols = [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,19];
+                // Columnas numéricas enteras
+                // 0=fecha,1=total_eventos,2=lav_paquete,3=lav_express,4=lav_basico,5=lav_ultra,
+                // 6=lav_deluxe,7=$paquetes,8=lav_memb,9=lav_exp_memb,10=lav_bas_memb,
+                // 11=lav_ult_memb,12=lav_del_memb,13=compra,14=renov,15=$compra,16=$renov,
+                // 17=cortesia,18=$total,19=$sinIVA,20=comentario
+                var intCols = [1,2,3,4,5,6,8,9,10,11,12,13,14,17];
                 intCols.forEach(function(col) {
                     var total = api.column(col, { page: 'all' }).data().reduce(function(a, b) {
                         return (parseInt(a) || 0) + (parseInt(b) || 0);
@@ -131,7 +147,7 @@ function indicadoresTable(){
                 });
 
                 // Columnas monetarias (formateadas con 2 decimales)
-                var moneyCols = [9, 17, 18, 20, 21];
+                var moneyCols = [7, 15, 16, 18, 19];
                 moneyCols.forEach(function(col) {
                     var total = api.column(col, { page: 'all' }).data().reduce(function(a, b) {
                         var val = typeof b === 'string' ? parseFloat(b.replace(/,/g, '')) : parseFloat(b);
@@ -143,7 +159,7 @@ function indicadoresTable(){
             initComplete: function () {
                 $('.table-responsive').removeClass('loader_iiee');
                 createCharts(this.api());
-                console.log('DataTable inicializada correctamente');
+                cargarComentarios(this.api());
             }
         });
 }
@@ -1066,4 +1082,127 @@ function toggleChartsPayments() {
         }
 
 
+// ─────────────────────────────────────────────────────────────────────────────
+// COMENTARIOS POR FECHA
+// ─────────────────────────────────────────────────────────────────────────────
 
+let _comentariosCache = {}; // { 'YYYY-MM-DD': 'texto' }
+
+function cargarComentarios(api) {
+    const fechas = api.rows().data().toArray().map(r => r.fecha);
+    if (!fechas.length) return;
+
+    $.ajax({
+        url: '/indicadores/comentarios',
+        type: 'GET',
+        data: { fechas: fechas },
+        success: function(map) {
+            _comentariosCache = {};
+            Object.keys(map).forEach(function(fecha) {
+                _comentariosCache[fecha] = map[fecha].comentario;
+            });
+            // Redibuja la columna comentario (índice 20) para reflejar el cache
+            api.column(20).nodes().each(function(cell, i) {
+                const fecha = api.cell(i, 20).data();
+                const texto = _comentariosCache[fecha] || '';
+                const color = texto ? '#2399b7' : '#ccc';
+                const title = texto ? texto : 'Sin comentario';
+                const preview = texto
+                    ? `<span style="font-size:.72rem;color:#555;max-width:120px;display:inline-block;vertical-align:middle;white-space:normal;line-height:1.2;">${texto.length > 50 ? texto.substring(0,50)+'…' : texto}</span>`
+                    : '';
+                $(cell).html(
+                    `<button class="btn-comentario" onclick="abrirComentario('${fecha}')"
+                        data-fecha="${fecha}" title="${title.replace(/"/g,'&quot;')}"
+                        style="background:none;border:none;padding:0;cursor:pointer;font-size:.9rem;">
+                        <i class="bi bi-chat-text" style="color:${color};"></i>
+                    </button>${preview}`
+                );
+            });
+        }
+    });
+}
+
+function _aplicarIconoComentario(fecha, texto) {
+    const btn = document.querySelector(`.btn-comentario[data-fecha="${fecha}"]`);
+    if (!btn) return;
+    const cell = btn.closest('td');
+    const color = texto ? '#2399b7' : '#ccc';
+    const title = texto ? texto : 'Sin comentario';
+    const preview = texto
+        ? `<span style="font-size:.72rem;color:#555;max-width:120px;display:inline-block;vertical-align:middle;white-space:normal;line-height:1.2;">${texto.length > 50 ? texto.substring(0,50)+'…' : texto}</span>`
+        : '';
+    $(cell).html(
+        `<button class="btn-comentario" onclick="abrirComentario('${fecha}')"
+            data-fecha="${fecha}" title="${title.replace(/"/g,'&quot;')}"
+            style="background:none;border:none;padding:0;cursor:pointer;font-size:.9rem;">
+            <i class="bi bi-chat-text" style="color:${color};"></i>
+        </button>${preview}`
+    );
+}
+
+function abrirComentario(fecha) {
+    const actual = _comentariosCache[fecha] || '';
+
+    Swal.fire({
+        title: `Comentario — ${fecha}`,
+        html: `
+            <textarea id="swal-comentario" class="form-control" rows="4"
+                placeholder="Escribe un comentario para este día..."
+                style="font-size:.85rem;resize:vertical;">${actual}</textarea>`,
+        showCancelButton: true,
+        showDenyButton: actual !== '',
+        confirmButtonText: 'Guardar',
+        denyButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#2399b7',
+        denyButtonColor: '#dc3545',
+        preConfirm: () => {
+            const val = document.getElementById('swal-comentario').value.trim();
+            if (!val) {
+                Swal.showValidationMessage('El comentario no puede estar vacío.');
+                return false;
+            }
+            return val;
+        }
+    }).then(result => {
+        if (result.isConfirmed) {
+            _guardarComentario(fecha, result.value);
+        } else if (result.isDenied) {
+            _eliminarComentario(fecha);
+        }
+    });
+}
+
+function _guardarComentario(fecha, texto) {
+    $.ajax({
+        url: '/indicadores/comentarios',
+        type: 'POST',
+        data: {
+            _token:     $('meta[name="csrf-token"]').attr('content'),
+            fecha:      fecha,
+            comentario: texto,
+        },
+        success: function() {
+            _comentariosCache[fecha] = texto;
+            _aplicarIconoComentario(fecha, texto);
+        },
+        error: function() {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo guardar el comentario.' });
+        }
+    });
+}
+
+function _eliminarComentario(fecha) {
+    $.ajax({
+        url: '/indicadores/comentarios/' + fecha,
+        type: 'DELETE',
+        data: { _token: $('meta[name="csrf-token"]').attr('content') },
+        success: function() {
+            delete _comentariosCache[fecha];
+            _aplicarIconoComentario(fecha, '');
+        },
+        error: function() {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar el comentario.' });
+        }
+    });
+}
