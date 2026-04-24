@@ -17,7 +17,7 @@ use App\Http\Controllers\TipoDeCambioController;
 use App\Http\Controllers\IndicadoresController;
 use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\PromocionesController;
-   
+
 use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -135,6 +135,16 @@ Route::post('/membresias/membresias_cajero_table', [MembershipController::class,
 
 
 
+
+#################
+# PROCEPAGO
+Route::middleware('auth')->controller(\App\Http\Controllers\ProcepagoController::class)->group(function () {
+    Route::get('/procepago/importacion',  'index')->name('procepago.importacion');
+    Route::post('/procepago/importacion', 'importar')->name('procepago.importacion.store');
+    Route::post('/procepago/table',       'table')->name('procepago.table');
+    Route::post('/procepago/hojas',       'hojas')->name('procepago.hojas');
+});
+# / PROCEPAGO
 
 #################
 # COMPAQ

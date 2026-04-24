@@ -80,7 +80,7 @@
                     <li>
                         <a class="nav-link {{ $activePage === 'indicadores_cajero' ? '' : 'collapsed' }}" href="/indicadores_cajero">
                             <i class="bi bi-receipt"></i><span>Indicadores Cajero</span></a>
-                    </li>
+                    </li> 
   
                     <li>
                         <a class="nav-link {{ $activePage === 'membresias' ? '' : 'collapsed' }}"
@@ -97,6 +97,22 @@
         @endif
 
    
+        @if (auth()->user()->role == 1 or auth()->user()->role == 2)
+        <li class="nav-item">
+            <a class="nav-link {{ in_array($activePage, ['procepago_importacion']) ? '' : 'collapsed' }}"
+                data-bs-target="#procepago-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-bank"></i><span>Procepago</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="procepago-nav" class="nav-content collapse {{ in_array($activePage, ['procepago_importacion']) ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
+                <li>
+                    <a class="nav-link {{ $activePage === 'procepago_importacion' ? '' : 'collapsed' }}" href="/procepago/importacion">
+                        <i class="bi bi-cloud-upload"></i><span>Importación</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        @endif
+
         <li class="nav-item">
             <a class="nav-link {{ $activePage === 'corte_caja' ? '' : 'collapsed' }}" href="/corte_caja">
                 <i class="bi bi-receipt"></i>
