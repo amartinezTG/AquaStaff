@@ -250,7 +250,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> 
  
             <div  class="row">
                 <div class="col-12">
@@ -274,6 +274,7 @@
                                             <th colspan="4" class="text-center">Mov. Membresía</th>
 
                                             <th rowspan="2">Garantia</th>
+                                            <th colspan="2" class="text-center">Domiciliaciones (Procepago)</th>
                                             <th rowspan="2">$ Total día</th>
                                             <th rowspan="2">$ Total Sin IVA</th>
                                             <th rowspan="2">Comentario</th>
@@ -299,6 +300,10 @@
                                             <th>Renov.</th>
                                             <th>$ Compra</th>
                                             <th>$ Renov.</th>
+
+                                            <!-- Domiciliaciones (Procepago) -->
+                                            <th># Renov.</th>
+                                            <th>$ Depósito</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -322,6 +327,8 @@
                                                 <th></th><!-- sum_compra_membresia -->
                                                 <th></th><!-- sum__renovacion_membresia -->
                                                 <th></th><!-- lavados_cortesia -->
+                                                <th></th><!-- domiciliaciones_cnt -->
+                                                <th></th><!-- domiciliaciones_deposito -->
                                                 <th></th><!-- suma_total_dia -->
                                                 <th></th><!-- suma_total_dia_iva -->
                                                 <th></th><!-- comentario -->

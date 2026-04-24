@@ -28,7 +28,7 @@ class IndicadoresController extends Controller
         $this->catalogs = $catalogs;
     }
 
-     
+      
     function indicadores_cajero(){
         $activePage = 'Indicadores';
         return view('indicadores.indicadores_cajero', compact('activePage'));
@@ -42,8 +42,19 @@ class IndicadoresController extends Controller
 
         $from  = $request->input('fecha_inicio'); // opcional
         $until = $request->input('fecha_final');  // opcional
- 
+
         $rows = LocalTransaction::resumenPorDia($from, $until);
+
+        // Domiciliaciones de procepago agrupadas por día
+        $domiciliaciones = DB::table('procepago_liquidaciones')
+            ->where('servicio', 'Domiciliaciones')
+            ->when($from,  fn($q) => $q->whereDate('fecha', '>=', $from))
+            ->when($until, fn($q) => $q->whereDate('fecha', '<=', $until))
+            ->selectRaw('DATE(fecha) as dia, COUNT(*) as cnt, SUM(deposito) as total_deposito')
+            ->groupBy('dia')
+            ->get()
+            ->keyBy('dia');
+
         $data  = [];
         if ($rows) {
             foreach ($rows as $key => $row) {
@@ -54,6 +65,8 @@ class IndicadoresController extends Controller
 
                 $lavados_membresia_total = $lavados_express_membresia + $lavados_basico_membresia
                                          + $lavados_ultra_membresia  + $lavados_deluxe_membresia;
+
+                $dom = $domiciliaciones->get($row['fecha']);
 
                 $data[] = array(
                     'fecha'                     => $row['fecha'],
@@ -76,6 +89,8 @@ class IndicadoresController extends Controller
                     'sum_compra_membresia'      => $row['sum_compra_membresia'],
                     'sum__renovacion_membresia' => $row['sum__renovacion_membresia'], // ojo: doble underscore según tu alias
                     'lavados_cortesia'          => $row['lavados_cortesia'],
+                    'domiciliaciones_cnt'       => $dom ? (int)$dom->cnt : 0,
+                    'domiciliaciones_deposito'  => $dom ? (float)$dom->total_deposito : 0,
 
                     'suma_total_dia'            => $row['suma_total_dia'],
                     'suma_total_dia_iva'         => $row['suma_total_dia']/1.08

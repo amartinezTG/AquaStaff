@@ -13,7 +13,7 @@
             <i class="bi bi-list toggle-sidebar-btn"></i>
         </div>
         @include('layout.nav-header')
-    </header>  
+    </header>   
 
     <main id="main" class="main">
         <style>
@@ -219,7 +219,7 @@
             },
             complete: function() { spinner.classList.add('d-none'); }
         });
-    }
+    }  
 
     // ── Importar ─────────────────────────────────────────────────────────────
     function importar() {
@@ -322,10 +322,21 @@
                   filename:'Procepago_Liquidaciones', exportOptions:{ columns:[0,1,2,3,4,5,6,7,8,9,10] } },
                 { extend:'copy',  text:'<i class="ti ti-copy me-1"></i>Copiar', className:'btn btn-warning buttons-copy' },
             ],
+            footerCallback: function() {
+                var api  = this.api();
+                var fmt  = (v, dec) => '$' + v.toLocaleString('es-MX',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+                var toNum = v => parseFloat(String(v).replace(/[$,\s]/g,'')) || 0;
+                var sum  = col => api.column(col,{search:'applied'}).data().reduce((a,b) => a + toNum(b), 0);
+                document.getElementById('foot-importe').textContent  = fmt(sum(4), 2);
+                document.getElementById('foot-comision').textContent = fmt(sum(5), 4);
+                document.getElementById('foot-iva').textContent      = fmt(sum(6), 4);
+                document.getElementById('foot-deposito').textContent = fmt(sum(7), 2);
+            },
         });
     }
 
     function calcularTotales(data) {
+        // totales iniciales antes de cualquier búsqueda — footerCallback los reemplazará al dibujar
         const sum = (key) => data.reduce((a,r) => a + parseFloat(r[key]||0), 0);
         const fmt = (v, dec=2) => '$' + v.toLocaleString('es-MX',{minimumFractionDigits:dec,maximumFractionDigits:dec});
         document.getElementById('foot-importe').textContent  = fmt(sum('importe'));

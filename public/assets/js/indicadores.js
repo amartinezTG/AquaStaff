@@ -1,7 +1,7 @@
 console.log("Indicadores JS cargado");
 
 let chartInstances = {};
-
+ 
 function indicadoresTable(){
         if ($.fn.DataTable.isDataTable('#indicadores_table')) {
             $('#indicadores_table').DataTable().clear().destroy();
@@ -111,6 +111,11 @@ function indicadoresTable(){
                 { data: 'sum__renovacion_membresia', render: $.fn.dataTable.render.number(',', '.', 2)}, // ojo: doble underscore según tu alias
                 { data: 'lavados_cortesia'},
 
+                { data: 'domiciliaciones_cnt', className: 'text-center fw-bold',
+                  render: d => d > 0 ? `<span style="color:#0d6efd;font-weight:700;">${d}</span>` : '<span class="text-muted">—</span>' },
+                { data: 'domiciliaciones_deposito', className: 'text-end',
+                  render: d => d > 0 ? '<span style="color:#0d6efd;">$' + parseFloat(d).toLocaleString('es-MX',{minimumFractionDigits:2}) + '</span>' : '<span class="text-muted">—</span>' },
+
                 { data: 'suma_total_dia', render: $.fn.dataTable.render.number(',', '.', 2)},
                 { data: 'suma_total_dia_iva', render: $.fn.dataTable.render.number(',', '.', 2)},
                 {
@@ -137,20 +142,21 @@ function indicadoresTable(){
                 // 0=fecha,1=total_eventos,2=lav_paquete,3=lav_express,4=lav_basico,5=lav_ultra,
                 // 6=lav_deluxe,7=$paquetes,8=lav_memb,9=lav_exp_memb,10=lav_bas_memb,
                 // 11=lav_ult_memb,12=lav_del_memb,13=compra,14=renov,15=$compra,16=$renov,
-                // 17=cortesia,18=$total,19=$sinIVA,20=comentario
-                var intCols = [1,2,3,4,5,6,8,9,10,11,12,13,14,17];
+                // 17=cortesia,18=dom_cnt,19=dom_deposito,20=$total,21=$sinIVA,22=comentario
+                var intCols = [1,2,3,4,5,6,8,9,10,11,12,13,14,17,18];
                 intCols.forEach(function(col) {
                     var total = api.column(col, { page: 'all' }).data().reduce(function(a, b) {
-                        return (parseInt(a) || 0) + (parseInt(b) || 0);
+                        var val = typeof b === 'string' ? parseInt(b.replace(/<[^>]+>/g,'').trim()) : parseInt(b);
+                        return (parseInt(a) || 0) + (val || 0);
                     }, 0);
                     $(api.column(col).footer()).html(total.toLocaleString('es-MX'));
                 });
 
                 // Columnas monetarias (formateadas con 2 decimales)
-                var moneyCols = [7, 15, 16, 18, 19];
+                var moneyCols = [7, 15, 16, 19, 20, 21];
                 moneyCols.forEach(function(col) {
                     var total = api.column(col, { page: 'all' }).data().reduce(function(a, b) {
-                        var val = typeof b === 'string' ? parseFloat(b.replace(/,/g, '')) : parseFloat(b);
+                        var val = typeof b === 'string' ? parseFloat(b.replace(/[<][^>]+[>]|\$|,/g, '')) : parseFloat(b);
                         return (parseFloat(a) || 0) + (val || 0);
                     }, 0);
                     $(api.column(col).footer()).html('$' + total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
