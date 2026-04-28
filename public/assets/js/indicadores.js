@@ -1,7 +1,7 @@
 console.log("Indicadores JS cargado");
 
 let chartInstances = {};
- 
+    
 function indicadoresTable(){
         if ($.fn.DataTable.isDataTable('#indicadores_table')) {
             $('#indicadores_table').DataTable().clear().destroy();
@@ -9,8 +9,7 @@ function indicadoresTable(){
         var fecha_inicio = $('#fecha_inicio').val();
         var fecha_final = $('#fecha_final').val();
         var indicadores_table = $('#indicadores_table').DataTable({
-            colReorder: true,
-            layout: {
+            layout: { 
                 topStart: ['buttons'],
                 bottomStart: ['pageLength', 'info'], // izquierda
                 bottomEnd: 'paging'                  // derecha
@@ -18,7 +17,7 @@ function indicadoresTable(){
             pageLength: 100,
             order: [
                 [0, 'desc']
-            ],  
+            ],   
             buttons: [
                 {
                     extend: 'excelHtml5',
@@ -1107,9 +1106,9 @@ function cargarComentarios(api) {
             Object.keys(map).forEach(function(fecha) {
                 _comentariosCache[fecha] = map[fecha].comentario;
             });
-            // Redibuja la columna comentario (índice 20) para reflejar el cache
-            api.column(20).nodes().each(function(cell, i) {
-                const fecha = api.cell(i, 20).data();
+            // Redibuja la columna comentario (índice 22) para reflejar el cache
+            api.column(22).nodes().each(function(cell, i) {
+                const fecha = api.cell(i, 22).data();
                 const texto = _comentariosCache[fecha] || '';
                 const color = texto ? '#2399b7' : '#ccc';
                 const title = texto ? texto : 'Sin comentario';
@@ -1201,8 +1200,11 @@ function _guardarComentario(fecha, texto) {
 function _eliminarComentario(fecha) {
     $.ajax({
         url: '/indicadores/comentarios/' + fecha,
-        type: 'DELETE',
-        data: { _token: $('meta[name="csrf-token"]').attr('content') },
+        type: 'POST',
+        data: {
+            _method: 'DELETE',
+            _token:  $('meta[name="csrf-token"]').attr('content'),
+        },
         success: function() {
             delete _comentariosCache[fecha];
             _aplicarIconoComentario(fecha, '');

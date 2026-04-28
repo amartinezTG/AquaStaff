@@ -54,7 +54,7 @@ class LocalTransaction extends Model
                 SUM(CASE WHEN t1.TransactionType IN (1) AND t1.Total <> 0 THEN t1.Total ELSE 0 END) AS sum__renovacion_membresia,
 
                 -- Cortesía
-                SUM(CASE WHEN t1.TransactionType = 2 AND t1.Total = 0 AND t1.PaymentType = 3 AND t1.Membership NOT IN ('f104f389-103f-44fa-bd41-f948af1ecbb7','92a43e72-4e6e-4ecc-8b80-b6a921166cdb','e7089f5a-8d86-40e2-8b87-c092fd026f5d' ,'81e4abd3-0ead-4d5b-a834-08a1e7a6a9ca') THEN 1 ELSE 0 END) AS lavados_cortesia,
+                SUM(CASE WHEN t1.PaymentType = 3 THEN 1 ELSE 0 END) AS lavados_cortesia,
 
                 -- Total del día
                 SUM(t1.Total) AS suma_total_dia,
@@ -72,7 +72,7 @@ class LocalTransaction extends Model
 
     public static function indicadores_pagos_table(?string $from = null, ?string $until = null){
         $resultados = DB::select("
-                SELECT 
+                SELECT  
                     DATE(t1.TransationDate) AS fecha,
                     -- Conteo total de eventos por día
                     COUNT(*) AS total_eventos,

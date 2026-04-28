@@ -130,9 +130,9 @@
                 background-color: #f0f9ff;
             }
 
-            /* Últimas columnas importantes (totales) */
-            #indicadores_table tbody td:nth-last-child(2),
-            #indicadores_table tbody td:last-child {
+            /* Últimas columnas importantes (totales) — col 20=$Total, col 21=$SinIVA */
+            #indicadores_table tbody td:nth-last-child(3),
+            #indicadores_table tbody td:nth-last-child(2) {
                 background-color: #fff3cd;
                 font-weight: 700;
                 color: #856404;
@@ -250,8 +250,8 @@
                         </div>
                     </div>
                 </div>
-            </div> 
- 
+            </div>       
+  
             <div  class="row">
                 <div class="col-12">
                     <div class="card " style="border-left: 5px solid #2399b7ff;">
