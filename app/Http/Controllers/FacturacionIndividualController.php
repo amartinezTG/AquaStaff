@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
-  
+   
 class FacturacionIndividualController extends Controller
 { 
     protected $catalogs;
@@ -585,7 +585,7 @@ class FacturacionIndividualController extends Controller
         $data = json_decode($body, true);
 
         if (!empty($data['token'])) {
-            Cache::forever($cacheKey, $data['token']);
+            Cache::put($cacheKey, $data['token'], now()->addDays(29));
             return ['token' => $data['token'], 'error' => null];
         }
 
