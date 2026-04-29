@@ -15,7 +15,7 @@ class StaffUserController extends Controller
     {
         $staffUsers = StaffUser::all();
         return view('staff_users.index', compact('staffUsers'));
-    }
+    } 
 
     public function showLoginForm()
     {
@@ -38,14 +38,13 @@ class StaffUserController extends Controller
         $credentials = $request->only('email', 'password');
      
         if (Auth::attempt($credentials)) {
-            // Obtener el usuario autenticado
             $user = Auth::user();
-            /*
-            // Verificar si la cuenta está activa
-            if ($user->activate != 1) {
-                Auth::logout(); // Desconectar al usuario
-                return back()->withErrors(['general' => 'La cuenta no está activada']);
-            }*/
+
+            if ($user->active != 1) {
+                Auth::logout();
+                return back()->withErrors(['general' => 'Tu cuenta está desactivada. Contacta al administrador.']);
+            }
+
             return redirect()->intended('/dashboard');
         }
 
@@ -72,7 +71,7 @@ class StaffUserController extends Controller
 
         return view('usuarios.staff_users', compact('activePage', 'catalogs', 'staff_users'));
 
-    }
+    } 
 
     public function user_form(Request $request){
 
@@ -94,8 +93,8 @@ class StaffUserController extends Controller
     
 
         if ($request->id) {
-            $StaffUser = StaffUser::find( $request->id );
-            
+            $StaffUser = StaffUser::find($request->id);
+
             if ($request->password) {
                 $request->validate([
                     'name'      => 'required',
@@ -107,7 +106,6 @@ class StaffUserController extends Controller
                 ], [
                     'name.required'      => 'Campo requerido',
                     'email.required'     => 'Usuario requerido',
-                   // 'email.email'        => 'Debes agregar un correo válido',
                     'email.unique'       => 'El usuario ya existe, favor de ingresar otro',
                     'role.required'      => 'Campo ROL requerido',
                     'active.required'    => 'Campo STATUS requerido',
@@ -116,33 +114,23 @@ class StaffUserController extends Controller
                     'password.confirmed' => 'Las contraseñas no coinciden.'
                 ]);
 
-                $StaffUser->name   = $request->name;
-                $StaffUser->email  = $request->email;
-                $StaffUser->role   = $request->role;
-                $StaffUser->active = $request->active;
                 $StaffUser->password = Hash::make($request->password);
 
-            }else{
+            } else {
                 $request->validate([
                     'name'      => 'required',
-                    'email'     => ['required', 'email', 'unique:staff_users,email,' . $request->id],
-
-                  //  'email' => ['required', 'email', 'unique:users,email,' . auth()->id()],
-
+                    'email'     => ['required', 'unique:staff_users,email,' . $request->id],
                     'role'      => 'required',
                     'active'    => 'required'
                 ], [
                     'name.required'      => 'Campo requerido',
                     'email.required'     => 'Usuario requerido',
-                    //'email.email'        => 'Debes agregar un correo válido',
                     'email.unique'       => 'El usuario ya existe, favor de ingresar otro',
                     'role.required'      => 'Campo ROL requerido',
                     'active.required'    => 'Campo STATUS requerido'
                 ]);
-
             }
 
-            $StaffUser = StaffUser::find( $request->id );
             $StaffUser->name   = $request->name;
             $StaffUser->email  = $request->email;
             $StaffUser->role   = $request->role;
@@ -193,7 +181,7 @@ class StaffUserController extends Controller
     }
 
 
-    public function delete_user( $user_id){ 
+    public function delete_user( $user_id){
         $catalogs        = new GeneralCatalogs();
         $activePage      = 'usuarios';
         $user         = StaffUser::where('id', $user_id)->first();
@@ -206,6 +194,26 @@ class StaffUserController extends Controller
                             ->get();
 
         return view('usuarios', compact('activePage', 'catalogs', 'users'));
+    }
+
+    public function toggleActive(Request $request, $user_id)
+    {
+        if (auth()->user()->role != 1) {
+            return response()->json(['error' => 'Sin permisos'], 403);
+        }
+
+        if (auth()->id() == $user_id) {
+            return response()->json(['error' => 'No puedes desactivarte a ti mismo'], 422);
+        }
+
+        $user = StaffUser::findOrFail($user_id);
+        $user->active = $user->active == 1 ? 0 : 1;
+        $user->save();
+
+        return response()->json([
+            'active' => $user->active,
+            'label'  => $user->active == 1 ? 'Activo' : 'Inactivo',
+        ]);
     }
 
 

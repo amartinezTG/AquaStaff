@@ -17,7 +17,7 @@ use App\Http\Controllers\TipoDeCambioController;
 use App\Http\Controllers\IndicadoresController;
 use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\PromocionesController;
-
+ 
 use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -248,6 +248,7 @@ Route::get('/usuario', [StaffUserController::class, 'user_form'])->name('usuario
 Route::post('/usuario', [StaffUserController::class, 'user_submit_form'])->name('crear_usuario');
 Route::get('/editar_usuario/{usuario_id}', [StaffUserController::class, 'user_form'])->middleware('auth');
 Route::get('/eliminar_usuario/{user_id}', [StaffUserController::class, 'delete_user'])->middleware('auth');
+Route::post('/usuario/toggle-active/{user_id}', [StaffUserController::class, 'toggleActive'])->middleware('auth')->name('usuario.toggle_active');
 Route::get('/logout', [StaffUserController::class, 'logout'])->name('logout');
 
 #################
