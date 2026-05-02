@@ -392,11 +392,18 @@
                 </div>
             </div>
 
-            <!-- Tabla de indicadores de membresías -->
+            <!-- Tabla de indicado res de membresías -->
             <div class="row">
                 <div class="col-12">
                     <div class="card" style="border-left: 5px solid #6f42c1;">
                         <div class="card-body p-4">
+                            <div class="d-flex align-items-start gap-2 mb-3">
+                                <i class="ti ti-info-circle text-info mt-1" style="font-size:1.1rem;"></i>
+                                <p class="text-muted mb-0" style="font-size:0.82rem; line-height:1.5;">
+                                    Una fila por <strong>cliente</strong> con membresía activa. Muestra el tipo de membresía vigente y cuántos lavados realizó dentro del período seleccionado.
+                                    Los clientes sin uso en el período no aparecen en la tabla.
+                                </p>
+                            </div>
                             <div class="table-responsive">
                                 <table id="indicadores_membresias_table" class="table table-bordered table-hover table-striped dt-responsive nowrap w-100 dataTable">
                                     <thead>

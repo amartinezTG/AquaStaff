@@ -13,7 +13,7 @@
             <i class="bi bi-list toggle-sidebar-btn"></i>
         </div>
         @include('layout.nav-header')
-    </header>
+    </header> 
   
     <main id="main" class="main">
         <style>
@@ -290,6 +290,14 @@
                 <div class="col-12">
                     <div class="card" style="border-left: 5px solid #2399b7ff;">
                         <div class="card-body p-4">
+                            <div class="d-flex align-items-start gap-2 mb-3">
+                                <i class="ti ti-info-circle text-info mt-1" style="font-size:1.1rem;"></i>
+                                <p class="text-muted mb-0" style="font-size:0.82rem; line-height:1.5;">
+                                    Listado de transacciones de <strong>compra</strong> y <strong>renovación</strong> de membresías registradas en cajero.
+                                    Filtra por rango de fechas y usa los botones para exportar a Excel o PDF.
+                                    El resumen por paquete y las gráficas se actualizan automáticamente con cada consulta.
+                                </p>
+                            </div>
                             <div class="table-responsive">
                                 <table id="membresias_table" class="table table-bordered table-hover table-striped dt-responsive nowrap w-100 dataTable">
                                     <thead>
