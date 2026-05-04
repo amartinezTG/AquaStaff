@@ -195,7 +195,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>   
+                    </div>    
   
                     <!-- Selección info -->
                     <div id="seleccionInfo" class="alert alert-info py-2 mb-2" style="display:none; font-size:.82rem;">
@@ -235,8 +235,14 @@
                 <div class="tab-pane fade" id="tabHistorial">
                     <div class="card" style="border-left:5px solid #0d6efd;">
                         <div class="card-body p-3">
-                            <div class="d-flex justify-content-end mb-2">
-                                <button id="btnRecargarHistorial" class="btn btn-sm btn-outline-secondary">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input" type="checkbox" id="ocultarCanceladas" checked>
+                                    <label class="form-check-label fw-semibold" for="ocultarCanceladas" style="font-size:.82rem;">
+                                        Ocultar canceladas
+                                    </label>
+                                </div>
+                                <button id="btnRecargarHistorial" class="btn btn-sm btn-outline-secondary ms-auto">
                                     <i class="bi bi-arrow-clockwise me-1"></i>Recargar
                                 </button>
                             </div>
@@ -254,6 +260,26 @@
                                         <th>Fecha CFDI</th>
                                         <th>Generado por</th>
                                         <th>Acciones</th>
+                                    </tr>
+                                    <tr id="historial-filters">
+                                        <th></th>
+                                        <th><input type="text" class="form-control form-control-sm" placeholder="UUID..."></th>
+                                        <th>
+                                            <select class="form-select form-select-sm">
+                                                <option value="">Todos</option>
+                                                <option>Efectivo</option>
+                                                <option>Tarjeta de Débito</option>
+                                                <option>Tarjeta de Crédito</option>
+                                            </select>
+                                        </th>
+                                        <th><input type="text" class="form-control form-control-sm" placeholder="Total..."></th>
+                                        <th></th>
+                                        <th><input type="date" class="form-control form-control-sm"></th>
+                                        <th><input type="date" class="form-control form-control-sm"></th>
+                                        <th><input type="text" class="form-control form-control-sm" placeholder="Fecha..."></th>
+                                        <th><input type="text" class="form-control form-control-sm" placeholder="Fecha..."></th>
+                                        <th><input type="text" class="form-control form-control-sm" placeholder="Usuario..."></th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>

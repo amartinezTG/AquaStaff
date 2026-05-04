@@ -155,13 +155,7 @@ class FacturacionController extends Controller
         $byPayment = $transactions->groupBy('PaymentType');
 
         foreach ($byPayment as $paymentType => $paymentGroup) {
-            if ((int)$paymentType === 1 || (int)$paymentType === 2) {
-                foreach ($paymentGroup->groupBy('Atm') as $cajero => $cajeroGroup) {
-                    $groupedTransactions[] = $cajeroGroup;
-                }
-            } else {
-                $groupedTransactions[] = $paymentGroup;
-            }
+            $groupedTransactions[] = $paymentGroup;
         }
 
         // Obtener token desde FacturoPorTi producción
@@ -195,16 +189,12 @@ class FacturacionController extends Controller
                 $endDateGroup    = $group->max('TransationDate');
                 $paymentType     = $group->first()->PaymentType;
                 $paymentTypeName = $this->catalogs->folio_payment_type[$paymentType] ?? 'Desconocido';
-                $cajeroInfo      = (((int)$paymentType === 1 || (int)$paymentType === 2) && $group->first()->Atm)
-                    ? '_' . $group->first()->Atm
-                    : '';
 
                 $invoiceName = substr(
                     'GLOBAL_' .
                     Carbon::parse($startDateGroup)->format('Ymd') . '_' .
                     Carbon::parse($endDateGroup)->format('Ymd') . '_' .
-                    str_replace(' ', '_', $paymentTypeName) .
-                    $cajeroInfo,
+                    str_replace(' ', '_', $paymentTypeName),
                     0, 60
                 );
 
@@ -470,7 +460,7 @@ class FacturacionController extends Controller
 
         if (!$globalInvoice->uuid) {
             return response()->json(['error' => 'Esta factura no tiene UUID registrado y no puede cancelarse vía API.'], 400);
-        }  
+        }    
 
         // Construir payload de cancelación para FacturoPorTi (/servicios/cancelar/csd)
         $cancelJSON = [

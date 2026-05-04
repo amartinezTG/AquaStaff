@@ -23,7 +23,7 @@ function buscarTransacciones() {
     if (facturacionTable) {
         facturacionTable.destroy();
         $('#facturacion_table tbody').empty();
-    }
+    } 
 
     selectedIds.clear();
     actualizarSeleccionInfo();
@@ -353,12 +353,23 @@ document.getElementById('btnRecargarHistorial')?.addEventListener('click', funct
 function cargarHistorial() {
     Swal.fire({ title: 'Cargando historial...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 
+    $.fn.dataTable.ext.search = $.fn.dataTable.ext.search.filter(f => f._historialCanceladas !== true);
+
+    const filtroCanceladas = function(settings, data, dataIndex, rowData) {
+        if (settings.nTable.id !== 'historial_table') return true;
+        const ocultar = document.getElementById('ocultarCanceladas')?.checked;
+        return ocultar ? !rowData.cancelada_at : true;
+    };
+    filtroCanceladas._historialCanceladas = true;
+    $.fn.dataTable.ext.search.push(filtroCanceladas);
+
     historialTable = $('#historial_table').DataTable({
         processing: true,
         serverSide: false,
         destroy: true,
         paging: true,
         pageLength: 25,
+        orderCellsTop: true,
         order: [[7, 'desc']],
         ajax: {
             url: '/facturacion/historial',
@@ -401,7 +412,6 @@ function cargarHistorial() {
                 render: function(d, t, row) {
                     const fname = encodeURIComponent(row.file_name || row.name);
                     let btns = '';
-
                     if (row.cancelada_at) {
                         btns += `<span class="badge bg-danger">Cancelada</span>`;
                     } else {
@@ -431,7 +441,22 @@ function cargarHistorial() {
                 exportOptions: { columns: [0,1,2,3,4,5,6,7,8] }
             },
         ],
-        initComplete: function() { Swal.close(); }
+        initComplete: function() {
+            Swal.close();
+            // Conectar inputs de la fila de filtros a cada columna
+            $('#historial-filters th').each(function(i) {
+                const input = $(this).find('input, select');
+                if (!input.length) return;
+                input.on('keyup change', function() {
+                    historialTable.column(i).search(this.value).draw();
+                });
+            });
+        }
+    });
+
+    // Checkbox ocultar canceladas
+    document.getElementById('ocultarCanceladas')?.addEventListener('change', function() {
+        historialTable.draw();
     });
 }
 
