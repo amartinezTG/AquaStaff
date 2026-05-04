@@ -337,6 +337,7 @@ class FacturacionController extends Controller
                         'paymentType'      => $paymentType,
                         'periodicidad'     => $periodicidad,
                         'created_by'       => auth()->id(),
+                        'fecha_emision'    => $fechaEmision->format('Y-m-d H:i:s'),
                     ]);
 
                     if ($pdf && $xml) {
@@ -404,13 +405,14 @@ class FacturacionController extends Controller
                 gi.periodicidad,
                 gi.cancelada_at,
                 gi.created_at,
+                gi.fecha_emision,
                 gi.created_by,
                 u.name AS generado_por,
                 COUNT(lt.local_transaction_id) AS num_transacciones
             FROM global_invoice gi
             LEFT JOIN local_transaction lt ON lt.global_invoice_id = gi.id
             LEFT JOIN users u ON u.id = gi.created_by
-            GROUP BY gi.id, gi.name, gi.uuid, gi.serie, gi.folio, gi.file_name, gi.total, gi.start_date_group, gi.end_date_group, gi.paymentType, gi.periodicidad, gi.cancelada_at, gi.cancel_motivo, gi.created_at, gi.created_by, u.name
+            GROUP BY gi.id, gi.name, gi.uuid, gi.serie, gi.folio, gi.file_name, gi.total, gi.start_date_group, gi.end_date_group, gi.paymentType, gi.periodicidad, gi.cancelada_at, gi.cancel_motivo, gi.created_at, gi.fecha_emision, gi.created_by, u.name
             ORDER BY gi.created_at DESC
         ";
 
@@ -438,6 +440,7 @@ class FacturacionController extends Controller
                 'periodicidad'        => $row->periodicidad,
                 'num_transacciones'   => $row->num_transacciones,
                 'created_at'          => $row->created_at,
+                'fecha_emision'       => $row->fecha_emision ?? null,
                 'cancelada_at'        => $row->cancelada_at ?? null,
                 'generado_por'        => $row->generado_por ?? null,
             ];
@@ -467,7 +470,7 @@ class FacturacionController extends Controller
 
         if (!$globalInvoice->uuid) {
             return response()->json(['error' => 'Esta factura no tiene UUID registrado y no puede cancelarse vía API.'], 400);
-        } 
+        }  
 
         // Construir payload de cancelación para FacturoPorTi (/servicios/cancelar/csd)
         $cancelJSON = [

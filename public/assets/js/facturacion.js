@@ -38,7 +38,7 @@ function buscarTransacciones() {
         scroller: true,
         deferRender: true,
         order: [[1, 'desc']],
-        ajax: {
+        ajax: { 
             url: '/facturacion/transacciones',
             type: 'POST', 
             data: {
@@ -387,7 +387,8 @@ function cargarHistorial() {
             { data: 'num_transacciones', className: 'text-center' },
             { data: 'start_date_group', render: (d) => d ? d.substring(0, 10) : '' },
             { data: 'end_date_group',   render: (d) => d ? d.substring(0, 10) : '' },
-            { data: 'created_at',       render: (d) => d ? d.substring(0, 16).replace('T', ' ') : '' },
+            { data: 'created_at',    render: (d) => d ? d.substring(0, 16).replace('T', ' ') : '' },
+            { data: 'fecha_emision', render: (d) => d ? d.substring(0, 16).replace('T', ' ') : '<span class="text-muted">—</span>' },
             {
                 data: 'generado_por',
                 className: 'text-center',

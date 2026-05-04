@@ -202,7 +202,7 @@
                         <i class="bi bi-info-circle me-1"></i>
                         <span id="seleccionTexto">0 transacciones seleccionadas — $0.00</span>
                         <button class="btn btn-sm btn-outline-secondary ms-3" onclick="limpiarSeleccion()">Limpiar selección</button>
-                    </div>
+                    </div> 
 
                     <!-- Tabla -->
                     <div class="card" style="border-left:5px solid #0d6efd;">
@@ -250,7 +250,8 @@
                                         <th>Transacciones</th>
                                         <th>Inicio</th>
                                         <th>Fin</th>
-                                        <th>Generada</th>
+                                        <th>Generada (sistema)</th>
+                                        <th>Fecha CFDI</th>
                                         <th>Generado por</th>
                                         <th>Acciones</th>
                                     </tr>
