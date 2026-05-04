@@ -26,7 +26,7 @@ return [
     | running in. This may determine how you prefer to configure various
     | services the appslication utilizes. Set this in your ".env" file.
     |
-    */
+    */ 
 
     'env' => env('APP_ENV', 'production'),
 
@@ -69,7 +69,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'America/Mexico_City',
 
     /*
     |--------------------------------------------------------------------------

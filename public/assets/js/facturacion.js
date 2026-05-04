@@ -27,7 +27,7 @@ function buscarTransacciones() {
 
     selectedIds.clear();
     actualizarSeleccionInfo();
-  
+   
     facturacionTable = $('#facturacion_table').DataTable({
         processing: true,
         serverSide: false,
@@ -342,6 +342,14 @@ document.getElementById('tabHistorialLink')?.addEventListener('click', function(
     }
 });
 
+document.getElementById('btnRecargarHistorial')?.addEventListener('click', function() {
+    if (historialTable) {
+        historialTable.destroy();
+        historialTable = null;
+    }
+    cargarHistorial();
+});
+
 function cargarHistorial() {
     Swal.fire({ title: 'Cargando historial...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 
@@ -381,6 +389,11 @@ function cargarHistorial() {
             { data: 'end_date_group',   render: (d) => d ? d.substring(0, 10) : '' },
             { data: 'created_at',       render: (d) => d ? d.substring(0, 16).replace('T', ' ') : '' },
             {
+                data: 'generado_por',
+                className: 'text-center',
+                render: (d) => d ? `<small>${d}</small>` : '<span class="text-muted">—</span>'
+            },
+            {
                 data: null,
                 orderable: false,
                 className: 'text-center',
@@ -414,7 +427,7 @@ function cargarHistorial() {
                 text: '<i class="ti ti-file-spreadsheet me-1"></i>Excel',
                 className: 'btn btn-success buttons-excel',
                 filename: 'Historial_Facturas_Globales',
-                exportOptions: { columns: [0,1,2,3,4,5,6,7] }
+                exportOptions: { columns: [0,1,2,3,4,5,6,7,8] }
             },
         ],
         initComplete: function() { Swal.close(); }

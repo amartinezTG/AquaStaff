@@ -34,7 +34,7 @@ class FacturacionController extends Controller
         $fechaInicio = $request->fecha_inicio ?? Carbon::now()->subDays(1)->format('Y-m-d');
         $fechaFinal  = $request->fecha_final  ?? Carbon::now()->format('Y-m-d');
 
-        $sql = "
+        $sql = " 
             SELECT
                 lt.local_transaction_id,
                 lt._id,
@@ -336,6 +336,7 @@ class FacturacionController extends Controller
                         'end_date_group'   => $endDateGroup,
                         'paymentType'      => $paymentType,
                         'periodicidad'     => $periodicidad,
+                        'created_by'       => auth()->id(),
                     ]);
 
                     if ($pdf && $xml) {
@@ -358,8 +359,13 @@ class FacturacionController extends Controller
                     ];
                 } else {
                     DB::rollBack();
+                    $infoTecnica = $response['estatus']['informacionTecnica'] ?? '';
+                    $errorMsg = 'Error al timbrar';
+                    if (str_contains($infoTecnica, '72 horas') || str_contains($infoTecnica, 'rango de la fecha')) {
+                        $errorMsg = 'La fecha del CFDI está fuera del rango permitido por el SAT (máximo 72 horas). Cambia la fecha a una más reciente e intenta de nuevo.';
+                    }
                     return response()->json([
-                        'error'            => 'Error al timbrar',
+                        'error'            => $errorMsg,
                         'estatus'          => $response['estatus'] ?? null,
                         'respuesta_completa' => $response,
                     ], 500);
@@ -398,10 +404,13 @@ class FacturacionController extends Controller
                 gi.periodicidad,
                 gi.cancelada_at,
                 gi.created_at,
+                gi.created_by,
+                u.name AS generado_por,
                 COUNT(lt.local_transaction_id) AS num_transacciones
             FROM global_invoice gi
             LEFT JOIN local_transaction lt ON lt.global_invoice_id = gi.id
-            GROUP BY gi.id, gi.name, gi.uuid, gi.serie, gi.folio, gi.file_name, gi.total, gi.start_date_group, gi.end_date_group, gi.paymentType, gi.periodicidad, gi.cancelada_at, gi.cancel_motivo, gi.created_at
+            LEFT JOIN users u ON u.id = gi.created_by
+            GROUP BY gi.id, gi.name, gi.uuid, gi.serie, gi.folio, gi.file_name, gi.total, gi.start_date_group, gi.end_date_group, gi.paymentType, gi.periodicidad, gi.cancelada_at, gi.cancel_motivo, gi.created_at, gi.created_by, u.name
             ORDER BY gi.created_at DESC
         ";
 
@@ -430,6 +439,7 @@ class FacturacionController extends Controller
                 'num_transacciones'   => $row->num_transacciones,
                 'created_at'          => $row->created_at,
                 'cancelada_at'        => $row->cancelada_at ?? null,
+                'generado_por'        => $row->generado_por ?? null,
             ];
         }, $rows);
 
@@ -457,7 +467,7 @@ class FacturacionController extends Controller
 
         if (!$globalInvoice->uuid) {
             return response()->json(['error' => 'Esta factura no tiene UUID registrado y no puede cancelarse vía API.'], 400);
-        }
+        } 
 
         // Construir payload de cancelación para FacturoPorTi (/servicios/cancelar/csd)
         $cancelJSON = [
