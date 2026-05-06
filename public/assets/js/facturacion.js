@@ -24,7 +24,7 @@ function buscarTransacciones() {
         facturacionTable.destroy();
         $('#facturacion_table tbody').empty();
     } 
-
+ 
     selectedIds.clear();
     actualizarSeleccionInfo();
    
@@ -225,11 +225,16 @@ function generarFactura() {
     const periodicidad = document.getElementById('periodicidad').value;
     const paymentType  = document.getElementById('paymentType').value;
 
-    // Sugerencias por tipo de pago
+    const nombresPago = { 0: 'Efectivo', 1: 'Débito', 2: 'Crédito' };
+    const conceptosPago = {
+        0: 'INGRESOS POR SERVICIOS DE LAVADO EN EFECTIVO',
+        1: 'INGRESOS POR SERVICIOS DE LAVADO CON TARJETA DE DEBITO',
+        2: 'INGRESOS POR SERVICIOS DE LAVADO CON TARJETA DE CREDITO',
+    };
     const sugerencias = {
-        '0': 'INGRESOS POR SERVICIOS DE LAVADO EN EFECTIVO',
-        '1': 'INGRESOS POR SERVICIOS DE LAVADO CON TARJETA DE DEBITO',
-        '2': 'INGRESOS POR SERVICIOS DE LAVADO CON TARJETA DE CREDITO',
+        '0': conceptosPago[0],
+        '1': conceptosPago[1],
+        '2': conceptosPago[2],
         '':  'INGRESOS POR SERVICIOS DE LAVADO',
     };
 
@@ -237,6 +242,16 @@ function generarFactura() {
     const ahora = new Date();
     const pad   = n => String(n).padStart(2, '0');
     const fechaDefault = `${ahora.getFullYear()}-${pad(ahora.getMonth()+1)}-${pad(ahora.getDate())}T${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`;
+
+    // Agrupar IDs seleccionados por PaymentType usando los datos del DataTable
+    const grupos = { 0: [], 1: [], 2: [] };
+    facturacionTable.rows().data().each(function(row) {
+        if (selectedIds.has(row.local_transaction_id)) {
+            const pt = parseInt(row.payment_type);
+            if (grupos[pt] !== undefined) grupos[pt].push(row.local_transaction_id);
+        }
+    });
+    const gruposActivos = Object.entries(grupos).filter(([, ids]) => ids.length > 0);
 
     Swal.fire({
         title: 'Generar Factura Global',
@@ -246,6 +261,9 @@ function generarFactura() {
                 <div class="mb-3 p-2 rounded" style="background:#f8f9fa;">
                     <span class="text-muted">Transacciones:</span> <strong>${selectedIds.size}</strong>
                     &nbsp;|&nbsp;
+                    <span class="text-muted">Grupos:</span> <strong>${gruposActivos.length}</strong>
+                    (${gruposActivos.map(([pt, ids]) => `${nombresPago[pt]}: ${ids.length}`).join(', ')})
+                    &nbsp;|&nbsp;
                     <span class="text-muted">Periodicidad:</span> <strong>${periodicidad}</strong>
                 </div>
                 <div class="mb-3">
@@ -253,7 +271,7 @@ function generarFactura() {
                     <input type="datetime-local" id="swal-fecha" class="form-control form-control-sm" value="${fechaDefault}">
                 </div>
                 <hr class="my-2">
-                <label class="fw-bold mb-1">Concepto del CFDI</label>
+                <label class="fw-bold mb-1">Concepto base del CFDI</label>
                 <div class="mb-2 d-flex flex-wrap gap-1">
                     <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size:.72rem;"
                         onclick="document.getElementById('swal-concepto').value='INGRESOS POR SERVICIOS DE LAVADO EN EFECTIVO'">
@@ -275,14 +293,16 @@ function generarFactura() {
                 <textarea id="swal-concepto" class="form-control" rows="2" maxlength="255"
                     style="font-size:.82rem; text-transform:uppercase;"
                 >${conceptoDefault}</textarea>
-                <div class="text-muted mt-1" style="font-size:.72rem;">Máx. 255 caracteres</div>
+                <div class="text-muted mt-1" style="font-size:.72rem;">
+                    Máx. 255 caracteres. Se enviará una factura por grupo de forma de pago.
+                </div>
             </div>`,
         showCancelButton: true,
         confirmButtonText: 'Sí, generar',
         cancelButtonText:  'Cancelar',
         confirmButtonColor: '#198754',
         preConfirm: () => {
-            const fecha   = document.getElementById('swal-fecha').value;
+            const fecha    = document.getElementById('swal-fecha').value;
             const concepto = document.getElementById('swal-concepto').value.trim().toUpperCase();
             if (!fecha) {
                 Swal.showValidationMessage('La fecha de emisión es requerida.');
@@ -294,40 +314,77 @@ function generarFactura() {
             }
             return { fecha, concepto };
         }
-    }).then(result => {
+    }).then(async result => {
         if (!result.isConfirmed) return;
 
         const { fecha: fechaEmision, concepto } = result.value;
+        const token    = $('meta[name="csrf-token"]').attr('content');
+        const total    = gruposActivos.length;
+        let generadas  = 0;
+        let facturas   = [];
 
-        Swal.fire({ title: 'Generando factura...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+        for (let i = 0; i < gruposActivos.length; i++) {
+            const [pt, ids] = gruposActivos[i];
+            const nombreGrupo = nombresPago[pt] ?? 'Grupo';
+            const conceptoGrupo = conceptosPago[pt] ?? concepto;
 
-        $.ajax({
-            url:  '/facturacion/generar',
-            type: 'POST',
-            data: {
-                _token:        $('meta[name="csrf-token"]').attr('content'),
-                ids:           Array.from(selectedIds),
-                periodicidad:  periodicidad,
-                fecha_emision: fechaEmision,
-                concepto:      concepto,
-            },
-            success: function(resp) {
+            Swal.fire({
+                title: `Generando ${i + 1} de ${total}...`,
+                html: `<span style="font-size:.85rem;">
+                    <strong>${nombreGrupo}</strong> — ${ids.length.toLocaleString()} transacciones
+                    <br><small class="text-muted">Por favor espera, esto puede tardar unos segundos.</small>
+                </span>`,
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                const resp = await $.ajax({
+                    url:  '/facturacion/generar',
+                    type: 'POST',
+                    timeout: 300000,
+                    data: {
+                        _token:        token,
+                        ids:           ids,
+                        periodicidad:  periodicidad,
+                        fecha_emision: fechaEmision,
+                        concepto:      conceptoGrupo,
+                    },
+                });
+
+                generadas++;
+                facturas = facturas.concat(resp.invoices || []);
+
+                // Pausa entre grupos para no saturar
+                if (i < gruposActivos.length - 1) {
+                    await new Promise(r => setTimeout(r, 1500));
+                }
+
+            } catch (xhr) {
                 Swal.close();
-                const count = resp.invoices ? resp.invoices.length : 0;
+                const msg = xhr.responseJSON?.error || `Error al generar grupo ${nombreGrupo}.`;
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Factura(s) generada(s)',
-                    html: `Se generaron <strong>${count}</strong> factura(s) global(es).<br><small class="text-muted">Las transacciones ahora aparecen bloqueadas.</small>`,
-                }).then(() => {
+                    icon: 'error',
+                    title: `Error en grupo ${i + 1} de ${total} (${nombreGrupo})`,
+                    html: `${msg}${generadas > 0 ? `<br><small class="text-muted">Los ${generadas} grupo(s) anteriores ya fueron guardados.</small>` : ''}`,
+                });
+                if (generadas > 0) {
                     limpiarSeleccion();
                     buscarTransacciones();
-                });
-            },
-            error: function(xhr) {
-                Swal.close();
-                const msg = xhr.responseJSON?.error || 'Error al generar la factura.';
-                Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                }
+                return;
             }
+        }
+
+        Swal.close();
+        Swal.fire({
+            icon: 'success',
+            title: 'Factura(s) generada(s)',
+            html: `Se generaron <strong>${facturas.length}</strong> factura(s) global(es) en <strong>${generadas}</strong> grupo(s).<br><small class="text-muted">Las transacciones ahora aparecen bloqueadas.</small>`,
+        }).then(() => {
+            limpiarSeleccion();
+            buscarTransacciones();
         });
     });
 }
