@@ -250,7 +250,7 @@
                         </div>
                     </div>
                 </div>
-            </div>       
+            </div>
   
             <div  class="row">
                 <div class="col-12">
@@ -303,7 +303,7 @@
 
                                             <!-- Domiciliaciones (Procepago) -->
                                             <th># Renov.</th>
-                                            <th>$ Depósito</th>
+                                            <th>$ Importe</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>

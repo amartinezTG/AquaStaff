@@ -50,8 +50,8 @@ class IndicadoresController extends Controller
             ->where('servicio', 'Domiciliaciones')
             ->when($from,  fn($q) => $q->whereDate('fecha', '>=', $from))
             ->when($until, fn($q) => $q->whereDate('fecha', '<=', $until))
-            ->selectRaw('DATE(fecha) as dia, COUNT(*) as cnt, SUM(deposito) as total_deposito')
-            ->groupBy('dia')
+            ->selectRaw('DATE(fecha) as dia, COUNT(*) as cnt, SUM(importe) as total_deposito')
+            ->groupBy('dia') 
             ->get()
             ->keyBy('dia');
 
