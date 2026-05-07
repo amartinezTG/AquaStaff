@@ -58,10 +58,10 @@ class IndicadoresController extends Controller
         $data  = [];
         if ($rows) {
             foreach ($rows as $key => $row) {
-                $lavados_deluxe_membresia  = ($row['lavados_deluxe_membresia']  ?? 0) + ($row['QrMembresiaDeluxe']  ?? 0);
-                $lavados_ultra_membresia   = ($row['lavados_ultra_membresia']   ?? 0) + ($row['QrMembresiaUltra']   ?? 0);
-                $lavados_basico_membresia  = ($row['lavados_basico_membresia']  ?? 0) + ($row['QrMembresiaBasico']  ?? 0);
-                $lavados_express_membresia = ($row['lavados_express_membresia'] ?? 0) + ($row['QrMembresiaExpress'] ?? 0);
+                $lavados_deluxe_membresia  = ($row['lavados_deluxe_membresia']  ?? 0) ;
+                $lavados_ultra_membresia   = ($row['lavados_ultra_membresia']   ?? 0) ;
+                $lavados_basico_membresia  = ($row['lavados_basico_membresia']  ?? 0) ;
+                $lavados_express_membresia = ($row['lavados_express_membresia'] ?? 0) ;
 
                 $lavados_membresia_total = $lavados_express_membresia + $lavados_basico_membresia
                                          + $lavados_ultra_membresia  + $lavados_deluxe_membresia;

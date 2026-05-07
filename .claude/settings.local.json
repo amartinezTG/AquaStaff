@@ -42,7 +42,11 @@
       "Bash(echo \"Listo: $?\")",
       "Bash(grep -v \"^$\")",
       "Bash(xargs grep *)",
-      "Bash(findstr -i global)"
+      "Bash(findstr -i global)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\alejandro.martinez\\\\Desktop\\\\aqua\\\\AquaStaff\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "PowerShell(php -r \"$c = new mysqli\\('10.200.1.227', 'admin', 'T0t4lG4s2020', 'u514131194_d0CoK', 3306\\); if\\($c->connect_error\\){die\\('Error: '.$c->connect_error\\);} echo 'OK'; $c->close\\(\\);\")"
     ]
   }
 }

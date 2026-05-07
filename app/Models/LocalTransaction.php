@@ -53,7 +53,7 @@ class LocalTransaction extends Model
                 SUM(CASE WHEN t1.TransactionType IN (0) AND t1.Total <> 0 THEN t1.Total ELSE 0 END) AS sum_compra_membresia,
                 SUM(CASE WHEN t1.TransactionType IN (1) AND t1.Total <> 0 THEN t1.Total ELSE 0 END) AS sum__renovacion_membresia,
 
-                -- Cortesía
+                -- Cortesía 
                 SUM(CASE WHEN t1.PaymentType = 3 THEN 1 ELSE 0 END) AS lavados_cortesia,
 
                 -- Total del día
