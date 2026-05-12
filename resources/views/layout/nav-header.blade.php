@@ -3,28 +3,28 @@
 
     <ul class="sidebar-nav" id="sidebar-nav">
 
-        <li class="nav-item"> 
+        <li class="nav-item">    
             <a class="nav-link {{ $activePage === 'dashboard' ? '' : 'collapsed' }} " href="/dashboard">
                 <i class="bi bi-grid"></i>
                 <span>Dashboard</span>
             </a>
         </li><!-- End Dashboard Nav -->
 
-        @if (auth()->user()->role == 1 or auth()->user()->role == 2)
-            <li class="nav-item">
-                <a class="nav-link {{ $activePage === 'vending' ? '' : 'collapsed' }}" href="/vending">
-                    <i class="bi bi-safe2"></i>
-                    <span>Vending Machine</span>
-                </a>
-            </li><!-- End Vending Machine Nav -->
-        @endif
+        <!-- <li class="nav-item">
+            <a class="nav-link {{ $activePage === 'vending' ? '' : 'collapsed' }}" href="/vending">
+                <i class="bi bi-safe2"></i>
+                <span>Vending Machine</span>
+            </a>
+        </li>End Vending Machine Nav -->
+
+
  
-        <li class="nav-item">
+        <!-- <li class="nav-item">
             <a class="nav-link {{ $activePage === 'membresias' ? '' : 'collapsed' }}" href="/membresias">
                 <i class="bi bi-person-badge"></i>
                 <span>Membresías</span>
             </a>
-        </li>
+        </li> -->
          <li class="nav-item">
             <a class="nav-link {{ $activePage === 'membresia_cajero' ? '' : 'collapsed' }}" href="/membresias/cajero"><i class="bi bi-person-badge"></i><span>Membresías Cajero</span>
             </a>
@@ -40,11 +40,11 @@
         </li><!-- End Cajero Nav --> --}}
 
         <li class="nav-item">
-            <a class="nav-link collapsed" data-bs-target="#indicadores-nav" data-bs-toggle="collapse"
+            <a class="nav-link {{ in_array($activePage, ['cajero', 'cajero_transacciones', 'importacion', 'analisis_procepago']) ? '' : 'collapsed' }}" data-bs-target="#cajero-nav" data-bs-toggle="collapse"
                 href="#">
                 <i class="bi bi-inboxes"></i><span>Cajero</span><i class="bi bi-chevron-down ms-auto"></i>
             </a>
-            <ul id="indicadores-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+            <ul id="cajero-nav" class="nav-content collapse {{ in_array($activePage, ['cajero', 'cajero_transacciones', 'importacion', 'analisis_procepago']) ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
                 <li>
                     <a class="nav-link {{ $activePage === 'cajero' ? '' : 'collapsed' }}" href="/cajero">
                         <i class="bi bi-receipt"></i><span>Cajero</span></a>
@@ -68,11 +68,11 @@
 
         @if (auth()->user()->role == 1 or auth()->user()->role == 2 or auth()->user()->role == 3)
             <li class="nav-item">
-                <a class="nav-link collapsed" data-bs-target="#indicadores-nav" data-bs-toggle="collapse"
+                <a class="nav-link {{ in_array($activePage, ['indicadores', 'indicadores_cajero', 'indicadores_membresias', 'indicadores_clientes']) ? '' : 'collapsed' }}" data-bs-target="#indicadores-nav" data-bs-toggle="collapse"
                     href="#">
                     <i class="bi bi-bar-chart"></i><span>Indicadores</span><i class="bi bi-chevron-down ms-auto"></i>
                 </a>
-                <ul id="indicadores-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <ul id="indicadores-nav" class="nav-content collapse {{ in_array($activePage, ['indicadores', 'indicadores_cajero', 'indicadores_membresias', 'indicadores_clientes']) ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
                     <li>
                         <a class="nav-link {{ $activePage === 'indicadores' ? '' : 'collapsed' }}" href="/indicadores">
                             <i class="bi bi-receipt"></i><span>Indicadores</span></a>
@@ -80,13 +80,13 @@
                     <li>
                         <a class="nav-link {{ $activePage === 'indicadores_cajero' ? '' : 'collapsed' }}" href="/indicadores_cajero">
                             <i class="bi bi-receipt"></i><span>Indicadores Cajero</span></a>
-                    </li> 
-  
+                    </li>
+
                     <li>
-                        <a class="nav-link {{ $activePage === 'membresias' ? '' : 'collapsed' }}"
+                        <a class="nav-link {{ $activePage === 'indicadores_membresias' ? '' : 'collapsed' }}"
                             href="/indicadores_membresias"><i class="bi bi-receipt"></i><span>Indicadores Membresías</span>
                         </a>
-                    </li> 
+                    </li>
                     <li>
                         <a class="nav-link {{ $activePage === 'indicadores_clientes' ? '' : 'collapsed' }}" href="{{ route('indicadores.clientes') }}">
                             <i class="bi bi-people"></i><span>Clientes</span>
@@ -186,10 +186,10 @@
 
         @if (auth()->user()->role == 1 or auth()->user()->role == 2 or auth()->user()->role == 3)
             <li class="nav-item">
-                <a class="nav-link collapsed" data-bs-target="#charts-nav" data-bs-toggle="collapse" href="#">
+                <a class="nav-link {{ in_array($activePage, ['transferencias', 'productos']) ? '' : 'collapsed' }}" data-bs-target="#inventarios-nav" data-bs-toggle="collapse" href="#">
                     <i class="bi bi-bar-chart"></i><span>Inventarios</span><i class="bi bi-chevron-down ms-auto"></i>
                 </a>
-                <ul id="charts-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <ul id="inventarios-nav" class="nav-content collapse {{ in_array($activePage, ['transferencias', 'productos']) ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
                     <li>
                         <a class="nav-link {{ $activePage === 'transferencias' ? '' : 'collapsed' }}"
                             href="/transferencias">
@@ -197,18 +197,15 @@
                             <span>Transferencias</span>
                         </a>
                     </li>
+                    <li>
+                        <a class="nav-link {{ $activePage === 'productos' ? '' : 'collapsed' }}" href="/productos">
+                            <i class="bi bi-receipt"></i>
+                            <span>Productos</span>
+                        </a>
+                    </li>
                 </ul>
-        @endif
-
-        <ul id="charts-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-            <li>
-                <a class="nav-link {{ $activePage === 'productos' ? '' : 'collapsed' }}" href="/productos">
-                    <i class="bi bi-receipt"></i>
-                    <span>Productos</span>
-                </a>
             </li>
-        </ul>
-        </li>
+        @endif
 
         <!-- End Membresías Nav -->
 

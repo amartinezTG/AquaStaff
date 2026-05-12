@@ -18,7 +18,7 @@
               </div><!-- End Logo -->
 
               <div class="card mb-3">
-       
+        
 
                 <div class="card-body">
 
@@ -51,8 +51,13 @@
 
                     <div class="col-12">
                       <label for="yourPassword" class="form-label">Contraseña</label>
-                      <input type="password" name="password" class="form-control" id="yourPassword" required>
-                      <div class="invalid-feedback">Please enter your password!</div>
+                      <div class="input-group has-validation">
+                        <input type="password" name="password" class="form-control" id="yourPassword" required>
+                        <span class="input-group-text" style="cursor:pointer;" onclick="togglePassword()">
+                          <i class="bi bi-eye" id="toggleIcon"></i>
+                        </span>
+                        <div class="invalid-feedback">Please enter your password!</div>
+                      </div>
                     </div>
 
                     <div class="col-12 ">
@@ -93,5 +98,19 @@
 
   <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
 
+
+<script>
+  function togglePassword() {
+    const input = document.getElementById('yourPassword');
+    const icon = document.getElementById('toggleIcon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
+  }
+</script>
 
 @include('layout.footer')
