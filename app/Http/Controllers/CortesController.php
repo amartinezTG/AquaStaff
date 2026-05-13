@@ -10,7 +10,7 @@ use App\Models\CorteCajeroDenominacion;
 use App\Models\FacilityCaja;
 use App\Models\Facilities;
 use App\Models\TipoDeCambio;
-  
+ 
 class CortesController extends Controller
 {
     private array $denominacionesMXN = [
@@ -30,6 +30,7 @@ class CortesController extends Controller
     {
         $activePage = 'cortes';
         $mes        = $request->get('mes', now()->format('Y-m'));
+        $orden      = $request->get('orden', 'asc'); // asc | desc
 
         [$anio, $mes_num] = explode('-', $mes);
 
@@ -44,16 +45,21 @@ class CortesController extends Controller
             ->whereMonth('fecha_corte', $mes_num)
             ->orderBy('fecha_corte')
             ->get()
-            ->groupBy('fecha_corte');
+            ->groupBy(fn($c) => $c->fecha_corte->format('Y-m-d'));
 
-        // Fechas del mes para las columnas
-        $diasEnMes  = cal_days_in_month(CAL_GREGORIAN, (int)$mes_num, (int)$anio);
-        $fechas     = collect();
+        // Fechas del mes ordenadas según parámetro
+        $diasEnMes = cal_days_in_month(CAL_GREGORIAN, (int)$mes_num, (int)$anio);
+        $fechas    = collect();
         for ($d = 1; $d <= $diasEnMes; $d++) {
             $fechas->push(sprintf('%04d-%02d-%02d', $anio, $mes_num, $d));
         }
+        if ($orden === 'desc') {
+            $fechas = $fechas->reverse()->values();
+        }
 
-        return view('cortes.index', compact('activePage', 'mes', 'cajas', 'cortes', 'fechas'));
+        $ordenOpuesto = $orden === 'asc' ? 'desc' : 'asc';
+
+        return view('cortes.index', compact('activePage', 'mes', 'cajas', 'cortes', 'fechas', 'orden', 'ordenOpuesto'));
     }
 
     // GET /cortes/capturar

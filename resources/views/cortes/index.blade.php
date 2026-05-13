@@ -32,7 +32,7 @@
     @if(session('error'))
       <div class="alert alert-danger">{{ session('error') }}</div>
     @endif
-
+ 
     {{-- Controles de mes y acciones --}}
     <div class="card mb-3">
       <div class="card-body py-3">
@@ -58,7 +58,17 @@
           <table class="table table-sm table-bordered align-middle" style="font-size:.82rem; min-width:900px">
             <thead class="table-dark">
               <tr>
-                <th style="min-width:90px">Fecha</th>
+                <th style="min-width:90px">
+                  <a href="{{ route('cortes.index') }}?mes={{ $mes }}&orden={{ $ordenOpuesto }}"
+                     class="text-white text-decoration-none d-flex align-items-center gap-1">
+                    Fecha
+                    @if($orden === 'asc')
+                      <i class="bi bi-sort-down-alt" title="Orden ascendente — clic para invertir"></i>
+                    @else
+                      <i class="bi bi-sort-up-alt" title="Orden descendente — clic para invertir"></i>
+                    @endif
+                  </a>
+                </th>
                 @foreach($cajas as $caja)
                   <th class="text-center" colspan="3">{{ $caja->nombre }} ({{ $caja->codigo }})</th>
                 @endforeach
