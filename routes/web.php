@@ -17,7 +17,8 @@ use App\Http\Controllers\TipoDeCambioController;
 use App\Http\Controllers\IndicadoresController;
 use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\PromocionesController;
- 
+use App\Http\Controllers\CortesController;
+
 use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -195,6 +196,18 @@ Route::get('/detalle_corte_pdf/{corte_id}', [CorteCajaController::class, 'genera
 # / CORTE CAJA
 
 #################
+# CORTES POR CAJERO
+Route::middleware('auth')->prefix('cortes')->name('cortes.')->group(function () {
+    Route::get('/',                [CortesController::class, 'index'])->name('index');
+    Route::get('/capturar',        [CortesController::class, 'create'])->name('create');
+    Route::post('/',               [CortesController::class, 'store'])->name('store');
+    Route::get('/{fecha}',         [CortesController::class, 'show'])->name('show')->where('fecha', '\d{4}-\d{2}-\d{2}');
+    Route::get('/{id}/editar',     [CortesController::class, 'edit'])->name('edit');
+    Route::put('/{id}',            [CortesController::class, 'update'])->name('update');
+});
+# / CORTES POR CAJERO
+
+#################
 # CAJA CHICA
 Route::get('/caja_chica', [CajaChicaController::class, 'index'])->middleware('auth');
 Route::post('/caja_chica_sucursal', [CajaChicaController::class, 'SubmitCorte'])->name('caja_chica_sucursal');
@@ -273,7 +286,7 @@ Route::get('/indicadores_operativos_pdf/', [IndicadoresController::class, 'gener
 
 
 Route::get('/exportar_membresias_pdf/', [IndicadoresController::class, 'generarMembresiasPDF'])->name('exportar_membresias_pdf');
-
+ 
 
 #################
 # PROMOCIONES
