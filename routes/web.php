@@ -200,6 +200,7 @@ Route::get('/detalle_corte_pdf/{corte_id}', [CorteCajaController::class, 'genera
 Route::middleware('auth')->prefix('cortes')->name('cortes.')->group(function () {
     Route::get('/',                [CortesController::class, 'index'])->name('index');
     Route::get('/capturar',        [CortesController::class, 'create'])->name('create');
+    Route::get('/datos-cajero',    [CortesController::class, 'datosCajero'])->name('datos_cajero');
     Route::post('/',               [CortesController::class, 'store'])->name('store');
     Route::get('/{fecha}',         [CortesController::class, 'show'])->name('show')->where('fecha', '\d{4}-\d{2}-\d{2}');
     Route::get('/{id}/editar',     [CortesController::class, 'edit'])->name('edit');
@@ -279,7 +280,7 @@ Route::get('/exportar-indicadores/', [IndicadoresController::class, 'exportarInd
 
 
 
-
+ 
 Route::get('/exportar-membresias', [IndicadoresController::class, 'exportMembresias'])->middleware('auth')->name('exportar-membresias');
 
 Route::get('/indicadores_operativos_pdf/', [IndicadoresController::class, 'generarOperativosPDF'])->name('indicadores_operativos_pdf');

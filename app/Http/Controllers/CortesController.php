@@ -10,7 +10,7 @@ use App\Models\CorteCajeroDenominacion;
 use App\Models\FacilityCaja;
 use App\Models\Facilities;
 use App\Models\TipoDeCambio;
-
+  
 class CortesController extends Controller
 {
     private array $denominacionesMXN = [
@@ -62,23 +62,32 @@ class CortesController extends Controller
         $activePage = 'cortes';
         $tipoCambio = TipoDeCambio::latest()->first()->tipo_cambio ?? 20.0;
 
-        // Por defecto MISIONES (facility_id=2), extensible a otras sucursales
         $facilityId = $request->get('facility_id', 2);
         $facility   = Facilities::findOrFail($facilityId);
         $cajas      = FacilityCaja::where('facility_id', $facilityId)->where('activo', 1)->get();
 
         $fechaCorte = $request->get('fecha', now()->format('Y-m-d'));
 
-        // Verificar si ya existen cortes para ese día
-        $cortesExistentes = CorteCajero::where('fecha_corte', $fechaCorte)
-            ->where('facility_id', $facilityId)
-            ->with('caja')
-            ->get()
-            ->keyBy('caja_id');
+        // Cajero seleccionado — por defecto el primero
+        $cajaId         = $request->get('caja_id', $cajas->first()->id ?? null);
+        $cajaSeleccionada = $cajas->firstWhere('id', $cajaId) ?? $cajas->first();
+
+        // Si ya existe corte para esta caja/fecha, pre-cargar datos
+        $corteExistente = CorteCajero::with('denominaciones')
+            ->where('fecha_corte', $fechaCorte)
+            ->where('caja_id', $cajaSeleccionada->id)
+            ->first();
+
+        $denMxn = $corteExistente
+            ? $corteExistente->denominaciones->where('moneda', 'MXN')->keyBy('denominacion')
+            : collect();
+        $denUsd = $corteExistente
+            ? $corteExistente->denominaciones->where('moneda', 'USD')->keyBy('denominacion')
+            : collect();
 
         return view('cortes.capturar', compact(
             'activePage', 'tipoCambio', 'facility', 'cajas',
-            'fechaCorte', 'cortesExistentes'
+            'fechaCorte', 'cajaSeleccionada', 'corteExistente', 'denMxn', 'denUsd'
         ));
     }
 
@@ -86,68 +95,105 @@ class CortesController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'fecha_corte'  => 'required|date',
-            'facility_id'  => 'required|integer',
-            'cajas'        => 'required|array|min:1',
+            'fecha_corte' => 'required|date',
+            'facility_id' => 'required|integer',
+            'caja_id'     => 'required|integer',
         ]);
 
         $facilityId = $request->facility_id;
         $fechaCorte = $request->fecha_corte;
+        $cajaId     = $request->caja_id;
         $tipoCambio = TipoDeCambio::latest()->first()->tipo_cambio ?? 20.0;
 
-        DB::transaction(function () use ($request, $facilityId, $fechaCorte, $tipoCambio) {
-            foreach ($request->cajas as $cajaId => $datos) {
-                // Calcular totales derivados
-                $efectivoDllsImporte = round(
-                    ($datos['efectivo_dlls_cantidad'] ?? 0) * ($datos['efectivo_dlls_tc'] ?? $tipoCambio), 2
-                );
-                $totalEfectivo   = ($datos['efectivo_mxn'] ?? 0) + $efectivoDllsImporte;
-                $totalDeVenta    = $totalEfectivo + ($datos['importe_tarjeta'] ?? 0);
-                $totalEgresos    = ($datos['dotacion'] ?? 0) + ($datos['pagos_cancelados'] ?? 0);
-                $saldoDispensador = ($datos['saldo_inicial_dispensador'] ?? 0) + ($datos['dotacion'] ?? 0);
-                $saldoCambio     = ($datos['cambio_entregado'] ?? 0) + ($datos['cambio_no_entregado'] ?? 0);
+        $efectivoDllsImporte = round(
+            ($request->efectivo_dlls_cantidad ?? 0) * ($request->efectivo_dlls_tc ?? $tipoCambio), 2
+        );
+        $totalEfectivo    = ($request->efectivo_mxn ?? 0) + $efectivoDllsImporte;
+        $totalDeVenta     = $totalEfectivo + ($request->importe_tarjeta ?? 0);
+        $totalEgresos     = ($request->dotacion ?? 0) + ($request->pagos_cancelados ?? 0);
+        $saldoDispensador = ($request->saldo_inicial_dispensador ?? 0) + ($request->dotacion ?? 0);
+        $saldoCambio      = ($request->cambio_entregado ?? 0) + ($request->cambio_no_entregado ?? 0);
 
-                $corte = CorteCajero::updateOrCreate(
-                    ['fecha_corte' => $fechaCorte, 'caja_id' => $cajaId],
-                    [
-                        'facility_id'               => $facilityId,
-                        'total_ventas'              => $datos['total_ventas']              ?? 0,
-                        'num_pagos_tarjeta'         => $datos['num_pagos_tarjeta']         ?? 0,
-                        'importe_tarjeta'           => $datos['importe_tarjeta']           ?? 0,
-                        'efectivo_mxn'              => $datos['efectivo_mxn']              ?? 0,
-                        'efectivo_dlls_cantidad'    => $datos['efectivo_dlls_cantidad']    ?? 0,
-                        'efectivo_dlls_tc'          => $datos['efectivo_dlls_tc']          ?? $tipoCambio,
-                        'efectivo_dlls_importe'     => $efectivoDllsImporte,
-                        'total_efectivo'            => $totalEfectivo,
-                        'total_de_venta'            => $totalDeVenta,
-                        'dotacion'                  => $datos['dotacion']                  ?? 0,
-                        'pagos_cancelados'          => $datos['pagos_cancelados']          ?? 0,
-                        'total_egresos'             => $totalEgresos,
-                        'saldo_inicial_dispensador' => $datos['saldo_inicial_dispensador'] ?? 0,
-                        'dotacion_final'            => $datos['dotacion_final']            ?? 0,
-                        'saldo_dispensador'         => $saldoDispensador,
-                        'cambio_entregado'          => $datos['cambio_entregado']          ?? 0,
-                        'cambio_no_entregado'       => $datos['cambio_no_entregado']       ?? 0,
-                        'saldo_cambio_entregado'    => $saldoCambio,
-                        'referencia_cambio'         => $datos['referencia_cambio']         ?? null,
-                        'corte_total_efectivo'      => $datos['corte_total_efectivo']      ?? 0,
-                        'efectivo_entregado'        => $datos['efectivo_entregado']        ?? 0,
-                        'capturado_por'             => Auth::id(),
-                        'estado'                    => 'cerrado',
-                        'observaciones'             => $datos['observaciones']             ?? null,
-                    ]
-                );
+        $corte = CorteCajero::updateOrCreate(
+            ['fecha_corte' => $fechaCorte, 'caja_id' => $cajaId],
+            [
+                'facility_id'               => $facilityId,
+                'total_ventas'              => $request->total_ventas              ?? 0,
+                'num_pagos_tarjeta'         => $request->num_pagos_tarjeta         ?? 0,
+                'importe_tarjeta'           => $request->importe_tarjeta           ?? 0,
+                'efectivo_mxn'              => $request->efectivo_mxn              ?? 0,
+                'efectivo_dlls_cantidad'    => $request->efectivo_dlls_cantidad    ?? 0,
+                'efectivo_dlls_tc'          => $request->efectivo_dlls_tc          ?? $tipoCambio,
+                'efectivo_dlls_importe'     => $efectivoDllsImporte,
+                'total_efectivo'            => $totalEfectivo,
+                'total_de_venta'            => $totalDeVenta,
+                'dotacion'                  => $request->dotacion                  ?? 0,
+                'pagos_cancelados'          => $request->pagos_cancelados          ?? 0,
+                'total_egresos'             => $totalEgresos,
+                'saldo_inicial_dispensador' => $request->saldo_inicial_dispensador ?? 0,
+                'dotacion_final'            => $request->dotacion_final            ?? 0,
+                'saldo_dispensador'         => $saldoDispensador,
+                'cambio_entregado'          => $request->cambio_entregado          ?? 0,
+                'cambio_no_entregado'       => $request->cambio_no_entregado       ?? 0,
+                'saldo_cambio_entregado'    => $saldoCambio,
+                'referencia_cambio'         => $request->referencia_cambio         ?? null,
+                'corte_total_efectivo'      => $request->corte_total_efectivo      ?? 0,
+                'efectivo_entregado'        => $request->efectivo_entregado        ?? 0,
+                'capturado_por'             => Auth::id(),
+                'estado'                    => 'cerrado',
+                'observaciones'             => $request->observaciones             ?? null,
+            ]
+        );
 
-                // Guardar denominaciones MXN
-                $this->guardarDenominaciones($corte->id, 'MXN', $datos['den_mxn'] ?? []);
+        $this->guardarDenominaciones($corte->id, 'MXN', $request->input('den_mxn', []));
+        $this->guardarDenominaciones($corte->id, 'USD', $request->input('den_usd', []));
 
-                // Guardar denominaciones USD
-                $this->guardarDenominaciones($corte->id, 'USD', $datos['den_usd'] ?? []);
-            }
-        });
+        return redirect()->route('cortes.show', $fechaCorte)
+            ->with('success', 'Corte guardado correctamente.');
+    }
 
-        return redirect()->route('cortes.index')
-            ->with('success', 'Cortes del día ' . $fechaCorte . ' guardados correctamente.');
+    // GET /cortes/datos-cajero  — JSON para el select dinámico
+    public function datosCajero(Request $request)
+    {
+        $cajaId     = $request->get('caja_id');
+        $fechaCorte = $request->get('fecha_corte');
+
+        $corte = CorteCajero::with('denominaciones')
+            ->where('fecha_corte', $fechaCorte)
+            ->where('caja_id', $cajaId)
+            ->first();
+
+        if (!$corte) {
+            return response()->json(['existe' => false]);
+        }
+
+        $denMxn = $corte->denominaciones->where('moneda', 'MXN')->keyBy('denominacion')
+            ->map(fn($d) => $d->cantidad);
+        $denUsd = $corte->denominaciones->where('moneda', 'USD')->keyBy('denominacion')
+            ->map(fn($d) => $d->cantidad);
+
+        return response()->json([
+            'existe'                    => true,
+            'updated_at'                => $corte->updated_at->format('d/m/Y H:i'),
+            'total_ventas'              => $corte->total_ventas,
+            'num_pagos_tarjeta'         => $corte->num_pagos_tarjeta,
+            'importe_tarjeta'           => $corte->importe_tarjeta,
+            'efectivo_mxn'              => $corte->efectivo_mxn,
+            'efectivo_dlls_cantidad'    => $corte->efectivo_dlls_cantidad,
+            'efectivo_dlls_tc'          => $corte->efectivo_dlls_tc,
+            'dotacion'                  => $corte->dotacion,
+            'pagos_cancelados'          => $corte->pagos_cancelados,
+            'saldo_inicial_dispensador' => $corte->saldo_inicial_dispensador,
+            'dotacion_final'            => $corte->dotacion_final,
+            'cambio_entregado'          => $corte->cambio_entregado,
+            'cambio_no_entregado'       => $corte->cambio_no_entregado,
+            'referencia_cambio'         => $corte->referencia_cambio,
+            'corte_total_efectivo'      => $corte->corte_total_efectivo,
+            'efectivo_entregado'        => $corte->efectivo_entregado,
+            'observaciones'             => $corte->observaciones,
+            'den_mxn'                   => $denMxn,
+            'den_usd'                   => $denUsd,
+        ]);
     }
 
     // GET /cortes/{fecha}
