@@ -222,7 +222,7 @@
           <div class="card-header py-2 px-4 bg-info bg-opacity-10 border-bottom">
             <span class="fw-bold text-info small text-uppercase">
               <i class="bi bi-safe me-1"></i>Saldo en Dispensadores
-            </span>
+            </span> 
           </div>
           <div class="card-body px-4 py-3">
 

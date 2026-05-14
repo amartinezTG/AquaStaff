@@ -10,7 +10,7 @@ use App\Models\CorteCajeroDenominacion;
 use App\Models\FacilityCaja;
 use App\Models\Facilities;
 use App\Models\TipoDeCambio;
- 
+  
 class CortesController extends Controller
 {
     private array $denominacionesMXN = [
@@ -18,7 +18,7 @@ class CortesController extends Controller
         'b50'  => 50,  'b20'  => 20,  'b10'  => 10,
         'b5'   => 5,   'b2'   => 2,   'b1'   => 1,
         'm10'  => 10,  'm5'   => 5,   'm2'   => 2,  'm1' => 1,
-    ]; 
+    ];  
 
     private array $denominacionesUSD = [
         'usd_b50' => 50, 'usd_b20' => 20, 'usd_b10' => 10,
@@ -60,7 +60,7 @@ class CortesController extends Controller
         $ordenOpuesto = $orden === 'asc' ? 'desc' : 'asc';
 
         return view('cortes.index', compact('activePage', 'mes', 'cajas', 'cortes', 'fechas', 'orden', 'ordenOpuesto'));
-    }
+    } 
 
     // GET /cortes/capturar
     public function create(Request $request)
@@ -228,6 +228,122 @@ class CortesController extends Controller
         ];
 
         return view('cortes.show', compact('activePage', 'fecha', 'cortes', 'facility', 'totalDia', 'tipoCambio'));
+    }
+
+    // GET /cortes/{fecha}/json — datos del día para el modal en index
+    public function showJson($fecha)
+    {
+        $tipoCambio = TipoDeCambio::latest()->first()->tipo_cambio ?? 20.0;
+
+        $cortes = CorteCajero::with(['caja', 'denominaciones', 'capturadoPor'])
+            ->where('fecha_corte', $fecha)
+            ->orderBy('caja_id')
+            ->get();
+
+        if ($cortes->isEmpty()) {
+            return response()->json(['error' => 'No hay cortes para esa fecha.'], 404);
+        }
+
+        $denMap = [
+            'MXN' => ['b500'=>500,'b200'=>200,'b100'=>100,'b50'=>50,'b20'=>20,'b10'=>10,'b5'=>5,'b2'=>2,'b1'=>1,'m10'=>10,'m5'=>5,'m2'=>2,'m1'=>1],
+            'USD' => ['usd_b50'=>50,'usd_b20'=>20,'usd_b10'=>10,'usd_b5'=>5,'usd_b2'=>2,'usd_b1'=>1],
+        ];
+
+        $data = $cortes->map(function ($c) use ($tipoCambio, $denMap) {
+            $denMxn = $c->denominaciones->where('moneda','MXN')->keyBy('denominacion');
+            $denUsd = $c->denominaciones->where('moneda','USD')->keyBy('denominacion');
+
+            $billetes = []; $totalBilletes = 0;
+            foreach ($denMap['MXN'] as $k => $val) {
+                $cant = $denMxn[$k]->cantidad ?? 0;
+                if ($cant > 0) { $billetes[] = ['lbl' => $k, 'cant' => $cant, 'monto' => $cant * $val]; }
+                $totalBilletes += $cant * $val;
+            }
+            $usdItems = []; $totalUsd = 0;
+            foreach ($denMap['USD'] as $k => $val) {
+                $cant = $denUsd[$k]->cantidad ?? 0;
+                if ($cant > 0) { $usdItems[] = ['lbl' => $k, 'cant' => $cant, 'monto' => $cant * $val]; }
+                $totalUsd += $cant * $val;
+            }
+
+            return [
+                'id'                      => $c->id,
+                'caja_nombre'             => $c->caja->nombre,
+                'caja_codigo'             => $c->caja->codigo,
+                'diferencia'              => (float) $c->diferencia,
+                'total_ventas'            => (float) $c->total_ventas,
+                'num_pagos_tarjeta'       => $c->num_pagos_tarjeta,
+                'importe_tarjeta'         => (float) $c->importe_tarjeta,
+                'efectivo_mxn'            => (float) $c->efectivo_mxn,
+                'efectivo_dlls_cantidad'  => (float) $c->efectivo_dlls_cantidad,
+                'efectivo_dlls_tc'        => (float) $c->efectivo_dlls_tc,
+                'efectivo_dlls_importe'   => (float) $c->efectivo_dlls_importe,
+                'total_efectivo'          => (float) $c->total_efectivo,
+                'total_de_venta'          => (float) $c->total_de_venta,
+                'dotacion'                => (float) $c->dotacion,
+                'pagos_cancelados'        => (float) $c->pagos_cancelados,
+                'total_egresos'           => (float) $c->total_egresos,
+                'saldo_inicial_dispensador' => (float) $c->saldo_inicial_dispensador,
+                'dotacion_final'          => (float) $c->dotacion_final,
+                'saldo_dispensador'       => (float) $c->saldo_dispensador,
+                'cambio_entregado'        => (float) $c->cambio_entregado,
+                'cambio_no_entregado'     => (float) $c->cambio_no_entregado,
+                'saldo_cambio_entregado'  => (float) $c->saldo_cambio_entregado,
+                'referencia_cambio'       => $c->referencia_cambio,
+                'corte_total_efectivo'    => (float) $c->corte_total_efectivo,
+                'efectivo_entregado'      => (float) $c->efectivo_entregado,
+                'observaciones'           => $c->observaciones,
+                'capturado_por'           => $c->capturadoPor->name ?? 'N/D',
+                'updated_at'              => $c->updated_at->format('d/m/Y H:i'),
+                'billetes_mxn'            => $billetes,
+                'total_billetes'          => $totalBilletes,
+                'usd_items'               => $usdItems,
+                'total_usd'               => $totalUsd,
+                'total_usd_mxn'           => round($totalUsd * $tipoCambio, 2),
+                'tc'                      => $tipoCambio,
+            ];
+        });
+
+        return response()->json([
+            'fecha'      => $fecha,
+            'tc'         => $tipoCambio,
+            'total_dia'  => [
+                'prosepago'  => (float) $cortes->sum('importe_tarjeta'),
+                'efectivo'   => (float) $cortes->sum('total_efectivo'),
+                'venta'      => (float) $cortes->sum('total_de_venta'),
+                'diferencia' => (float) $cortes->sum('diferencia'),
+            ],
+            'cortes' => $data,
+        ]);
+    }
+
+    // GET /cortes/{fecha}/modal — HTML parcial para inyectar en modal
+    public function showModal($fecha)
+    {
+        $tipoCambio = TipoDeCambio::latest()->first()->tipo_cambio ?? 20.0;
+
+        $cortes = CorteCajero::with(['caja', 'denominaciones', 'capturadoPor'])
+            ->where('fecha_corte', $fecha)
+            ->orderBy('caja_id')
+            ->get();
+
+        if ($cortes->isEmpty()) {
+            return response('<div class="text-center py-4 text-danger">No hay cortes para esta fecha.</div>');
+        }
+
+        $totalDia = [
+            'prosepago'  => (float) $cortes->sum('importe_tarjeta'),
+            'efectivo'   => (float) $cortes->sum('total_efectivo'),
+            'venta'      => (float) $cortes->sum('total_de_venta'),
+            'diferencia' => (float) $cortes->sum('diferencia'),
+        ];
+
+        $billetesMxn = ['b500'=>['lbl'=>'B. $500','val'=>500],'b200'=>['lbl'=>'B. $200','val'=>200],'b100'=>['lbl'=>'B. $100','val'=>100],'b50'=>['lbl'=>'B. $50','val'=>50],'b20'=>['lbl'=>'B. $20','val'=>20],'b10'=>['lbl'=>'B. $10','val'=>10],'b5'=>['lbl'=>'B. $5','val'=>5],'b2'=>['lbl'=>'B. $2','val'=>2],'b1'=>['lbl'=>'B. $1','val'=>1],'m10'=>['lbl'=>'M. $10','val'=>10],'m5'=>['lbl'=>'M. $5','val'=>5],'m2'=>['lbl'=>'M. $2','val'=>2],'m1'=>['lbl'=>'M. $1','val'=>1]];
+        $billetesUsd = ['usd_b50'=>['lbl'=>'B. $50','val'=>50],'usd_b20'=>['lbl'=>'B. $20','val'=>20],'usd_b10'=>['lbl'=>'B. $10','val'=>10],'usd_b5'=>['lbl'=>'B. $5','val'=>5],'usd_b2'=>['lbl'=>'B. $2','val'=>2],'usd_b1'=>['lbl'=>'B. $1','val'=>1]];
+
+        return view('cortes.modal.contenido-dia', compact(
+            'fecha', 'cortes', 'totalDia', 'tipoCambio', 'billetesMxn', 'billetesUsd'
+        ));
     }
 
     // GET /cortes/{id}/editar

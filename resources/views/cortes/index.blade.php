@@ -13,7 +13,7 @@
 </header>
 
 <main id="main" class="main">
- 
+
   <div class="pagetitle">
     <h1>Cortes por Cajero</h1>
     <nav>
@@ -63,9 +63,9 @@
                      class="text-white text-decoration-none d-flex align-items-center gap-1">
                     Fecha
                     @if($orden === 'asc')
-                      <i class="bi bi-sort-down-alt" title="Orden ascendente — clic para invertir"></i>
+                      <i class="bi bi-sort-down-alt"></i>
                     @else
-                      <i class="bi bi-sort-up-alt" title="Orden descendente — clic para invertir"></i>
+                      <i class="bi bi-sort-up-alt"></i>
                     @endif
                   </a>
                 </th>
@@ -98,7 +98,7 @@
                     {{ \Carbon\Carbon::parse($fecha)->format('d/m') }}
                     <small class="d-block text-muted" style="font-size:.7rem">
                       {{ \Carbon\Carbon::parse($fecha)->isoFormat('ddd') }}
-                    </small>
+                    </small>   
                   </td>
 
                   @foreach($cajas as $caja)
@@ -120,11 +120,14 @@
                   </td>
                   <td class="text-center">
                     @if($tieneDatos)
-                      <a href="{{ route('cortes.show', $fecha) }}" class="btn btn-xs btn-outline-primary btn-sm py-0 px-2">
+                      <button type="button"
+                              class="btn btn-outline-primary btn-sm py-0 px-2 btn-ver-corte"
+                              data-fecha="{{ $fecha }}">
                         <i class="bi bi-eye"></i>
-                      </a>
+                      </button>
                     @else
-                      <a href="{{ route('cortes.create') }}?fecha={{ $fecha }}" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2">
+                      <a href="{{ route('cortes.create') }}?fecha={{ $fecha }}"
+                         class="btn btn-outline-secondary btn-sm py-0 px-2">
                         <i class="bi bi-plus"></i>
                       </a>
                     @endif
@@ -152,12 +155,4 @@
   </section>
 </main>
 
-<footer id="footer" class="footer">
-  <div class="copyright">&copy; Copyright <strong><span></span></strong>. All Rights Reserved</div>
-</footer>
-
-<a href="#" class="back-to-top d-flex align-items-center justify-content-center">
-  <i class="bi bi-arrow-up-short"></i>
-</a>
-
-@include('layout.footer')
+@include('cortes.modal.detalle-dia')

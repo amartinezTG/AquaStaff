@@ -203,6 +203,8 @@ Route::middleware('auth')->prefix('cortes')->name('cortes.')->group(function () 
     Route::get('/datos-cajero',    [CortesController::class, 'datosCajero'])->name('datos_cajero');
     Route::post('/',               [CortesController::class, 'store'])->name('store');
     Route::get('/{fecha}',         [CortesController::class, 'show'])->name('show')->where('fecha', '\d{4}-\d{2}-\d{2}');
+    Route::get('/{fecha}/json',    [CortesController::class, 'showJson'])->name('show_json')->where('fecha', '\d{4}-\d{2}-\d{2}');
+    Route::get('/{fecha}/modal',   [CortesController::class, 'showModal'])->name('show_modal')->where('fecha', '\d{4}-\d{2}-\d{2}');
     Route::get('/{id}/editar',     [CortesController::class, 'edit'])->name('edit');
     Route::put('/{id}',            [CortesController::class, 'update'])->name('update');
 });
@@ -229,7 +231,7 @@ Route::get('/inventarios', function () {
 })->middleware('auth');
 
 Route::get('/productos', [ProductosController::class, 'index'])->middleware('auth');
-
+ 
 Route::get('/agregar_producto', [ProductosController::class, 'ProductAdd'])->middleware('auth');
 Route::get('/editar_producto/{product_id}', [ProductosController::class, 'ProductAdd'])->middleware('auth');
 Route::get('/eliminar_producto/{product_id}', [ProductosController::class, 'eliminar_producto'])->middleware('auth');
@@ -251,7 +253,7 @@ Route::post('/submit_transfer_update', [ProductosController::class, 'SubmitTrans
 Route::get('/search/products', [ProductosController::class, 'searchProducts'])->name('search.products');
 #################
 # / TRANSFERENCIAS 
-
+  
 #################
 # USERS
 Route::get('/usuarios', [StaffUserController::class, 'index'])->middleware('auth');
