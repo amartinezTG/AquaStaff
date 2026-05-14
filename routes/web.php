@@ -47,6 +47,7 @@ Route::middleware('auth')->controller(DashboardController::class)->group(functio
     Route::post('/dashboard/info_dashboard',  'info_dashboard')->name('dashboard.info_dashboard');
 
     Route::get('/dashboard/active_memberships',  'active_memberships')->name('dashboard.active_memberships');
+    Route::get('/dashboard/duplicate_memberships', 'duplicateMemberships')->name('dashboard.duplicate_memberships');
 
 });
 
@@ -235,7 +236,7 @@ Route::get('/productos', [ProductosController::class, 'index'])->middleware('aut
 Route::get('/agregar_producto', [ProductosController::class, 'ProductAdd'])->middleware('auth');
 Route::get('/editar_producto/{product_id}', [ProductosController::class, 'ProductAdd'])->middleware('auth');
 Route::get('/eliminar_producto/{product_id}', [ProductosController::class, 'eliminar_producto'])->middleware('auth');
-
+ 
 Route::post('/producto_agregar', [ProductosController::class, 'SubmitProduct'])->name('producto_agregar')->middleware('auth');
 #################
 # / PRODUCTS

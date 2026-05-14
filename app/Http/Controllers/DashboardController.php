@@ -131,7 +131,7 @@ class DashboardController extends Controller
             'monthlyByProv'
 
         ));
-    }
+    } 
 
 
     public function info_dashboard(Request $request)
@@ -431,6 +431,46 @@ class DashboardController extends Controller
             GROUP BY servicio, sort_order
             ORDER BY sort_order
         ", [$startDate, $endDate]);
+    }
+
+    public function duplicateMemberships()
+    {
+        $rows = DB::select("
+            SELECT
+                cm.client_id,
+                CONCAT(COALESCE(c.first_name,''), ' ', COALESCE(c.last_name,'')) AS cliente,
+                c.email,
+                c.phone,
+                COUNT(*) AS total_vigentes,
+                GROUP_CONCAT(
+                    CONCAT(
+                        CASE cm.membership_id
+                            WHEN '612f057787e473107fda56aa' THEN 'Express'
+                            WHEN '61344ae637a5f00383106c7a' THEN 'Express'
+                            WHEN '612f067387e473107fda56b0' THEN 'Básico'
+                            WHEN '61344b5937a5f00383106c80' THEN 'Básico'
+                            WHEN '612f1c4f30b90803837e7969' THEN 'Ultra'
+                            WHEN '61344b9137a5f00383106c84' THEN 'Ultra'
+                            WHEN '61344bab37a5f00383106c88' THEN 'Delux'
+                            WHEN '612abcd1c4ce4c141237a356' THEN 'Delux'
+                            ELSE 'N/A'
+                        END,
+                        ' (',
+                        DATE(cm.start_date), ' → ', DATE(cm.end_date),
+                        ')'
+                    )
+                    ORDER BY cm.start_date
+                    SEPARATOR ' | '
+                ) AS membresias
+            FROM client_membership cm
+            JOIN clients c ON c._id = cm.client_id
+            WHERE cm.end_date >= NOW()
+            GROUP BY cm.client_id, c.first_name, c.last_name, c.email, c.phone
+            HAVING COUNT(*) > 1
+            ORDER BY cliente ASC
+        ");
+
+        return response()->json($rows);
     }
 
     private function calculatePercentageChange($current, $previous)
