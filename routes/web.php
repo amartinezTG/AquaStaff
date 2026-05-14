@@ -17,7 +17,8 @@ use App\Http\Controllers\TipoDeCambioController;
 use App\Http\Controllers\IndicadoresController;
 use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\PromocionesController;
- 
+use App\Http\Controllers\CortesController;
+
 use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -46,6 +47,7 @@ Route::middleware('auth')->controller(DashboardController::class)->group(functio
     Route::post('/dashboard/info_dashboard',  'info_dashboard')->name('dashboard.info_dashboard');
 
     Route::get('/dashboard/active_memberships',  'active_memberships')->name('dashboard.active_memberships');
+    Route::get('/dashboard/duplicate_memberships', 'duplicateMemberships')->name('dashboard.duplicate_memberships');
 
 });
 
@@ -195,6 +197,21 @@ Route::get('/detalle_corte_pdf/{corte_id}', [CorteCajaController::class, 'genera
 # / CORTE CAJA
 
 #################
+# CORTES POR CAJERO
+Route::middleware('auth')->prefix('cortes')->name('cortes.')->group(function () {
+    Route::get('/',                [CortesController::class, 'index'])->name('index');
+    Route::get('/capturar',        [CortesController::class, 'create'])->name('create');
+    Route::get('/datos-cajero',    [CortesController::class, 'datosCajero'])->name('datos_cajero');
+    Route::post('/',               [CortesController::class, 'store'])->name('store');
+    Route::get('/{fecha}',         [CortesController::class, 'show'])->name('show')->where('fecha', '\d{4}-\d{2}-\d{2}');
+    Route::get('/{fecha}/json',    [CortesController::class, 'showJson'])->name('show_json')->where('fecha', '\d{4}-\d{2}-\d{2}');
+    Route::get('/{fecha}/modal',   [CortesController::class, 'showModal'])->name('show_modal')->where('fecha', '\d{4}-\d{2}-\d{2}');
+    Route::get('/{id}/editar',     [CortesController::class, 'edit'])->name('edit');
+    Route::put('/{id}',            [CortesController::class, 'update'])->name('update');
+});
+# / CORTES POR CAJERO
+
+#################
 # CAJA CHICA
 Route::get('/caja_chica', [CajaChicaController::class, 'index'])->middleware('auth');
 Route::post('/caja_chica_sucursal', [CajaChicaController::class, 'SubmitCorte'])->name('caja_chica_sucursal');
@@ -215,11 +232,11 @@ Route::get('/inventarios', function () {
 })->middleware('auth');
 
 Route::get('/productos', [ProductosController::class, 'index'])->middleware('auth');
-
+ 
 Route::get('/agregar_producto', [ProductosController::class, 'ProductAdd'])->middleware('auth');
 Route::get('/editar_producto/{product_id}', [ProductosController::class, 'ProductAdd'])->middleware('auth');
 Route::get('/eliminar_producto/{product_id}', [ProductosController::class, 'eliminar_producto'])->middleware('auth');
-
+ 
 Route::post('/producto_agregar', [ProductosController::class, 'SubmitProduct'])->name('producto_agregar')->middleware('auth');
 #################
 # / PRODUCTS
@@ -237,7 +254,7 @@ Route::post('/submit_transfer_update', [ProductosController::class, 'SubmitTrans
 Route::get('/search/products', [ProductosController::class, 'searchProducts'])->name('search.products');
 #################
 # / TRANSFERENCIAS 
-
+  
 #################
 # USERS
 Route::get('/usuarios', [StaffUserController::class, 'index'])->middleware('auth');
@@ -266,14 +283,14 @@ Route::get('/exportar-indicadores/', [IndicadoresController::class, 'exportarInd
 
 
 
-
+ 
 Route::get('/exportar-membresias', [IndicadoresController::class, 'exportMembresias'])->middleware('auth')->name('exportar-membresias');
 
 Route::get('/indicadores_operativos_pdf/', [IndicadoresController::class, 'generarOperativosPDF'])->name('indicadores_operativos_pdf');
 
 
 Route::get('/exportar_membresias_pdf/', [IndicadoresController::class, 'generarMembresiasPDF'])->name('exportar_membresias_pdf');
-
+ 
 
 #################
 # PROMOCIONES

@@ -5,7 +5,7 @@ let rfcSearchTimer  = null;
 // ─────────────────────────────────────────────────────────────────────────────
 // BUSCAR TRANSACCIONES
 // ─────────────────────────────────────────────────────────────────────────────
-  
+    
 function buscarTransacciones() {
     const fechaInicio      = document.getElementById('fechaInicio').value;
     const fechaFinal       = document.getElementById('fechaFinal').value;
@@ -275,11 +275,13 @@ function abrirModalFacturar() {
                         <label class="form-label mb-1" style="font-size:.78rem;">Régimen Fiscal <span class="text-danger">*</span></label>
                         <select id="swal-regimen" class="form-select form-select-sm">
                             <option value="601">601 - General de Ley PM</option>
+                            <option value="603">603 - PM Fines No Lucrativos</option>
                             <option value="605">605 - Sueldos y Salarios</option>
                             <option value="606">606 - Arrendamiento</option>
                             <option value="612">612 - PF Act. Emp. y Prof.</option>
                             <option value="616">616 - Sin obligaciones fiscales</option>
                             <option value="621">621 - Incorporación Fiscal</option>
+                            <option value="625">625 - Plataformas Tecnológicas</option>
                             <option value="626">626 - RESICO</option>
                         </select>
                     </div>

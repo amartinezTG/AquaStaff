@@ -18,7 +18,7 @@
         </li>End Vending Machine Nav -->
 
 
- 
+
         <!-- <li class="nav-item">
             <a class="nav-link {{ $activePage === 'membresias' ? '' : 'collapsed' }}" href="/membresias">
                 <i class="bi bi-person-badge"></i>
@@ -119,6 +119,13 @@
                 <span>Corte de Caja</span>
             </a>
         </li><!-- End Corte Caja -->
+
+        <li class="nav-item">
+            <a class="nav-link {{ $activePage === 'cortes' ? '' : 'collapsed' }}" href="{{ route('cortes.index') }}">
+                <i class="bi bi-journal-check"></i>
+                <span>Cortes por Cajero</span>
+            </a>
+        </li><!-- End Cortes por Cajero -->
 
         @if (auth()->user()->role == 1 or auth()->user()->role == 2)
             <li class="nav-item">
