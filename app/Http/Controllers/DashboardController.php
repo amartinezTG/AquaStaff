@@ -131,8 +131,8 @@ class DashboardController extends Controller
             'monthlyByProv'
 
         ));
-    } 
-
+    }  
+  
 
     public function info_dashboard(Request $request)
     { 
@@ -485,71 +485,63 @@ class DashboardController extends Controller
     public function active_memberships()
     {
         try {
-            // Query para obtener el total de membresías activas
-            $totalMemberships = DB::table('client_membership')
-                ->where('end_date', '>=', DB::raw('NOW()'))
-                ->count();
-
-            // Query para obtener el desglose por paquete
-            $membershipsByPackage = DB::table('client_membership')
-                ->select(
-                    DB::raw('COUNT(*) as count'),
-                    'membership_id',
-                    DB::raw("CASE membership_id
+            // Misma lógica que indicadores/clientes/table:
+            // parte de la tabla clients, hace LEFT JOIN con la membresía más reciente
+            // por cliente (MAX start_date), y cuenta solo las vigentes (end_date >= NOW())
+            $membershipsByPackage = DB::select("
+                SELECT
+                    CASE cm.membership_id
                         WHEN '612f057787e473107fda56aa' THEN 'Express'
                         WHEN '61344ae637a5f00383106c7a' THEN 'Express'
-                        WHEN '612f067387e473107fda56b0' THEN 'Básico'
-                        WHEN '61344b5937a5f00383106c80' THEN 'Básico'
+                        WHEN '612f067387e473107fda56b0' THEN 'Basico'
+                        WHEN '61344b5937a5f00383106c80' THEN 'Basico'
                         WHEN '612f1c4f30b90803837e7969' THEN 'Ultra'
                         WHEN '61344b9137a5f00383106c84' THEN 'Ultra'
                         WHEN '61344bab37a5f00383106c88' THEN 'Delux'
                         WHEN '612abcd1c4ce4c141237a356' THEN 'Delux'
-                        ELSE 'N/A'
-                    END AS package_name")
-                )
-                ->where('end_date', '>=', DB::raw('NOW()'))
-                ->groupBy('membership_id')
-                ->get();
+                        ELSE 'NA'
+                    END AS package_name,
+                    COUNT(*) AS count
+                FROM clients c
+                LEFT JOIN (
+                    SELECT cm.*
+                    FROM client_membership cm
+                    INNER JOIN (
+                        SELECT client_id, MAX(start_date) AS max_start
+                        FROM client_membership
+                        GROUP BY client_id
+                    ) latest ON cm.client_id = latest.client_id
+                             AND cm.start_date = latest.max_start
+                ) cm ON cm.client_id = c._id
+                WHERE cm.end_date >= NOW()
+                GROUP BY package_name
+            ");
 
-            // Inicializar contadores
-            $packages = [
-                'express' => 0,
-                'basico' => 0,
-                'ultra' => 0,
-                'delux' => 0
-            ];
+            $packages = ['express' => 0, 'basico' => 0, 'ultra' => 0, 'delux' => 0];
+            $total = 0;
 
-            // Sumar las cantidades por paquete
-            foreach ($membershipsByPackage as $membership) {
-                $packageKey = strtolower($membership->package_name);
-                
-                // Normalizar nombre del paquete
-                if ($packageKey === 'básico') {
-                    $packageKey = 'basico';
+            foreach ($membershipsByPackage as $row) {
+                $key = strtolower($row->package_name);
+                if (isset($packages[$key])) {
+                    $packages[$key] += (int)$row->count;
                 }
-                
-                if (isset($packages[$packageKey])) {
-                    $packages[$packageKey] += $membership->count;
+                if ($key !== 'na') {
+                    $total += (int)$row->count;
                 }
             }
 
-            // Preparar respuesta
-            $response = [
-                'total' => $totalMemberships,
-                'express' => $packages['express'],
-                'basico' => $packages['basico'],
-                'ultra' => $packages['ultra'],
-                'delux' => $packages['delux'],
-                'breakdown' => $membershipsByPackage,
-                'timestamp' => now()->format('Y-m-d H:i:s')
-            ];
-
-
-            return response()->json($response);
+            return response()->json([
+                'total'     => $total,
+                'express'   => $packages['express'],
+                'basico'    => $packages['basico'],
+                'ultra'     => $packages['ultra'],
+                'delux'     => $packages['delux'],
+                'timestamp' => now()->format('Y-m-d H:i:s'),
+            ]);
 
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Error al obtener membresías activas',
+                'error'   => 'Error al obtener membresías activas',
                 'message' => $e->getMessage()
             ], 500);
         }
