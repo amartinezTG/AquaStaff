@@ -13,7 +13,7 @@
               <div class="d-flex justify-content-center py-4">
                 <a href="index.html" class="logo d-flex align-items-center w-auto">
                   <img src="assets/client/AQCC_Isotipo-03.png" alt="">
-                  <span class="d-none d-lg-block">AquaAdmin V2</span>
+                  <span class="d-none d-lg-block">AquaAdmin</span>
                 </a>
               </div><!-- End Logo -->
 
