@@ -52,7 +52,26 @@
       "Bash(dir *)",
       "PowerShell(head *)",
       "PowerShell(Get-ChildItem \"C:\\\\Users\\\\alejandro.martinez\\\\Desktop\\\\aqua\\\\AquaStaff\\\\resources\" -Recurse | Select-Object -First 60 | ForEach-Object { $_.FullName })",
-      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\alejandro.martinez\\\\Desktop\\\\aqua\\\\AquaStaff\\\\routes\" -Recurse | ForEach-Object { $_.FullName })"
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\alejandro.martinez\\\\Desktop\\\\aqua\\\\AquaStaff\\\\routes\" -Recurse | ForEach-Object { $_.FullName })",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://staff.aquacarclub.com/promociones)",
+      "Read(//etc/apache2/sites-enabled/**)",
+      "Read(//etc/nginx/**)",
+      "Bash(git -C /var/www/html/AquaStaff status)",
+      "Bash(git -C /var/www/html/AquaStaff remote -v)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git config *)",
+      "Read(//root/.ssh/**)",
+      "Bash(ssh *)",
+      "Bash(git remote *)",
+      "Bash(crontab -l)",
+      "Read(//etc/cron.d/**)",
+      "Bash(crontab -l -u www-data)",
+      "Bash(chmod 644 /etc/cron.d/aquastaff)",
+      "Bash(systemctl status *)",
+      "Bash(service cron *)",
+      "Bash(git -C /var/www/html/AquaStaff diff)"
     ]
   }
 }

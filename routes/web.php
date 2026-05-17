@@ -18,6 +18,7 @@ use App\Http\Controllers\IndicadoresController;
 use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\PromocionesController;
 use App\Http\Controllers\CortesController;
+use App\Http\Controllers\MongoMonitorController;
 
 use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
@@ -303,6 +304,14 @@ Route::middleware('auth')->controller(PromocionesController::class)->group(funct
 });
 ###### ###########s
 # / PROMOCIONES
+
+#################
+# MONGO MONITOR
+Route::middleware('auth')->prefix('mongo-monitor')->name('mongo_monitor.')->controller(MongoMonitorController::class)->group(function () {
+    Route::get('/',       'index')->name('index');
+    Route::get('/stats',  'stats')->name('stats');
+});
+# / MONGO MONITOR
 
 Route::get('/vending', function () {
     $activePage = 'vending';
