@@ -13,7 +13,8 @@ function cargarClientes() {
         clientesTable.destroy();
         $('#clientes_table tbody').empty();
     }
- 
+    $('#clientes_table thead tr.col-filters').remove();
+
     Swal.fire({
         title: 'Cargando clientes...',
         allowOutsideClick: false,
@@ -31,7 +32,7 @@ function cargarClientes() {
         // scrollX: true,
         // scrollCollapse: true,
         // autoWidth: false,
-        deferRender: true,
+        order: [[9, 'desc']],
         ajax: {
             url: '/indicadores/clientes/table',
             type: 'POST',
@@ -49,6 +50,10 @@ function cargarClientes() {
             }
         },
         columns: [
+            {
+                data: '_id',
+                render: (d) => d ? `<code style="font-size:.68rem;color:#6c757d;">${d}</code>` : ''
+            },
             {
                 data: 'cliente',
                 render: (d) => `<span class="fw-bold">${d || '<span class="text-muted">Sin nombre</span>'}</span>`
@@ -81,6 +86,7 @@ function cargarClientes() {
                     return `<span class="badge ${cls}">${d}</span>`;
                 }
             },
+            { data: 'fecha_registro' },
             { data: 'start_date' },
             {
                 data: 'end_date',
@@ -112,24 +118,16 @@ function cargarClientes() {
                 className: 'btn btn-success buttons-excel',
                 filename: 'Clientes_AquaAdmin',
                 title: 'Clientes - AquaAdmin',
-                exportOptions: { format: { body: (d, r, c, node) => $(node).text() } }
-            },
-            {
-                extend: 'pdf',
-                text: '<i class="ti ti-file-type-pdf me-1"></i>PDF',
-                className: 'btn btn-danger buttons-pdf',
-                filename: 'Clientes_AquaAdmin',
-                title: 'Clientes - AquaAdmin',
-                orientation: 'landscape',
-                exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11,12,13] }
-            },
-            {
-                extend: 'copy',
-                text: '<i class="ti ti-copy me-1"></i>Copiar',
-                className: 'btn btn-warning buttons-copy',
+                exportOptions: {
+                    modifier: { page: 'all', search: 'applied' },
+                    format: { body: (d, r, c, node) => node ? $(node).text() : d }
+                }
             },
         ],
-        initComplete: function() { Swal.close(); }
+        initComplete: function() {
+            Swal.close();
+            agregarFiltrosColumna();
+        }
     });
 }
 
@@ -145,6 +143,26 @@ function actualizarResumen(data) {
     document.getElementById('statSin').textContent     = sin.toLocaleString();
 }
 
+function agregarFiltrosColumna() {
+    // Limpiar fila anterior si existe
+    $('#clientes_table thead tr.col-filters').remove();
+
+    const filterRow = $('<tr class="col-filters"></tr>');
+    // Tomar títulos de la primera fila del thead (la de cabeceras)
+    $('#clientes_table thead tr:first th').each(function () {
+        const title = $(this).text().trim();
+        filterRow.append(
+            $('<th></th>').html(`<input type="text" class="form-control form-control-sm" placeholder="${title}" />`)
+        );
+    });
+    $('#clientes_table thead').append(filterRow);
+
+    $('#clientes_table thead tr.col-filters input').on('keyup change', function () {
+        const colIndex = $(this).closest('th').index();
+        clientesTable.column(colIndex).search(this.value).draw();
+    });
+}
+
 // Filtro por columna estatus (col 7)
 function filtrarEstatus(val) {
     if (!clientesTable) return;
@@ -153,11 +171,11 @@ function filtrarEstatus(val) {
     const map = { 'todos': 'btn-todos', 'Vigente': 'btn-vigente', 'Vencida': 'btn-vencida', 'Sin membresía': 'btn-sin' };
     document.getElementById(map[val] || 'btn-todos')?.classList.add('active');
 
-    clientesTable.column(7).search(val === 'todos' ? '' : val, false, false).draw();
+    clientesTable.column(8).search(val === 'todos' ? '' : val, false, false).draw();
 }
 
 // Filtro por tipo membresía (col 6)
 function filtrarTipo(val) {
     if (!clientesTable) return;
-    clientesTable.column(6).search(val, false, false).draw();
+    clientesTable.column(7).search(val, false, false).draw();
 }

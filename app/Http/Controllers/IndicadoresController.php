@@ -262,7 +262,8 @@ class IndicadoresController extends Controller
                         ELSE 'Sin membresía'
                     END AS estatus_membresia,
                     COALESCE(oa.total_lavados, 0) AS total_lavados,
-                    oa.ultimo_lavado
+                    oa.ultimo_lavado,
+                    DATE(c.created_at) AS fecha_registro
                 FROM clients c
                 LEFT JOIN (
                     SELECT cm.*
@@ -279,6 +280,7 @@ class IndicadoresController extends Controller
                     WHERE OrderType = 1
                     GROUP BY UserId
                 ) oa ON oa.UserId = c._id
+                WHERE c.deleted_at IS NULL
                 ORDER BY cliente ASC
             ";
 
@@ -299,13 +301,14 @@ class IndicadoresController extends Controller
                     'estatus_membresia' => $row->estatus_membresia ?? 'Sin membresía',
                     'start_date'        => $row->start_date ? \Carbon\Carbon::parse($row->start_date)->format('Y-m-d') : '',
                     'end_date'          => $row->end_date   ? \Carbon\Carbon::parse($row->end_date)->format('Y-m-d')   : '',
-                    'is_recurrent'      => $row->is_recurrent == 1 ? 'Sí' : 'No',
+                    'is_recurrent'      => in_array(strtolower($row->is_recurrent ?? ''), ['1', 'true', 'yes']) ? 'Sí' : 'No',
                     'renewal_count'     => (int)($row->renewal_count ?? 0),
                     'prosepago_id'      => $row->prosepago_id ?? '',
                     'banco'             => $row->banco ?? '',
                     'titular'           => $row->titular ?? '',
                     'total_lavados'     => (int)$row->total_lavados,
                     'ultimo_lavado'     => $row->ultimo_lavado ? \Carbon\Carbon::parse($row->ultimo_lavado)->format('Y-m-d') : '',
+                    'fecha_registro'    => $row->fecha_registro ?? '',
                 ];
             }, $rows);
 

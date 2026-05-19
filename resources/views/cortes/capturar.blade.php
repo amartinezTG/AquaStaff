@@ -82,38 +82,70 @@
 
         {{-- ══ VENTAS ══ --}}
         <div class="card mb-2">
-          <div class="card-header py-2 px-4 bg-primary bg-opacity-10 border-bottom">
+          <div class="card-header py-2 px-4 bg-primary bg-opacity-10 border-bottom d-flex align-items-center justify-content-between">
             <span class="fw-bold text-primary small text-uppercase">
               <i class="bi bi-cash-stack me-1"></i>Ventas
+            </span>
+            <span style="font-size:.70rem;color:#92400e;font-weight:600">
+              <span style="display:inline-block;width:10px;height:10px;background:#fef9c3;border:1px solid #fbbf24;border-radius:2px;margin-right:3px"></span>
+              = Sistema (local_transaction)
             </span>
           </div>
           <div class="card-body px-4 py-3">
 
-            {{-- Fila 5: VENTAS (total del sistema) --}}
+            {{-- Leyenda columnas --}}
+            <div class="row g-0 py-1 mb-1" style="font-size:.70rem;color:#888;font-weight:600;text-transform:uppercase">
+              <div class="col-4"></div>
+              <div class="col-3 text-center" style="color:#92400e"><i class="bi bi-database me-1"></i>Sistema</div>
+              <div class="col-5 text-center">Capturado</div>
+            </div>
+
+            {{-- Total Ventas (sistema) --}}
             <div class="row g-0 align-items-center border-bottom py-2">
-              <div class="col-7 text-muted small">Total Ventas (sistema)</div>
+              <div class="col-4 text-muted small">Total Ventas (sistema)</div>
+              <div class="col-3 pe-1">
+                <div class="input-group input-group-sm" title="Suma de lavados paquete del cajero ese día en local_transaction">
+                  <span class="input-group-text" style="background:#fef9c3;border-color:#fbbf24;color:#92400e;font-size:.70rem">{{ $sistemaData['num_lavados'] }}x</span>
+                  <input type="text" id="sis_total_ventas" readonly tabindex="-1"
+                         value="{{ '$'.number_format($sistemaData['total_ventas'],2) }}"
+                         class="form-control form-control-sm text-end" style="background:#fef9c3;border-color:#fbbf24;color:#92400e;font-weight:600">
+                </div>
+              </div>
               <div class="col-5">
                 <div class="input-group input-group-sm">
                   <span class="input-group-text">$</span>
                   <input type="number" step="0.01" min="0" name="total_ventas" id="f_total_ventas"
                          value="{{ old('total_ventas', $corteExistente->total_ventas ?? '') }}"
-                         class="form-control text-end" placeholder="0.00">
+                         class="form-control text-end bg-light" placeholder="0.00" readonly tabindex="-1">
                 </div>
               </div>
             </div>
 
-            {{-- Fila 7-9: Tarjetas --}}
-            <div class="mt-2 mb-1 text-muted" style="font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; font-weight:600">
+            {{-- Desglose tipo de pago --}}
+            <div class="mt-2 mb-1 text-muted" style="font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:600">
               Desglose por Tipo de Pago
             </div>
+
+            {{-- Tarjetas --}}
             <div class="row g-0 align-items-center border-bottom py-2">
               <div class="col-4 text-muted small">Tarjetas</div>
-              <div class="col-4 pe-1">
+              {{-- Sistema: # pagos + importe (PaymentType!=0, incluye membresías) --}}
+              <div class="col-3 pe-1">
+                <div class="input-group input-group-sm" title="Pagos con tarjeta del cajero ese día (lavados + membresías)">
+                  <span class="input-group-text" style="background:#fef9c3;border-color:#fbbf24;color:#92400e;font-size:.70rem"
+                        id="sis_num_tarjeta_badge">{{ $sistemaData['num_pagos_tarjeta'] }}x</span>
+                  <input type="text" id="sis_importe_tarjeta" readonly tabindex="-1"
+                         value="{{ '$'.number_format($sistemaData['importe_tarjeta'],2) }}"
+                         class="form-control form-control-sm text-end" style="background:#fef9c3;border-color:#fbbf24;color:#92400e;font-weight:600">
+                </div>
+              </div>
+              {{-- Capturado: # pagos + importe --}}
+              <div class="col-2 pe-1">
                 <input type="number" min="0" name="num_pagos_tarjeta" id="f_num_tarjeta"
                        value="{{ old('num_pagos_tarjeta', $corteExistente->num_pagos_tarjeta ?? '') }}"
                        class="form-control form-control-sm text-end" placeholder="# pagos">
               </div>
-              <div class="col-4">
+              <div class="col-3">
                 <div class="input-group input-group-sm">
                   <span class="input-group-text">$</span>
                   <input type="number" step="0.01" min="0" name="importe_tarjeta" id="f_tarjeta"
@@ -122,15 +154,26 @@
                 </div>
               </div>
             </div>
+
             <div class="row g-0 align-items-center py-1">
               <div class="col-7 text-muted small ps-2">Total Prosepago</div>
               <div class="col-5 text-end small fw-semibold pe-1" id="txt_prosepago">$0.00</div>
             </div>
 
-            {{-- Fila 10-13: Efectivo --}}
+            {{-- Efectivo MXN --}}
             <div class="row g-0 align-items-center border-top border-bottom py-2 mt-1">
               <div class="col-4 text-muted small">Efectivo MXN</div>
-              <div class="col-4 pe-1">
+              {{-- Sistema: efectivo registrado (PaymentType=0, TransactionType=2) --}}
+              <div class="col-3 pe-1">
+                <div class="input-group input-group-sm" title="Efectivo registrado en local_transaction para este cajero">
+                  <span class="input-group-text" style="background:#fef9c3;border-color:#fbbf24"><i class="bi bi-database" style="color:#92400e;font-size:.70rem"></i></span>
+                  <input type="text" id="sis_efectivo_mxn" readonly tabindex="-1"
+                         value="{{ '$'.number_format($sistemaData['efectivo_mxn'],2) }}"
+                         class="form-control form-control-sm text-end" style="background:#fef9c3;border-color:#fbbf24;color:#92400e;font-weight:600">
+                </div>
+              </div>
+              {{-- Capturado --}}
+              <div class="col-2 pe-1">
                 <div class="input-group input-group-sm">
                   <span class="input-group-text">$</span>
                   <input type="number" step="0.01" min="0" name="efectivo_mxn" id="f_mxn"
@@ -138,27 +181,32 @@
                          class="form-control text-end" placeholder="0.00">
                 </div>
               </div>
-              <div class="col-4">
-                <div class="input-group input-group-sm" title="Importe MXN">
+              <div class="col-3">
+                <div class="input-group input-group-sm" title="Importe MXN calculado">
                   <span class="input-group-text">$</span>
                   <input type="text" class="form-control text-end bg-light" id="txt_mxn_importe"
                          value="" readonly tabindex="-1" placeholder="—">
                 </div>
               </div>
             </div>
+
+            {{-- Efectivo DLLS --}}
             <div class="row g-0 align-items-center border-bottom py-2">
               <div class="col-4 text-muted small">Efectivo DLLS</div>
+              <div class="col-3 pe-1">
+                {{-- Sin equivalente en sistema --}}
+              </div>
               <div class="col-2 pe-1">
                 <input type="number" step="0.01" min="0" name="efectivo_dlls_cantidad" id="f_dlls"
                        value="{{ old('efectivo_dlls_cantidad', $corteExistente->efectivo_dlls_cantidad ?? '') }}"
                        class="form-control form-control-sm text-end" placeholder="cant.">
               </div>
-              <div class="col-2 pe-1">
+              <div class="col-1 pe-1">
                 <input type="number" step="0.0001" min="0" name="efectivo_dlls_tc" id="f_tc"
                        value="{{ old('efectivo_dlls_tc', $corteExistente->efectivo_dlls_tc ?? $tipoCambio) }}"
                        class="form-control form-control-sm text-end" placeholder="TC">
               </div>
-              <div class="col-4">
+              <div class="col-2">
                 <div class="input-group input-group-sm">
                   <span class="input-group-text">$</span>
                   <input type="text" class="form-control text-end bg-light" id="txt_dlls_importe"
@@ -166,6 +214,7 @@
                 </div>
               </div>
             </div>
+
             <div class="row g-0 align-items-center py-1 border-bottom">
               <div class="col-7 text-muted small ps-2">Total Efectivo</div>
               <div class="col-5 text-end small fw-semibold pe-1" id="txt_efectivo">$0.00</div>
@@ -246,7 +295,7 @@
                   <span class="input-group-text">$</span>
                   <input type="number" step="0.01" min="0" name="dotacion_final" id="f_dot_final"
                          value="{{ old('dotacion_final', $corteExistente->dotacion_final ?? '') }}"
-                         class="form-control text-end" placeholder="0.00">
+                         class="form-control text-end bg-light" placeholder="0.00" readonly tabindex="-1">
                 </div>
               </div>
             </div>
@@ -486,6 +535,19 @@
   function num(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
   function set(id, val) { var el=document.getElementById(id); if(el) el.value = (val!=null && val!==undefined) ? val : ''; }
 
+  // ── Rellenar inputs amarillos del sistema ─────────────────────────────────
+  function setSistema(s) {
+    if (!s) return;
+    var el;
+    el = document.getElementById('sis_total_ventas');   if(el) el.value = fmt(s.total_ventas);
+    el = document.getElementById('sis_num_lavados');    if(el) el.value = (s.num_lavados || 0) + ' lavados';
+    el = document.getElementById('sis_importe_tarjeta');if(el) el.value = fmt(s.importe_tarjeta);
+    el = document.getElementById('sis_num_tarjeta_badge'); if(el) el.textContent = (s.num_pagos_tarjeta || 0);
+    el = document.getElementById('sis_membresias_tarjeta');
+    if(el) el.value = (s.num_membresias||0) + ' · ' + fmt(s.importe_membresias_tarjeta);
+    el = document.getElementById('sis_efectivo_mxn');  if(el) el.value = fmt(s.efectivo_mxn);
+  }
+
   // ── Recalcular todos los totales ──────────────────────────────────────────
   function recalc() {
     var tarjeta  = num('f_tarjeta');
@@ -503,6 +565,10 @@
     var egresos  = dotacion + cancelados;
     var disp     = saldo_disp + dotacion;
 
+    // Total Ventas capturado = Total Prosepago + Total Efectivo
+    var elTV = document.getElementById('f_total_ventas');
+    if (elTV) elTV.value = venta.toFixed(2);
+
     document.getElementById('txt_prosepago').textContent  = fmt(tarjeta);
     document.getElementById('txt_mxn_importe').value      = fmt(mxn);
     document.getElementById('txt_dlls_importe').value     = fmt(dlls_mxn);
@@ -510,6 +576,8 @@
     document.getElementById('txt_venta').textContent      = fmt(venta);
     document.getElementById('txt_egresos').textContent    = fmt(egresos);
     document.getElementById('txt_dispensador').textContent = fmt(disp);
+    var elDotFinal = document.getElementById('f_dot_final');
+    if (elDotFinal) elDotFinal.value = disp.toFixed(2);
 
     // Denominaciones MXN
     var totalBilletes = 0, totalMonedas = 0;
@@ -556,7 +624,7 @@
 
   // ── Listeners ─────────────────────────────────────────────────────────────
   ['f_tarjeta','f_mxn','f_dlls','f_tc','f_dotacion','f_cancelados',
-   'f_saldo_disp','f_dot_final','f_corte','f_entregado'].forEach(function(id) {
+   'f_saldo_disp','f_corte','f_entregado'].forEach(function(id) {
     document.getElementById(id)?.addEventListener('input', recalc);
   });
   document.querySelectorAll('.den-mxn-input, .den-usd-input').forEach(function(el) {
@@ -584,6 +652,7 @@
     })
     .then(function(r) { return r.json(); })
     .then(function(d) {
+      setSistema(d.sistema);
       var badge = document.getElementById('badge_existente');
       if (d.existe) {
         set('f_total_ventas', d.total_ventas);

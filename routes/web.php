@@ -19,6 +19,7 @@ use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\PromocionesController;
 use App\Http\Controllers\CortesController;
 use App\Http\Controllers\MongoMonitorController;
+use App\Http\Controllers\ApiExplorerController;
 
 use App\Models\TipoDeCambio;
 use Illuminate\Support\Facades\Auth;
@@ -312,6 +313,15 @@ Route::middleware('auth')->prefix('mongo-monitor')->name('mongo_monitor.')->cont
     Route::get('/stats',  'stats')->name('stats');
 });
 # / MONGO MONITOR
+
+#################
+# API EXPLORER
+Route::middleware('auth')->prefix('configuracion/api-explorer')->name('api_explorer.')->controller(ApiExplorerController::class)->group(function () {
+    Route::get('/',       'index')->name('index');
+    Route::post('/login', 'login')->name('login');
+    Route::post('/call',  'call')->name('call');
+});
+# / API EXPLORER
 
 Route::get('/vending', function () {
     $activePage = 'vending';

@@ -113,12 +113,12 @@
         </li>
         @endif
 
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <a class="nav-link {{ $activePage === 'corte_caja' ? '' : 'collapsed' }}" href="/corte_caja">
                 <i class="bi bi-receipt"></i>
                 <span>Corte de Caja</span>
             </a>
-        </li><!-- End Corte Caja -->
+        </li> --}}{{-- End Corte Caja --}}
 
         <li class="nav-item">
             <a class="nav-link {{ $activePage === 'cortes' ? '' : 'collapsed' }}" href="{{ route('cortes.index') }}">
@@ -127,14 +127,14 @@
             </a>
         </li><!-- End Cortes por Cajero -->
 
-        @if (auth()->user()->role == 1 or auth()->user()->role == 2)
+        {{-- @if (auth()->user()->role == 1 or auth()->user()->role == 2)
             <li class="nav-item">
                 <a class="nav-link {{ $activePage === 'caja_chica' ? '' : 'collapsed' }}" href="/caja_chica">
                     <i class="bi bi-receipt"></i>
                     <span>Caja Chica</span>
                 </a>
-            </li><!-- End Caja Chica -->
-        @endif
+            </li>
+        @endif --}}{{-- End Caja Chica --}}
 
 
 
@@ -220,16 +220,17 @@
 
         @if (auth()->user()->role == 1)
             <li class="nav-item">
-                <a class="nav-link collapsed" data-bs-target="#configuracion-nav" data-bs-toggle="collapse"
+                <a class="nav-link {{ in_array($activePage, ['usuarios', 'administracion', 'sync_monitor', 'mongo_monitor', 'tipo_de_cambio', 'api_explorer']) ? '' : 'collapsed' }}" data-bs-target="#configuracion-nav" data-bs-toggle="collapse"
                     href="#">
-                    <i class="bi bi-bar-chart"></i><span>Configuración </span><i class="bi bi-chevron-down ms-auto"></i>
+                    <i class="bi bi-gear"></i><span>Configuración </span><i class="bi bi-chevron-down ms-auto"></i>
                 </a>
-                <ul id="configuracion-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-                    <li><a href="/usuarios"><i class="bi bi-circle"></i><span>Usuarios </span></a></li>
-                    <li><a href="{{ route('administracion.index') }}"><i class="bi bi-shield-check"></i><span>Auditoría </span></a></li>
-                    <li><a href="{{ route('administracion.sync.monitor') }}"><i class="bi bi-arrow-repeat"></i><span>Monitor Sync</span></a></li>
-
-                    <li><a href="/tipo_de_cambio"><i class="bi bi-circle"></i><span>Tipo de Cambio</span></a></li>
+                <ul id="configuracion-nav" class="nav-content collapse {{ in_array($activePage, ['usuarios', 'administracion', 'sync_monitor', 'mongo_monitor', 'tipo_de_cambio', 'api_explorer']) ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
+                    <li><a class="nav-link {{ $activePage === 'usuarios' ? '' : 'collapsed' }}" href="/usuarios"><i class="bi bi-people"></i><span>Usuarios </span></a></li>
+                    <li><a class="nav-link {{ $activePage === 'administracion' ? '' : 'collapsed' }}" href="{{ route('administracion.index') }}"><i class="bi bi-shield-check"></i><span>Auditoría </span></a></li>
+                    <li><a class="nav-link {{ $activePage === 'sync_monitor' ? '' : 'collapsed' }}" href="{{ route('administracion.sync.monitor') }}"><i class="bi bi-arrow-repeat"></i><span>Monitor Sync</span></a></li>
+                    <li><a class="nav-link {{ $activePage === 'mongo_monitor' ? '' : 'collapsed' }}" href="{{ route('mongo_monitor.index') }}"><i class="bi bi-database-fill"></i><span>Monitor MongoDB</span></a></li>
+                    <li><a class="nav-link {{ $activePage === 'tipo_de_cambio' ? '' : 'collapsed' }}" href="/tipo_de_cambio"><i class="bi bi-currency-exchange"></i><span>Tipo de Cambio</span></a></li>
+                    <li><a class="nav-link {{ $activePage === 'api_explorer' ? '' : 'collapsed' }}" href="{{ route('api_explorer.index') }}"><i class="bi bi-braces-asterisk"></i><span>API Explorer</span></a></li>
                 </ul>
             </li>
         @endif

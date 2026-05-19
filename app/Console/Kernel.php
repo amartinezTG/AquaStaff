@@ -20,6 +20,12 @@ class Kernel extends ConsoleKernel
 
         // Limpia renovaciones/compras de membresía duplicadas del día en curso
         $schedule->command('transactions:clean-duplicates')->everyFiveMinutes();
+
+        // Detecta e inserta clientes nuevos desde la API cada 5 minutos
+        $schedule->command('sync:nuevos-clientes')->everyFiveMinutes();
+
+        // Sincronización completa: actualiza datos y membresías de todos los clientes (2:30pm y 11:00pm)
+        $schedule->command('sync:actualizar-clientes')->cron('30 14,23 * * *');
     } 
   
     /**

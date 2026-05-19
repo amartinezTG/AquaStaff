@@ -30,6 +30,20 @@
                 padding: 10px 8px;
                 border: none;
             }
+            #clientes_table thead tr.col-filters th {
+                background: #e8f0fe !important;
+                padding: 4px 4px !important;
+                position: static !important;
+            }
+            #clientes_table thead tr.col-filters input {
+                font-size: 0.72rem;
+                padding: 3px 5px;
+                border: 1px solid #b3c7f7;
+                border-radius: 4px;
+                width: 100%;
+                color: #333;
+                background: #fff;
+            }
 
             #clientes_table tbody td {
                 vertical-align: middle;
@@ -145,11 +159,18 @@
                 <div class="col-12">
                     <div class="card" style="border-left:5px solid #0d6efd;">
                         <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div>
+                                    <h5 class="mb-0 fw-semibold">Listado de Clientes</h5>
+                                    <small class="text-muted">Clientes registrados y sincronizados desde el servidor. La tabla se actualiza automáticamente cada 5 minutos con nuevos registros y dos veces al día con cambios en los datos.</small>
+                                </div>
+                            </div>
                             <div class="table-responsive">
 
                                 <table id="clientes_table" class="table table-bordered table-hover nowrap" style="width:100%">
                                     <thead>
                                         <tr>
+                                            <th>ID</th>
                                             <th>Cliente</th>
                                             <th>Tag</th>
                                             <th>Placa</th>
@@ -158,6 +179,7 @@
                                             <th>Email</th>
                                             <th>Membresía</th>
                                             <th>Estatus</th>
+                                            <th>Registro</th>
                                             <th>Inicio</th>
                                             <th>Vence</th>
                                             <th>Recurrente</th>
@@ -179,7 +201,7 @@
 
         </section>
 
-        <script src="{{ asset('assets/js/indicadores-clientes.js') }}"></script>
+        <script src="{{ asset('assets/js/indicadores-clientes.js') }}?v={{ filemtime(public_path('assets/js/indicadores-clientes.js')) }}"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 cargarClientes();

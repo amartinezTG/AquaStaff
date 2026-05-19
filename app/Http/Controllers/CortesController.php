@@ -10,6 +10,7 @@ use App\Models\CorteCajeroDenominacion;
 use App\Models\FacilityCaja;
 use App\Models\Facilities;
 use App\Models\TipoDeCambio;
+use Carbon\Carbon;
   
 class CortesController extends Controller
 {
@@ -30,7 +31,7 @@ class CortesController extends Controller
     {
         $activePage = 'cortes';
         $mes        = $request->get('mes', now()->format('Y-m'));
-        $orden      = $request->get('orden', 'asc'); // asc | desc
+        $orden      = $request->get('orden', 'desc'); // desc por defecto: más reciente arriba
 
         [$anio, $mes_num] = explode('-', $mes);
 
@@ -47,11 +48,17 @@ class CortesController extends Controller
             ->get()
             ->groupBy(fn($c) => $c->fecha_corte->format('Y-m-d'));
 
-        // Fechas del mes ordenadas según parámetro
+        // Fechas del mes: si es el mes actual, no mostrar días futuros
+        $hoy       = now()->startOfDay();
+        $esMesActual = $mes === now()->format('Y-m');
         $diasEnMes = cal_days_in_month(CAL_GREGORIAN, (int)$mes_num, (int)$anio);
         $fechas    = collect();
         for ($d = 1; $d <= $diasEnMes; $d++) {
-            $fechas->push(sprintf('%04d-%02d-%02d', $anio, $mes_num, $d));
+            $fecha = sprintf('%04d-%02d-%02d', $anio, $mes_num, $d);
+            if ($esMesActual && $fecha > $hoy->format('Y-m-d')) {
+                continue;
+            }
+            $fechas->push($fecha);
         }
         if ($orden === 'desc') {
             $fechas = $fechas->reverse()->values();
@@ -91,9 +98,12 @@ class CortesController extends Controller
             ? $corteExistente->denominaciones->where('moneda', 'USD')->keyBy('denominacion')
             : collect();
 
+        $sistemaData = $this->sistemaDatos($cajaSeleccionada->codigo, $fechaCorte);
+
         return view('cortes.capturar', compact(
             'activePage', 'tipoCambio', 'facility', 'cajas',
-            'fechaCorte', 'cajaSeleccionada', 'corteExistente', 'denMxn', 'denUsd'
+            'fechaCorte', 'cajaSeleccionada', 'corteExistente', 'denMxn', 'denUsd',
+            'sistemaData'
         ));
     }
 
@@ -164,13 +174,16 @@ class CortesController extends Controller
         $cajaId     = $request->get('caja_id');
         $fechaCorte = $request->get('fecha_corte');
 
+        $caja = FacilityCaja::find($cajaId);
+        $sistema = $caja ? $this->sistemaDatos($caja->codigo, $fechaCorte) : [];
+
         $corte = CorteCajero::with('denominaciones')
             ->where('fecha_corte', $fechaCorte)
             ->where('caja_id', $cajaId)
             ->first();
 
         if (!$corte) {
-            return response()->json(['existe' => false]);
+            return response()->json(['existe' => false, 'sistema' => $sistema]);
         }
 
         $denMxn = $corte->denominaciones->where('moneda', 'MXN')->keyBy('denominacion')
@@ -180,6 +193,7 @@ class CortesController extends Controller
 
         return response()->json([
             'existe'                    => true,
+            'sistema'                   => $sistema,
             'updated_at'                => $corte->updated_at->format('d/m/Y H:i'),
             'total_ventas'              => $corte->total_ventas,
             'num_pagos_tarjeta'         => $corte->num_pagos_tarjeta,
@@ -417,6 +431,42 @@ class CortesController extends Controller
 
         return redirect()->route('cortes.show', $corte->fecha_corte->format('Y-m-d'))
             ->with('success', 'Corte actualizado correctamente.');
+    }
+
+    // ── Datos del sistema para un cajero/fecha concretos ────────────────────
+    private function sistemaDatos(string $codigoCaja, string $fecha): array
+    {
+        $inicio = Carbon::parse($fecha)->startOfDay();
+        $fin    = Carbon::parse($fecha)->endOfDay();
+
+        $row = DB::selectOne("
+            SELECT
+                -- Total real del cajero: lavados (T2) + compra/renovación membresía (T0,T1), excluye cortesías (Total=0)
+                SUM(CASE WHEN Total > 0 THEN Total ELSE 0 END)                                                               AS total_ventas,
+                -- Tarjeta: cualquier tipo de transacción pagada con tarjeta (PaymentType 1=débito, 2=crédito)
+                SUM(CASE WHEN PaymentType != 0 AND Total > 0 THEN Total ELSE 0 END)                                         AS importe_tarjeta,
+                COUNT(CASE WHEN PaymentType != 0 AND Total > 0 THEN 1 END)                                                  AS num_pagos_tarjeta,
+                -- Efectivo: cualquier tipo de transacción pagada en efectivo (PaymentType=0)
+                SUM(CASE WHEN PaymentType = 0 AND Total > 0 THEN Total ELSE 0 END)                                          AS efectivo_mxn,
+                -- Conteos desglosados
+                COUNT(CASE WHEN TransactionType = 2 AND Total > 0 THEN 1 END)                                               AS num_lavados,
+                SUM(CASE WHEN TransactionType IN (0,1) AND PaymentType != 0 AND Total > 0 THEN Total ELSE 0 END)            AS importe_membresias_tarjeta,
+                COUNT(CASE WHEN TransactionType IN (0,1) AND Total > 0 THEN 1 END)                                          AS num_membresias
+            FROM local_transaction
+            WHERE TransationDate BETWEEN ? AND ?
+              AND Atm = ?
+              AND deleted_at IS NULL
+        ", [$inicio, $fin, $codigoCaja]);
+
+        return [
+            'total_ventas'              => (float) ($row->total_ventas              ?? 0),
+            'importe_tarjeta'           => (float) ($row->importe_tarjeta           ?? 0),
+            'num_pagos_tarjeta'         => (int)   ($row->num_pagos_tarjeta         ?? 0),
+            'efectivo_mxn'              => (float) ($row->efectivo_mxn              ?? 0),
+            'num_lavados'               => (int)   ($row->num_lavados               ?? 0),
+            'importe_membresias_tarjeta'=> (float) ($row->importe_membresias_tarjeta?? 0),
+            'num_membresias'            => (int)   ($row->num_membresias            ?? 0),
+        ];
     }
 
     // -----------------------------------------------------------------------
