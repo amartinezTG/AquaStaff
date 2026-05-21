@@ -520,11 +520,11 @@ class FacturacionIndividualController extends Controller
         $dirs = [
             'pdf' => [
                 storage_path('app/public/pdfs'),
-                base_path('../AquaFacturacion/storage/app/public/pdfs'),
+                base_path('../facturacion_aqua/storage/app/public/pdfs'),
             ],
             'xml' => [
                 storage_path('app/public/xmls'),
-                base_path('../AquaFacturacion/storage/app/public/xmls'),
+                base_path('../facturacion_aqua/storage/app/public/xmls'),
             ],
         ];
 
