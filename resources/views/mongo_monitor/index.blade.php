@@ -122,6 +122,7 @@
                                                 <th class="text-end">Total</th>
                                                 <th class="text-end">Avg. doc</th>
                                                 <th>Uso relativo</th>
+                                                <th></th>
                                             </tr>
                                         </thead>
                                         <tbody id="tbodyCollections"></tbody>
@@ -203,6 +204,13 @@
                         const pctCol = s.total_size > 0
                             ? Math.round((col.total_size / s.total_size) * 100)
                             : 0;
+                        const accionesCell = col.name === 'logs'
+                            ? `<td class="text-center">
+                                <button class="btn btn-sm btn-outline-danger" onclick="truncarLogs(this)" title="Eliminar todos los documentos de la colección logs">
+                                    <i class="bi bi-trash3 me-1"></i>Vaciar
+                                </button>
+                               </td>`
+                            : `<td></td>`;
                         tbody.innerHTML += `
                             <tr class="collection-row">
                                 <td><code class="text-dark fw-bold">${col.name}</code></td>
@@ -217,6 +225,7 @@
                                         <div class="progress-bar bg-info" style="width:${pctCol}%;font-size:11px">${pctCol > 8 ? pctCol + '%' : ''}</div>
                                     </div>
                                 </td>
+                                ${accionesCell}
                             </tr>`;
                     });
 
@@ -229,6 +238,55 @@
                 });
         }
 
+        function truncarLogs(btn) {
+            Swal.fire({
+                title: '¿Vaciar colección logs?',
+                html: 'Se eliminarán <strong>todos</strong> los documentos de la colección.<br>Esta acción <u>no se puede deshacer</u>.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, vaciar',
+                cancelButtonText: 'Cancelar',
+            }).then(result => {
+                if (!result.isConfirmed) return;
+
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+                fetch('/mongo-monitor/collections/logs/truncate', {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Colección vaciada',
+                            text: `Se eliminaron ${res.deleted.toLocaleString('es-MX')} documento(s).`,
+                            timer: 2500,
+                            showConfirmButton: false,
+                        });
+                        cargarStats();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: res.message });
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-trash3 me-1"></i>Vaciar';
+                    }
+                })
+                .catch(() => {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo conectar con el servidor.' });
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-trash3 me-1"></i>Vaciar';
+                });
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', cargarStats);
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>

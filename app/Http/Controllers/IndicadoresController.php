@@ -263,7 +263,9 @@ class IndicadoresController extends Controller
                     END AS estatus_membresia,
                     COALESCE(oa.total_lavados, 0) AS total_lavados,
                     oa.ultimo_lavado,
-                    DATE(c.created_at) AS fecha_registro
+                    DATE(c.created_at) AS fecha_registro,
+                    rld.tarjeta,
+                    IF(pd.en_procepago = 1, 'Sí', 'No') AS recurrente_procepago
                 FROM clients c
                 LEFT JOIN (
                     SELECT cm.*
@@ -271,8 +273,10 @@ class IndicadoresController extends Controller
                     INNER JOIN (
                         SELECT client_id, MAX(start_date) AS max_start
                         FROM client_membership
+                        WHERE deleted_at IS NULL
                         GROUP BY client_id
                     ) latest ON cm.client_id = latest.client_id AND cm.start_date = latest.max_start
+                    WHERE cm.deleted_at IS NULL
                 ) cm ON cm.client_id = c._id
                 LEFT JOIN (
                     SELECT UserId, COUNT(*) AS total_lavados, MAX(created_at) AS ultimo_lavado
@@ -280,6 +284,21 @@ class IndicadoresController extends Controller
                     WHERE OrderType = 1
                     GROUP BY UserId
                 ) oa ON oa.UserId = c._id
+                LEFT JOIN (
+                    SELECT r.referencia, r.tarjeta
+                    FROM recurrent_log_domiciliaciones r
+                    INNER JOIN (
+                        SELECT referencia, MAX(created_at) AS max_created
+                        FROM recurrent_log_domiciliaciones
+                        GROUP BY referencia
+                    ) latest_rld ON r.referencia = latest_rld.referencia AND r.created_at = latest_rld.max_created
+                ) rld ON rld.referencia = c._id
+                LEFT JOIN (
+                    SELECT referencia, 1 AS en_procepago
+                    FROM procepago_domiciliaciones
+                    WHERE deleted_at IS NULL
+                    GROUP BY referencia
+                ) pd ON pd.referencia = c._id
                 WHERE c.deleted_at IS NULL
                 ORDER BY cliente ASC
             ";
@@ -304,11 +323,12 @@ class IndicadoresController extends Controller
                     'is_recurrent'      => in_array(strtolower($row->is_recurrent ?? ''), ['1', 'true', 'yes']) ? 'Sí' : 'No',
                     'renewal_count'     => (int)($row->renewal_count ?? 0),
                     'prosepago_id'      => $row->prosepago_id ?? '',
-                    'banco'             => $row->banco ?? '',
                     'titular'           => $row->titular ?? '',
                     'total_lavados'     => (int)$row->total_lavados,
                     'ultimo_lavado'     => $row->ultimo_lavado ? \Carbon\Carbon::parse($row->ultimo_lavado)->format('Y-m-d') : '',
                     'fecha_registro'    => $row->fecha_registro ?? '',
+                    'tarjeta'               => $row->tarjeta ?? '',
+                    'recurrente_procepago'  => $row->recurrente_procepago ?? 'No',
                 ];
             }, $rows);
 
@@ -325,6 +345,99 @@ class IndicadoresController extends Controller
                 'message' => 'Error: ' . $e->getMessage(),
                 'data'    => [],
             ], 500);
+        }
+    }
+
+    public function indicadores_cliente_detalle(Request $request)
+    {
+        try {
+            $clientId = $request->input('client_id');
+            if (!$clientId) return response()->json(['success' => false, 'message' => 'client_id requerido'], 400);
+
+            $membershipNames = [
+                '612f057787e473107fda56aa' => 'Express',
+                '61344ae637a5f00383106c7a' => 'Express',
+                '612f067387e473107fda56b0' => 'Básico',
+                '61344b5937a5f00383106c80' => 'Básico',
+                '612f1c4f30b90803837e7969' => 'Ultra',
+                '61344b9137a5f00383106c84' => 'Ultra',
+                '61344bab37a5f00383106c88' => 'Delux',
+                '612abcd1c4ce4c141237a356' => 'Delux',
+            ];
+
+            // Membresías (incluyendo eliminadas, para historial completo)
+            $membresias = DB::select("
+                SELECT id, membership_id, start_date, end_date, prosepago_id,
+                       uses, months, is_blocked, deleted_at, created_at
+                FROM client_membership
+                WHERE client_id = ?
+                ORDER BY start_date DESC
+            ", [$clientId]);
+
+            foreach ($membresias as $m) {
+                $m->tipo = $membershipNames[$m->membership_id] ?? 'N/A';
+                $m->vigente = is_null($m->deleted_at) && $m->end_date >= now()->toDateTimeString();
+                $m->eliminada = !is_null($m->deleted_at);
+            }
+
+            // Lavados (orders OrderType = 1)
+            $lavados = DB::select("
+                SELECT o.order_id, o.OrderDate, o.MembershipId, o.Price, o.created_at
+                FROM orders o
+                WHERE o.UserId = ? AND o.OrderType = 1
+                ORDER BY o.OrderDate DESC
+                LIMIT 200
+            ", [$clientId]);
+
+            foreach ($lavados as $l) {
+                $l->tipo = $membershipNames[$l->MembershipId] ?? 'N/A';
+            }
+
+            // Domiciliaciones (cobros con datos de tarjeta)
+            $domiciliaciones = DB::select("
+                SELECT id, tarjeta, titular, banco, importe, concepto,
+                       prosepago_status, prosepago_mensaje, created_at
+                FROM recurrent_log_domiciliaciones
+                WHERE referencia = ?
+                ORDER BY created_at DESC
+                LIMIT 100
+            ", [$clientId]);
+
+            // Transacciones recurrentes
+            $transacciones = DB::select("
+                SELECT id, source, folio, importe, fecha, concepto,
+                       status, causa_denegada, prosepago_status, prosepago_mensaje
+                FROM recurrent_log_transactions
+                WHERE referencia = ?
+                ORDER BY fecha DESC
+                LIMIT 100
+            ", [$clientId]);
+
+            // Historial de membresía (solo role=latest para evitar ruido)
+            $recurrentMemberships = DB::select("
+                SELECT id, role, start_date, end_date, prosepago_id,
+                       months, uses, is_blocked, created_at
+                FROM recurrent_log_memberships
+                WHERE client_id = ?
+                ORDER BY created_at DESC
+                LIMIT 50
+            ", [$clientId]);
+
+            foreach ($recurrentMemberships as $rm) {
+                $rm->tipo = $membershipNames[$rm->membership_id ?? ''] ?? 'N/A';
+            }
+
+            return response()->json([
+                'success'               => true,
+                'membresias'            => $membresias,
+                'lavados'               => $lavados,
+                'domiciliaciones'       => $domiciliaciones,
+                'transacciones'         => $transacciones,
+                'recurrent_memberships' => $recurrentMemberships,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 

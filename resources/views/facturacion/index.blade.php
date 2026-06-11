@@ -298,7 +298,7 @@
             <i class="bi bi-receipt me-2"></i>Generar Factura Global
         </button>
 
-        <script src="{{ asset('assets/js/facturacion.js') }}"></script>
+        <script src="{{ asset('assets/js/facturacion.js') }}?v={{ filemtime(public_path('assets/js/facturacion.js')) }}"></script>
     </main>
 
     <footer id="footer" class="footer">

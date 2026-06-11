@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class MongoMonitorController extends Controller
 {
+    // Sólo estas colecciones pueden vaciarse desde la UI
+    const TRUNCATABLE = ['logs'];
     // Límite gratuito de MongoDB Atlas en bytes (512 MB)
     const FREE_TIER_LIMIT_BYTES = 512 * 1024 * 1024;
 
@@ -13,6 +16,27 @@ class MongoMonitorController extends Controller
     {
         $activePage = 'mongo_monitor';
         return view('mongo_monitor.index', compact('activePage'));
+    }
+
+    public function truncateCollection(string $collection)
+    {
+        if (!in_array($collection, self::TRUNCATABLE, true)) {
+            return response()->json(['success' => false, 'message' => 'Operación no permitida para esta colección.'], 403);
+        }
+
+        try {
+            $result = DB::connection('mongodb')
+                ->getMongoDB()
+                ->selectCollection($collection)
+                ->deleteMany([]);
+
+            return response()->json([
+                'success'  => true,
+                'deleted'  => $result->getDeletedCount(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 
     public function stats()

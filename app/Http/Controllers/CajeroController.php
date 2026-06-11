@@ -1130,6 +1130,8 @@ class CajeroController extends Controller
             }
         }
 
+        $cruzadasOk = $ltIds->intersect($ppIds)->count() - count($diferenciaMonto);
+
         return response()->json([
             'resumen' => [
                 'total_pp'           => round((float) $pp->sum('monto_total'), 2),
@@ -1140,6 +1142,7 @@ class CajeroController extends Controller
                 'solo_en_pp_monto'   => round((float) collect($soloEnProcepago)->sum('total_pp'), 2),
                 'dif_monto_n'        => count($diferenciaMonto),
                 'dif_monto_total'    => round((float) collect($diferenciaMonto)->sum('dif_precio'), 2),
+                'cruzadas_ok_n'      => max(0, $cruzadasOk),
             ],
             'solo_en_aqua'      => collect($soloEnAqua)->sortBy('fecha')->values(),
             'solo_en_procepago' => collect($soloEnProcepago)->sortBy('fecha')->values(),

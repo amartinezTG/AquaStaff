@@ -57,10 +57,8 @@ function CajerosDaTable(){
                 text: '<i class="ti ti-refresh"></i>',
                 className: 'btn-sm btn-success',
                 action: function (e, dt, node, config) {
-                    indicadores_table.clear().draw();
-                    indicadores_table.ajax.reload();
-                    // $('div#loader').addClass('d-none');
-                        $('.table-responsive').addClass('loader_iiee');
+                    dt.ajax.reload();
+                    $('.table-responsive').addClass('loader_iiee');
                 }
             }
                  

@@ -1,6 +1,7 @@
 let facturacionTable = null;
 let historialTable   = null;
 let selectedIds      = new Set();
+let allLoadedData    = [];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TABLA TRANSACCIONES
@@ -53,8 +54,10 @@ function buscarTransacciones() {
                 const all  = json.data || [];
                 actualizarResumen(all);
                 document.getElementById('summaryCards').style.display = 'flex';
-                // Filtrar por estatus si se seleccionó uno
-                return estatus ? all.filter(r => r.estatus_factura === estatus) : all;
+                const filtered = estatus ? all.filter(r => r.estatus_factura === estatus) : all;
+                // Guardar copia completa para selectAll y grupos (rows().data() solo devuelve DOM visible con Scroller)
+                allLoadedData = filtered;
+                return filtered;
             },
             error: function() {
                 Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar las transacciones.' });
@@ -150,17 +153,13 @@ function buscarTransacciones() {
         actualizarSeleccionInfo();
     });
 
-    // Seleccionar todos los pendientes (todos los registros cargados)
+    // Seleccionar todos los pendientes (usando allLoadedData, no rows().data() que es limitado por Scroller)
     document.getElementById('selectAll').onchange = function() {
         const checked = this.checked;
         if (checked) {
-            // Iterar sobre todos los datos del DataTable, no solo el DOM visible
-            facturacionTable.rows().data().each(function(row) {
-                if (!row.bloqueada) {
-                    selectedIds.add(row.local_transaction_id);
-                }
+            allLoadedData.forEach(function(row) {
+                if (!row.bloqueada) selectedIds.add(row.local_transaction_id);
             });
-            // Marcar checkboxes visibles en el DOM
             $('#facturacion_table tbody .row-check').prop('checked', true);
         } else {
             selectedIds.clear();
@@ -189,15 +188,12 @@ function actualizarSeleccionInfo() {
     const infoTexto  = document.getElementById('seleccionTexto');
 
     if (count > 0) {
-        // Calcular total seleccionado
         let totalSel = 0;
-        if (facturacionTable) {
-            facturacionTable.rows().data().each(function(row) {
-                if (selectedIds.has(row.local_transaction_id)) {
-                    totalSel += parseFloat(row.total);
-                }
-            });
-        }
+        allLoadedData.forEach(function(row) {
+            if (selectedIds.has(row.local_transaction_id)) {
+                totalSel += parseFloat(row.total);
+            }
+        });
         const fmt = '$' + totalSel.toLocaleString('es-MX', { minimumFractionDigits: 2 });
         infoTexto.textContent = `${count} transacción(es) seleccionada(s) — ${fmt}`;
         infoDiv.style.display    = 'block';
@@ -239,13 +235,15 @@ function generarFactura() {
     };
 
     const conceptoDefault = sugerencias[paymentType] ?? sugerencias[''];
-    const ahora = new Date();
-    const pad   = n => String(n).padStart(2, '0');
-    const fechaDefault = `${ahora.getFullYear()}-${pad(ahora.getMonth()+1)}-${pad(ahora.getDate())}T${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`;
+    const pad = n => String(n).padStart(2, '0');
+    // Default: último día del período filtrado a las 23:59, no la hora actual
+    const fechaFinalFiltro = document.getElementById('fechaFinal').value;
+    const baseDate = fechaFinalFiltro ? new Date(fechaFinalFiltro + 'T23:59') : new Date();
+    const fechaDefault = `${baseDate.getFullYear()}-${pad(baseDate.getMonth()+1)}-${pad(baseDate.getDate())}T23:59`;
 
-    // Agrupar IDs seleccionados por PaymentType usando los datos del DataTable
+    // Agrupar IDs seleccionados por PaymentType usando allLoadedData (no rows().data() que Scroller limita al DOM)
     const grupos = { 0: [], 1: [], 2: [] };
-    facturacionTable.rows().data().each(function(row) {
+    allLoadedData.forEach(function(row) {
         if (selectedIds.has(row.local_transaction_id)) {
             const pt = parseInt(row.payment_type);
             if (grupos[pt] !== undefined) grupos[pt].push(row.local_transaction_id);
@@ -267,8 +265,9 @@ function generarFactura() {
                     <span class="text-muted">Periodicidad:</span> <strong>${periodicidad}</strong>
                 </div>
                 <div class="mb-3">
-                    <label class="fw-bold mb-1">Fecha de emisión</label>
+                    <label class="fw-bold mb-1">Fecha de emisión del CFDI</label>
                     <input type="datetime-local" id="swal-fecha" class="form-control form-control-sm" value="${fechaDefault}">
+                    <small class="text-muted">Debe estar dentro de las últimas 72 hrs. Por defecto: último día del período a las 23:59.</small>
                 </div>
                 <hr class="my-2">
                 <label class="fw-bold mb-1">Concepto base del CFDI</label>
@@ -346,7 +345,7 @@ function generarFactura() {
                     timeout: 300000,
                     data: {
                         _token:        token,
-                        ids:           ids,
+                        ids:           JSON.stringify(ids),
                         periodicidad:  periodicidad,
                         fecha_emision: fechaEmision,
                         concepto:      conceptoGrupo,
@@ -383,8 +382,7 @@ function generarFactura() {
             title: 'Factura(s) generada(s)',
             html: `Se generaron <strong>${facturas.length}</strong> factura(s) global(es) en <strong>${generadas}</strong> grupo(s).<br><small class="text-muted">Las transacciones ahora aparecen bloqueadas.</small>`,
         }).then(() => {
-            limpiarSeleccion();
-            buscarTransacciones();
+            window.location.reload();
         });
     });
 }

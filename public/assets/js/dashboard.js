@@ -134,14 +134,28 @@ function updateDashboard(data) {
 function updateMainCards(summary) {
     // Ingresos del día
     updateCard('total_sales', formatCurrency(summary.total_ingresos || 0));
+    updateCard('ingresos_breakdown',
+        'Lavados: ' + formatCurrency(summary.ingresos_lavados || 0) +
+        ' &nbsp;|&nbsp; Memb.: ' + formatCurrency(summary.ingresos_membresia || 0) +
+        ' &nbsp;|&nbsp; Renov.: ' + formatCurrency(summary.ingresos_renovacion || 0)
+    );
     updateCard('ingresos_change', formatChange(summary.ingresos_change || 0));
     
     // Órdenes del día
     updateCard('total_ordenes', formatNumber(summary.total_ordenes || 0));
+    updateCard('lavados_breakdown',
+        'Comprados: ' + formatNumber(summary.lavados_comprados || 0) +
+        ' &nbsp;|&nbsp; Membresía: ' + formatNumber(summary.lavados_membresia || 0) +
+        ' &nbsp;|&nbsp; Otros: ' + formatNumber(summary.lavados_otros || 0)
+    );
     updateCard('ordenes_change', formatChange(summary.ordenes_change || 0));
     
     // Membresías
     updateCard('total_membresias', formatNumber(summary.total_membresias || 0));
+    updateCard('membresias_breakdown',
+        'Nueva: ' + formatNumber(summary.membresias_nuevas || 0) +
+        ' &nbsp;|&nbsp; Renov.: ' + formatNumber(summary.membresias_renovaciones || 0)
+    );
     updateCard('membresias_change', formatChange(summary.membresias_change || 0));
     
     // Ticket promedio

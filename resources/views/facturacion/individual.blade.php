@@ -239,7 +239,7 @@
             <i class="bi bi-receipt me-2"></i>Facturar selección
         </button>
 
-        <script src="{{ asset('assets/js/facturacion_individual.js') }}"></script>
+        <script src="{{ asset('assets/js/facturacion_individual.js') }}?v={{ filemtime(public_path('assets/js/facturacion_individual.js')) }}"></script>
     </main>
 
     <footer id="footer" class="footer">

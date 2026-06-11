@@ -242,6 +242,7 @@
                                 <div class="col-8">
                                     <div class="metric-label">Lavados en el Día</div>
                                     <h3 class="metric-value" id="total_ordenes">0</h3>
+                                    <div class="metric-change" id="lavados_breakdown" style="font-size:0.72rem;color:var(--text-muted);margin-bottom:2px;">--</div>
                                     <div class="metric-change" id="ordenes_change">--</div>
                                 </div>
                                 <div class="col-4 text-end">
@@ -259,6 +260,7 @@
                                 <div class="col-8">
                                     <div class="metric-label">Ingresos</div>
                                     <h3 class="metric-value" id="total_sales">$0</h3>
+                                    <div class="metric-change" id="ingresos_breakdown" style="font-size:0.72rem;color:var(--text-muted);margin-bottom:2px;">--</div>
                                     <div class="metric-change" id="ingresos_change">--</div>
                                 </div>
                                 <div class="col-4 text-end">
@@ -276,6 +278,7 @@
                                 <div class="col-8">
                                     <div class="metric-label">Membresías</div>
                                     <h3 class="metric-value" id="total_membresias">0</h3>
+                                    <div class="metric-change" id="membresias_breakdown" style="font-size:0.72rem;color:var(--text-muted);margin-bottom:2px;">--</div>
                                     <div class="metric-change" id="membresias_change">--</div>
                                 </div>
                                 <div class="col-4 text-end">
@@ -638,7 +641,7 @@
             </div>
         </section>
 
-        <script src="{{ asset('assets/js/dashboard.js') }}"></script>
+        <script src="{{ asset('assets/js/dashboard.js') }}?v={{ filemtime(public_path('assets/js/dashboard.js')) }}"></script>
         <script>
             document.addEventListener("DOMContentLoaded", function () {
                 // Cargar datos iniciales

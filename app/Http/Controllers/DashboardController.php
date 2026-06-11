@@ -178,28 +178,44 @@ class DashboardController extends Controller
                 CAST(t1.TransationDate AS DATE) AS fecha,
                 COUNT(*) AS total_ordenes,
                 SUM(t1.Total) AS total_ingresos,
-                COALESCE(AVG(CASE WHEN t1.Total > 0 THEN t1.Total END), 0) as ticket_promedio
+                COALESCE(SUM(t1.Total) / NULLIF(COUNT(*), 0), 0) as ticket_promedio,
+                COUNT(CASE WHEN t1.TransactionType = 2 AND t1.Total > 0 THEN 1 END) AS lavados_comprados,
+                COUNT(CASE WHEN t1.TransactionType = 2 AND t1.Total = 0 THEN 1 END) AS lavados_membresia,
+                COUNT(CASE WHEN t1.TransactionType IN (0,1) THEN 1 END) AS lavados_otros,
+                COALESCE(SUM(CASE WHEN t1.TransactionType = 2 THEN t1.Total END), 0) AS ingresos_lavados,
+                COALESCE(SUM(CASE WHEN t1.TransactionType = 0 THEN t1.Total END), 0) AS ingresos_membresia,
+                COALESCE(SUM(CASE WHEN t1.TransactionType = 1 THEN t1.Total END), 0) AS ingresos_renovacion,
+                COUNT(CASE WHEN t1.TransactionType = 0 THEN 1 END) AS membresias_nuevas,
+                COUNT(CASE WHEN t1.TransactionType = 1 THEN 1 END) AS membresias_renovaciones
             FROM local_transaction AS t1
             WHERE t1.TransationDate >= ?
             AND t1.TransationDate <  ?
             AND t1.deleted_at IS NULL
             GROUP BY CAST(t1.TransationDate AS DATE)
             ORDER BY fecha DESC
-        ", [$startDate, $endDate])[0] ?? (object)['total_ingresos' => 0, 'total_ordenes' => 0, 'ticket_promedio' => 0];
+        ", [$startDate, $endDate])[0] ?? (object)['total_ingresos' => 0, 'total_ordenes' => 0, 'ticket_promedio' => 0, 'lavados_comprados' => 0, 'lavados_membresia' => 0, 'lavados_otros' => 0, 'ingresos_lavados' => 0, 'ingresos_membresia' => 0, 'ingresos_renovacion' => 0, 'membresias_nuevas' => 0, 'membresias_renovaciones' => 0];
         // Datos del día anterior
         $yesterday = DB::select("
            SELECT
                 CAST(t1.TransationDate AS DATE) AS fecha,
                 COUNT(*) AS total_ordenes,
                 SUM(t1.Total) AS total_ingresos,
-                COALESCE(AVG(CASE WHEN t1.Total > 0 THEN t1.Total END), 0) as ticket_promedio
+                COALESCE(SUM(t1.Total) / NULLIF(COUNT(*), 0), 0) as ticket_promedio,
+                COUNT(CASE WHEN t1.TransactionType = 2 AND t1.Total > 0 THEN 1 END) AS lavados_comprados,
+                COUNT(CASE WHEN t1.TransactionType = 2 AND t1.Total = 0 THEN 1 END) AS lavados_membresia,
+                COUNT(CASE WHEN t1.TransactionType IN (0,1) THEN 1 END) AS lavados_otros,
+                COALESCE(SUM(CASE WHEN t1.TransactionType = 2 THEN t1.Total END), 0) AS ingresos_lavados,
+                COALESCE(SUM(CASE WHEN t1.TransactionType = 0 THEN t1.Total END), 0) AS ingresos_membresia,
+                COALESCE(SUM(CASE WHEN t1.TransactionType = 1 THEN t1.Total END), 0) AS ingresos_renovacion,
+                COUNT(CASE WHEN t1.TransactionType = 0 THEN 1 END) AS membresias_nuevas,
+                COUNT(CASE WHEN t1.TransactionType = 1 THEN 1 END) AS membresias_renovaciones
             FROM local_transaction AS t1
             WHERE t1.TransationDate >= ?
             AND t1.TransationDate <  ?
             AND t1.deleted_at IS NULL
             GROUP BY CAST(t1.TransationDate AS DATE)
             ORDER BY fecha DESC
-        ", [$yesterdayStart, $yesterdayEnd])[0] ?? (object)['total_ingresos' => 0, 'total_ordenes' => 0, 'ticket_promedio' => 0];
+        ", [$yesterdayStart, $yesterdayEnd])[0] ?? (object)['total_ingresos' => 0, 'total_ordenes' => 0, 'ticket_promedio' => 0, 'lavados_comprados' => 0, 'lavados_membresia' => 0, 'lavados_otros' => 0, 'ingresos_lavados' => 0, 'ingresos_membresia' => 0, 'ingresos_renovacion' => 0, 'membresias_nuevas' => 0, 'membresias_renovaciones' => 0];
 
         // Membresías nuevas del día
         $membresiasHoy = DB::select("
@@ -227,6 +243,14 @@ class DashboardController extends Controller
             'total_ordenes' => intval($today->total_ordenes),
             'total_membresias' => intval($membresiasHoy),
             'ticket_promedio' => floatval($today->ticket_promedio),
+            'lavados_comprados' => intval($today->lavados_comprados),
+            'lavados_membresia' => intval($today->lavados_membresia),
+            'lavados_otros' => intval($today->lavados_otros),
+            'ingresos_lavados' => floatval($today->ingresos_lavados),
+            'ingresos_membresia' => floatval($today->ingresos_membresia),
+            'ingresos_renovacion' => floatval($today->ingresos_renovacion),
+            'membresias_nuevas' => intval($today->membresias_nuevas),
+            'membresias_renovaciones' => intval($today->membresias_renovaciones),
             'ingresos_change' => $this->calculatePercentageChange($today->total_ingresos, $yesterday->total_ingresos),
             'ordenes_change' => $this->calculatePercentageChange($today->total_ordenes, $yesterday->total_ordenes),
             'membresias_change' => $this->calculatePercentageChange($membresiasHoy, $membresiasAyer),
@@ -509,11 +533,14 @@ class DashboardController extends Controller
                     INNER JOIN (
                         SELECT client_id, MAX(start_date) AS max_start
                         FROM client_membership
+                        WHERE deleted_at IS NULL
                         GROUP BY client_id
                     ) latest ON cm.client_id = latest.client_id
                              AND cm.start_date = latest.max_start
+                    WHERE cm.deleted_at IS NULL
                 ) cm ON cm.client_id = c._id
-                WHERE cm.end_date >= NOW()
+                WHERE c.deleted_at IS NULL
+                  AND cm.end_date >= NOW()
                 GROUP BY package_name
             ");
 

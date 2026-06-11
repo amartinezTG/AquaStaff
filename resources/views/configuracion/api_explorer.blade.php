@@ -141,7 +141,7 @@
                             <div class="small text-muted px-2 pt-2 pb-0 fw-semibold">Transacciones</div>
 
                             <button class="endpoint-btn" data-method="POST" data-endpoint="/api/Data/LocalTransactions" data-label="Transacciones locales"
-                                data-body='{"startDate":"2026-05-01T00:00:00","endDate":"2026-05-31T23:59:59"}'>
+                                data-body='{"initDate":"2026-05-01T00:00:00","endDate":"2026-05-31T23:59:59"}'>
                                 <span class="badge-post me-2">POST</span>/api/Data/LocalTransactions
                             </button>
 

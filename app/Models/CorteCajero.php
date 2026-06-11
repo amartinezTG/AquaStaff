@@ -9,6 +9,7 @@ class CorteCajero extends Model
     protected $table = 'cortes_cajero';
 
     protected $fillable = [
+        'corte_interlogic_id', 'interlogic_cargado',
         'fecha_corte', 'facility_id', 'caja_id',
         'total_ventas', 'num_pagos_tarjeta', 'importe_tarjeta',
         'efectivo_mxn', 'efectivo_dlls_cantidad', 'efectivo_dlls_tc',
@@ -43,5 +44,15 @@ class CorteCajero extends Model
     public function capturadoPor()
     {
         return $this->belongsTo(StaffUser::class, 'capturado_por');
+    }
+
+    public function paquetes()
+    {
+        return $this->hasMany(CorteCajeroPaquete::class, 'corte_cajero_id');
+    }
+
+    public function membresias()
+    {
+        return $this->hasMany(CorteCajeroMembresia::class, 'corte_cajero_id');
     }
 }

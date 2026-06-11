@@ -80,6 +80,13 @@
             /* Cards resumen */
             .stat-card { border-radius: 12px; border: none; transition: transform .2s; }
             .stat-card:hover { transform: translateY(-3px); }
+
+            /* DataTable lavados dentro del modal */
+            #tbl-lavados_wrapper .dt-buttons { margin-bottom: 6px; }
+            #tbl-lavados_wrapper .dt-search { display: inline-flex; align-items: center; gap: 4px; }
+            #tbl-lavados_wrapper .dt-search input { font-size: .78rem; padding: 3px 7px; border-radius: 5px; border: 1px solid #ced4da; }
+            #tbl-lavados_wrapper .dt-paging { margin-top: 4px; }
+            #tbl-lavados_wrapper .dt-info  { font-size: .75rem; color: #6c757d; }
         </style>
 
         <div class="pagetitle">
@@ -183,12 +190,13 @@
                                             <th>Inicio</th>
                                             <th>Vence</th>
                                             <th>Recurrente</th>
+                                            <th>Recurrente Procepago</th>
                                             <th>Renovaciones</th>
                                             <th>Lavados</th>
                                             <th>Último lavado</th>
                                             <th>Prosepago ID</th>
-                                            <th>Banco</th>
                                             <th>Titular</th>
+                                            <th>Tarjeta</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
@@ -200,6 +208,117 @@
             </div>
 
         </section>
+
+    <!-- Modal detalle cliente -->
+    <div class="modal fade" id="modalDetalleCliente" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header" style="background:linear-gradient(135deg,#0d6efd,#0a58ca);color:#fff;">
+                    <h5 class="modal-title mb-0">
+                        <i class="bi bi-person-circle me-2"></i>
+                        <span id="modalClienteNombre">—</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs px-3 pt-2" id="detalleTab">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-membresias">
+                                <i class="bi bi-credit-card me-1"></i>Membresías
+                                <span class="badge bg-primary ms-1" id="badge-membresias">0</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-lavados">
+                                <i class="bi bi-droplet me-1"></i>Lavados
+                                <span class="badge bg-info ms-1" id="badge-lavados">0</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-domiciliaciones">
+                                <i class="bi bi-bank me-1"></i>Cobros
+                                <span class="badge bg-success ms-1" id="badge-domiciliaciones">0</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-transacciones">
+                                <i class="bi bi-arrow-left-right me-1"></i>Transacciones
+                                <span class="badge bg-warning text-dark ms-1" id="badge-transacciones">0</span>
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content px-3 pb-3 pt-2" id="detalleTabContent">
+
+                        <!-- Tab Membresías -->
+                        <div class="tab-pane fade show active" id="tab-membresias">
+                            <div class="table-responsive mt-2">
+                                <table class="table table-sm table-bordered table-hover" id="tbl-membresias">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ID</th><th>Tipo</th><th>Inicio</th><th>Vence</th>
+                                            <th>Meses</th><th>Usos</th><th>Prosepago ID</th><th>Estatus</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="body-membresias"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab Lavados -->
+                        <div class="tab-pane fade" id="tab-lavados">
+                            <div class="table-responsive mt-2">
+                                <table class="table table-sm table-bordered table-hover" id="tbl-lavados">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>#</th><th>Fecha</th><th>Membresía</th><th>Precio</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="body-lavados"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab Cobros (Domiciliaciones) -->
+                        <div class="tab-pane fade" id="tab-domiciliaciones">
+                            <div class="table-responsive mt-2">
+                                <table class="table table-sm table-bordered table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Fecha</th><th>Tarjeta</th><th>Titular</th><th>Banco</th>
+                                            <th>Importe</th><th>Concepto</th><th>Estatus</th><th>Mensaje</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="body-domiciliaciones"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab Transacciones -->
+                        <div class="tab-pane fade" id="tab-transacciones">
+                            <div class="table-responsive mt-2">
+                                <table class="table table-sm table-bordered table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Fecha</th><th>Folio</th><th>Importe</th><th>Concepto</th>
+                                            <th>Estatus</th><th>Causa</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="body-transacciones"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
         <script src="{{ asset('assets/js/indicadores-clientes.js') }}?v={{ filemtime(public_path('assets/js/indicadores-clientes.js')) }}"></script>
         <script>

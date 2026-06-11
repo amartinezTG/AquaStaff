@@ -301,6 +301,8 @@
             document.getElementById('res-dif-neta').textContent   = (difNeta >= 0 ? '+' : '') + fmt(difNeta);
             document.getElementById('res-dif-neta').className     = 'num ' + (difNeta >= 0 ? 'pos' : 'neg');
 
+            document.getElementById('res-ok').textContent = r.cruzadas_ok_n.toLocaleString('es-MX');
+
             document.getElementById('badge-aqua').textContent = r.solo_en_aqua_n;
             document.getElementById('badge-pp').textContent   = r.solo_en_pp_n;
             document.getElementById('badge-dif').textContent  = r.dif_monto_n;
@@ -332,7 +334,7 @@
                     `<tr>
                         <td>${r.fecha}</td><td>${r.hora}</td>
                         <td class="text-center fw-bold">${r.cajero}</td>
-                        <td class="text-end">${fmt(r.total_aqua)}</td>
+                        <td class="text-end">${fmt(r.precio_aqua)}</td>
                         <td class="text-center text-muted">-</td>
                         <td class="text-end">${difCell(r.diferencia)}</td>
                     </tr>`);

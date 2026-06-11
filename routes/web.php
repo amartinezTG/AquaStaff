@@ -103,6 +103,7 @@ Route::middleware('auth')->controller(IndicadoresController::class)->group(funct
     Route::match(['get', 'post'], 'indicadores_membresias',  'indicadores_membresias')->name('indicadores_membresias');
     Route::get('indicadores/clientes', 'indicadores_clientes')->name('indicadores.clientes');
     Route::post('indicadores/clientes/table', 'indicadores_clientes_table')->name('indicadores.clientes.table');
+    Route::post('indicadores/clientes/detalle', 'indicadores_cliente_detalle')->name('indicadores.clientes.detalle');
     Route::get('indicadores/comentarios', 'getComentarios')->name('indicadores.comentarios.get');
     Route::post('indicadores/comentarios', 'upsertComentario')->name('indicadores.comentarios.upsert');
     Route::delete('indicadores/comentarios/{fecha}', 'deleteComentario')->name('indicadores.comentarios.delete');
@@ -143,10 +144,13 @@ Route::post('/membresias/membresias_cajero_table', [MembershipController::class,
 #################
 # PROCEPAGO
 Route::middleware('auth')->controller(\App\Http\Controllers\ProcepagoController::class)->group(function () {
-    Route::get('/procepago/importacion',  'index')->name('procepago.importacion');
-    Route::post('/procepago/importacion', 'importar')->name('procepago.importacion.store');
-    Route::post('/procepago/table',       'table')->name('procepago.table');
-    Route::post('/procepago/hojas',       'hojas')->name('procepago.hojas');
+    Route::get('/procepago/importacion',          'index')->name('procepago.importacion');
+    Route::post('/procepago/importacion',         'importar')->name('procepago.importacion.store');
+    Route::post('/procepago/table',               'table')->name('procepago.table');
+    Route::post('/procepago/hojas',               'hojas')->name('procepago.hojas');
+    Route::get('/procepago/domiciliaciones',      'domiciliacionesIndex')->name('procepago.domiciliaciones');
+    Route::post('/procepago/domiciliaciones',     'importarDomiciliaciones')->name('procepago.domiciliaciones.store');
+    Route::post('/procepago/domiciliaciones/table', 'tablaDomiciliaciones')->name('procepago.domiciliaciones.table');
 });
 # / PROCEPAGO
 
@@ -297,11 +301,17 @@ Route::get('/exportar_membresias_pdf/', [IndicadoresController::class, 'generarM
 #################
 # PROMOCIONES
 Route::middleware('auth')->controller(PromocionesController::class)->group(function () {
-    Route::get('/promociones', 'index')->name('promociones.index');
-    Route::post('/promociones/tabla', 'tabla')->name('promociones.tabla');
-    Route::post('/promociones/store', 'store')->name('promociones.store');
-    Route::put('/promociones/{id}', 'update')->name('promociones.update');
-    Route::get('/promociones/{id}/pdf', 'pdf')->name('promociones.pdf');
+    Route::get('/promociones',                       'index')->name('promociones.index');
+    Route::post('/promociones/tabla',                'tabla')->name('promociones.tabla');
+    Route::post('/promociones/store',                'store')->name('promociones.store');
+    // Bulk QR — estas rutas deben ir ANTES de las que tienen {id}
+    Route::post('/promociones/bulk/tabla',           'bulkTabla')->name('promociones.bulk.tabla');
+    Route::post('/promociones/bulk/store',           'bulkStore')->name('promociones.bulk.store');
+    Route::get('/promociones/bulk/proyectos',        'bulkProyectos')->name('promociones.bulk.proyectos');
+    Route::get('/promociones/bulk/download',         'bulkDownload')->name('promociones.bulk.download');
+    Route::delete('/promociones/bulk/proyecto',      'bulkDeleteProyecto')->name('promociones.bulk.delete-proyecto');
+    Route::put('/promociones/{id}',                  'update')->name('promociones.update');
+    Route::get('/promociones/{id}/pdf',              'pdf')->name('promociones.pdf');
 });
 ###### ###########s
 # / PROMOCIONES
@@ -311,6 +321,7 @@ Route::middleware('auth')->controller(PromocionesController::class)->group(funct
 Route::middleware('auth')->prefix('mongo-monitor')->name('mongo_monitor.')->controller(MongoMonitorController::class)->group(function () {
     Route::get('/',       'index')->name('index');
     Route::get('/stats',  'stats')->name('stats');
+    Route::delete('/collections/{collection}/truncate', 'truncateCollection')->name('truncate');
 });
 # / MONGO MONITOR
 

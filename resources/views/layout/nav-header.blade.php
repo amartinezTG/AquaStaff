@@ -99,14 +99,19 @@
    
         @if (auth()->user()->role == 1 or auth()->user()->role == 2)
         <li class="nav-item">
-            <a class="nav-link {{ in_array($activePage, ['procepago_importacion']) ? '' : 'collapsed' }}"
+            <a class="nav-link {{ in_array($activePage, ['procepago_importacion', 'procepago_domiciliaciones']) ? '' : 'collapsed' }}"
                 data-bs-target="#procepago-nav" data-bs-toggle="collapse" href="#">
                 <i class="bi bi-bank"></i><span>Procepago</span><i class="bi bi-chevron-down ms-auto"></i>
             </a>
-            <ul id="procepago-nav" class="nav-content collapse {{ in_array($activePage, ['procepago_importacion']) ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
+            <ul id="procepago-nav" class="nav-content collapse {{ in_array($activePage, ['procepago_importacion', 'procepago_domiciliaciones']) ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
                 <li>
                     <a class="nav-link {{ $activePage === 'procepago_importacion' ? '' : 'collapsed' }}" href="/procepago/importacion">
-                        <i class="bi bi-cloud-upload"></i><span>Importación</span>
+                        <i class="bi bi-cloud-upload"></i><span>Importación Depósitos</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-link {{ $activePage === 'procepago_domiciliaciones' ? '' : 'collapsed' }}" href="/procepago/domiciliaciones">
+                        <i class="bi bi-arrow-repeat"></i><span>Importación Domiciliaciones</span>
                     </a>
                 </li>
             </ul>

@@ -265,6 +265,7 @@ function abrirModalFacturar() {
                         <label class="form-label mb-1" style="font-size:.78rem;">RFC <span class="text-danger">*</span></label>
                         <input type="text" id="swal-rfc" class="form-control form-control-sm text-uppercase"
                             placeholder="RFC del receptor" maxlength="13">
+                        <small id="swal-rfc-tipo" class="fw-semibold" style="font-size:.72rem;"></small>
                     </div>
                     <div class="col-md-8">
                         <label class="form-label mb-1" style="font-size:.78rem;">Razón Social <span class="text-danger">*</span></label>
@@ -273,24 +274,31 @@ function abrirModalFacturar() {
                     </div>
                     <div class="col-md-4">
                         <label class="form-label mb-1" style="font-size:.78rem;">Régimen Fiscal <span class="text-danger">*</span></label>
-                        <select id="swal-regimen" class="form-select form-select-sm">
-                            <option value="601">601 - General de Ley PM</option>
-                            <option value="603">603 - PM Fines No Lucrativos</option>
-                            <option value="605">605 - Sueldos y Salarios</option>
-                            <option value="606">606 - Arrendamiento</option>
-                            <option value="612">612 - PF Act. Emp. y Prof.</option>
-                            <option value="616">616 - Sin obligaciones fiscales</option>
-                            <option value="621">621 - Incorporación Fiscal</option>
-                            <option value="625">625 - Plataformas Tecnológicas</option>
-                            <option value="626">626 - RESICO</option>
-                        </select>
+                        <select id="swal-regimen" class="form-select form-select-sm"></select>
+                        <small class="text-muted" style="font-size:.70rem;">Opciones según tipo de persona</small>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label mb-1" style="font-size:.78rem;">Uso CFDI <span class="text-danger">*</span></label>
                         <select id="swal-cfdi-use" class="form-select form-select-sm">
-                            <option value="G01">G01 - Adquisición de mercancias</option>
+                            <option value="G01">G01 - Adquisición de mercancías</option>
+                            <option value="G02">G02 - Devoluciones o descuentos</option>
                             <option value="G03" selected>G03 - Gastos en general</option>
-                            <option value="P01">P01 - Por definir</option>
+                            <option value="I01">I01 - Construcciones</option>
+                            <option value="I02">I02 - Mobilario y equipo</option>
+                            <option value="I03">I03 - Equipo de transporte</option>
+                            <option value="I04">I04 - Equipo de cómputo</option>
+                            <option value="I06">I06 - Comunicaciones telefónicas</option>
+                            <option value="I08">I08 - Otra maquinaria</option>
+                            <option value="D01">D01 - Honorarios médicos (solo PF)</option>
+                            <option value="D02">D02 - Gastos médicos (solo PF)</option>
+                            <option value="D03">D03 - Gastos funerales (solo PF)</option>
+                            <option value="D04">D04 - Donativos (solo PF)</option>
+                            <option value="D05">D05 - Intereses hipotecarios (solo PF)</option>
+                            <option value="D06">D06 - Aportaciones voluntarias SAR (solo PF)</option>
+                            <option value="D07">D07 - Primas seguros (solo PF)</option>
+                            <option value="D08">D08 - Gastos de transporte (solo PF)</option>
+                            <option value="D09">D09 - Depósitos en cuentas (solo PF)</option>
+                            <option value="D10">D10 - Pagos servicios educativos (solo PF)</option>
                             <option value="S01">S01 - Sin efectos fiscales</option>
                         </select>
                     </div>
@@ -328,6 +336,69 @@ function abrirModalFacturar() {
         cancelButtonText:  'Cancelar',
         confirmButtonColor: '#6f42c1',
         didOpen: () => {
+            // Catálogos régimen por tipo de persona
+            const regimenesFisica = [
+                { v:'605', l:'605 - Sueldos y Salarios' },
+                { v:'606', l:'606 - Arrendamiento' },
+                { v:'608', l:'608 - Demás ingresos' },
+                { v:'611', l:'611 - Ingresos por dividendos' },
+                { v:'612', l:'612 - Act. Empresariales y Prof.' },
+                { v:'614', l:'614 - Ingresos por intereses' },
+                { v:'615', l:'615 - Régimen de los ingresos' },
+                { v:'616', l:'616 - Sin obligaciones fiscales' },
+                { v:'621', l:'621 - Incorporación Fiscal' },
+                { v:'625', l:'625 - Plataformas Tecnológicas' },
+                { v:'626', l:'626 - RESICO (Persona Física)' },
+            ];
+            const regimenesMoral = [
+                { v:'601', l:'601 - General de Ley PM' },
+                { v:'603', l:'603 - PM Fines No Lucrativos' },
+                { v:'606', l:'606 - Arrendamiento' },
+                { v:'620', l:'620 - Sociedades Coop. de Prod.' },
+                { v:'622', l:'622 - Actividades Agrícolas/Ganaderas' },
+                { v:'623', l:'623 - Opcional para Grupos' },
+                { v:'624', l:'624 - Coordinados' },
+                { v:'625', l:'625 - Plataformas Tecnológicas' },
+                { v:'626', l:'626 - RESICO (Persona Moral)' },
+            ];
+
+            function detectarTipoPersona(rfc) {
+                const l = rfc.replace(/\s/g,'').length;
+                if (l === 12) return 'moral';
+                if (l === 13) return 'fisica';
+                return null;
+            }
+
+            function actualizarRegimenes(tipo, valorActual) {
+                const sel = document.getElementById('swal-regimen');
+                const lista = tipo === 'moral' ? regimenesMoral : regimenesFisica;
+                sel.innerHTML = lista.map(r =>
+                    `<option value="${r.v}" ${r.v === valorActual ? 'selected' : ''}>${r.l}</option>`
+                ).join('');
+            }
+
+            function actualizarTipoLabel(tipo) {
+                const lbl = document.getElementById('swal-rfc-tipo');
+                if (tipo === 'moral') {
+                    lbl.textContent = '🏢 Persona Moral';
+                    lbl.style.color = '#0d6efd';
+                } else if (tipo === 'fisica') {
+                    lbl.textContent = '👤 Persona Física';
+                    lbl.style.color = '#198754';
+                } else {
+                    lbl.textContent = '';
+                }
+            }
+
+            // Inicializar regímenes en blanco hasta que se escriba el RFC
+            actualizarRegimenes('fisica', '626');
+
+            document.getElementById('swal-rfc').addEventListener('input', function() {
+                const tipo = detectarTipoPersona(this.value);
+                actualizarTipoLabel(tipo);
+                if (tipo) actualizarRegimenes(tipo, document.getElementById('swal-regimen').value);
+            });
+
             // Autocomplete para RFC
             const searchInput = document.getElementById('swal-rfc-search');
             const suggestionsBox = document.getElementById('rfc-suggestions');
@@ -355,14 +426,19 @@ function abrirModalFacturar() {
                                 div.className = 'suggestion-item';
                                 div.innerHTML = `<strong>${item.rfc}</strong> — ${item.company_name}`;
                                 div.onclick = function () {
-                                    document.getElementById('swal-rfc').value       = item.rfc;
-                                    document.getElementById('swal-razon').value     = item.company_name;
-                                    document.getElementById('swal-regimen').value   = item.tax_regime   || '601';
-                                    document.getElementById('swal-cfdi-use').value  = item.cfdi_use     || 'G03';
-                                    document.getElementById('swal-cp').value        = item.zip_code     || '32030';
-                                    document.getElementById('swal-email').value     = item.email        || '';
+                                    const rfcVal = item.rfc;
+                                    document.getElementById('swal-rfc').value      = rfcVal;
+                                    document.getElementById('swal-razon').value    = item.company_name;
+                                    document.getElementById('swal-cp').value       = item.zip_code    || '32030';
+                                    document.getElementById('swal-email').value    = item.email       || '';
+                                    // Detectar tipo y poblar regímenes antes de asignar el valor guardado
+                                    const tipo = detectarTipoPersona(rfcVal);
+                                    actualizarTipoLabel(tipo);
+                                    if (tipo) actualizarRegimenes(tipo, item.tax_regime || (tipo === 'moral' ? '601' : '626'));
+                                    if (item.tax_regime) document.getElementById('swal-regimen').value = item.tax_regime;
+                                    document.getElementById('swal-cfdi-use').value = item.cfdi_use    || 'G03';
                                     suggestionsBox.innerHTML = '';
-                                    searchInput.value = item.rfc + ' — ' + item.company_name;
+                                    searchInput.value = rfcVal + ' — ' + item.company_name;
                                 };
                                 suggestionsBox.appendChild(div);
                             });
@@ -410,6 +486,26 @@ function abrirModalFacturar() {
             }
             if (fechaSel > ahora) {
                 Swal.showValidationMessage('La fecha de emisión no puede ser futura.');
+                return false;
+            }
+
+            // Validar UsoCFDI D01-D10 solo permitidos para Persona Física (RFC 13 chars)
+            const esMoral = rfc.replace(/\s/g,'').length === 12;
+            const cfdiSoloFisica = ['D01','D02','D03','D04','D05','D06','D07','D08','D09','D10'];
+            if (esMoral && cfdiSoloFisica.includes(cfdiUse)) {
+                Swal.showValidationMessage(`El uso CFDI "${cfdiUse}" solo es válido para Persona Física. Para Persona Moral usa G01, G03 o S01.`);
+                return false;
+            }
+
+            // Validar que el régimen corresponda al tipo de persona
+            const regimenFisicaValidos = ['605','606','608','611','612','614','615','616','621','625','626'];
+            const regimenMoralValidos  = ['601','603','606','620','622','623','624','625','626'];
+            if (esMoral && !regimenMoralValidos.includes(taxRegime)) {
+                Swal.showValidationMessage(`El régimen ${taxRegime} no es válido para Persona Moral. Verifica el RFC o cambia el régimen.`);
+                return false;
+            }
+            if (!esMoral && rfc.length === 13 && !regimenFisicaValidos.includes(taxRegime)) {
+                Swal.showValidationMessage(`El régimen ${taxRegime} no es válido para Persona Física. Verifica el RFC o cambia el régimen.`);
                 return false;
             }
 
@@ -472,8 +568,18 @@ function abrirModalFacturar() {
             },
             error: function (xhr) {
                 Swal.close();
-                const msg = xhr.responseJSON?.error || 'Error al generar las facturas.';
-                Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                const resp    = xhr.responseJSON || {};
+                const msg     = resp.error || 'Error al generar las facturas.';
+                const estatus = resp.estatus || null;
+                let detalle   = '';
+                if (estatus) {
+                    detalle += `<div class="mt-2 text-start" style="font-size:.8rem;">`;
+                    if (estatus.codigo)           detalle += `<div><span class="text-muted">Código SAT:</span> <strong>${estatus.codigo}</strong></div>`;
+                    if (estatus.descripcion)      detalle += `<div><span class="text-muted">Descripción:</span> ${estatus.descripcion}</div>`;
+                    if (estatus.informacionTecnica) detalle += `<div class="mt-1 p-2 rounded" style="background:#fff3cd;color:#856404;font-size:.76rem;">${estatus.informacionTecnica}</div>`;
+                    detalle += `</div>`;
+                }
+                Swal.fire({ icon: 'error', title: 'Error al timbrar', html: `<p style="font-size:.85rem;">${msg}</p>${detalle}`, width: 600 });
             }
         });
     });
