@@ -24,8 +24,14 @@ class Kernel extends ConsoleKernel
         // Detecta e inserta clientes nuevos desde la API cada 5 minutos
         $schedule->command('sync:nuevos-clientes')->everyFiveMinutes();
 
+        // Detecta duplicados exactos en client_membership y alerta por correo
+        $schedule->command('membership:check-duplicates')->dailyAt('01:00');
+
         // Sincronización completa: actualiza datos y membresías de todos los clientes (2:30pm y 11:00pm)
         $schedule->command('sync:actualizar-clientes')->cron('30 14,23 * * *');
+
+        // Registra en individual_invoices las autofacturas del portal cliente (facturacion_aqua)
+        $schedule->command('facturas:sync-individuales --origen=cliente')->hourly();
     } 
   
     /**

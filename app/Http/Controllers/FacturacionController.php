@@ -125,7 +125,8 @@ class FacturacionController extends Controller
      */
     public function generarFactura(Request $request)
     {
-        $ids          = $request->input('ids', []);
+        $idsRaw       = $request->input('ids', '[]');
+        $ids          = is_array($idsRaw) ? $idsRaw : (json_decode($idsRaw, true) ?: []);
         $periodicidad = $request->input('periodicidad', '04');
         $concepto     = strtoupper(trim($request->input('concepto', 'VENTA GLOBAL SERVICIOS DE LAVADO')));
         $fechaEmision = $request->input('fecha_emision')
@@ -332,6 +333,14 @@ class FacturacionController extends Controller
 
                     if ($pdf && $xml) {
                         $this->saveInvoiceFile($invoiceName, $pdf, $xml);
+                    } else {
+                        Log::warning('[FacturacionGlobal] Timbrado OK pero la API no devolvió PDF/XML — archivo no guardado', [
+                            'global_invoice_id' => $globalInvoice->id,
+                            'uuid'              => $uuid,
+                            'file_name'         => $invoiceName,
+                            'tiene_pdf'         => (bool) $pdf,
+                            'tiene_xml'         => (bool) $xml,
+                        ]);
                     }
 
                     DB::table('local_transaction')
@@ -401,7 +410,7 @@ class FacturacionController extends Controller
                 COUNT(lt.local_transaction_id) AS num_transacciones
             FROM global_invoice gi
             LEFT JOIN local_transaction lt ON lt.global_invoice_id = gi.id
-            LEFT JOIN users u ON u.id = gi.created_by
+            LEFT JOIN staff_users u ON u.id = gi.created_by
             GROUP BY gi.id, gi.name, gi.uuid, gi.serie, gi.folio, gi.file_name, gi.total, gi.start_date_group, gi.end_date_group, gi.paymentType, gi.periodicidad, gi.cancelada_at, gi.cancel_motivo, gi.created_at, gi.fecha_emision, gi.created_by, u.name
             ORDER BY gi.created_at DESC
         ";
@@ -561,8 +570,13 @@ class FacturacionController extends Controller
 
     private function saveInvoiceFile(string $name, string $pdf, string $xml): void
     {
-        $pdfPath = storage_path('app/public/invoices/' . $name . '.pdf');
-        $xmlPath = storage_path('app/public/invoices/' . $name . '.xml');
+        $dir = storage_path('app/public/invoices');
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+            chown($dir, 'www-data');
+        }
+        $pdfPath = $dir . '/' . $name . '.pdf';
+        $xmlPath = $dir . '/' . $name . '.xml';
         file_put_contents($pdfPath, base64_decode($pdf));
         file_put_contents($xmlPath, $xml);
     }

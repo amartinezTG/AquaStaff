@@ -349,6 +349,14 @@ class FacturacionIndividualController extends Controller
 
                     if ($pdf && $xml) {
                         $this->saveInvoiceFile($fileName, $pdf, $xml);
+                    } else {
+                        Log::warning('[FacturacionIndividual] Timbrado OK pero la API no devolvió PDF/XML — archivo no guardado', [
+                            'local_transaction_id' => $tx->local_transaction_id,
+                            'uuid'                 => $uuid,
+                            'file_name'            => $fileName,
+                            'tiene_pdf'            => (bool) $pdf,
+                            'tiene_xml'            => (bool) $xml,
+                        ]);
                     }
 
                     DB::table('local_transaction')
@@ -357,6 +365,25 @@ class FacturacionIndividualController extends Controller
                             'fiscal_invoice'    => $uuid,
                             'fiscal_account_id' => $fiscalAccountId,
                         ]);
+
+                    // Registro permanente del CFDI (sobrevive a la cancelación)
+                    DB::table('individual_invoices')->insertOrIgnore([
+                        'uuid'                 => $uuid,
+                        'local_transaction_id' => $tx->local_transaction_id,
+                        'fiscal_account_id'    => $fiscalAccountId,
+                        'serie'                => 'AB',
+                        'folio'                => '100',
+                        'subtotal'             => $base,
+                        'iva'                  => $iva,
+                        'total'                => $total,
+                        'file_name'            => $fileName,
+                        'fecha_emision'        => str_replace('T', ' ', $fechaEmision),
+                        'status'               => 'vigente',
+                        'origen'               => 'staff',
+                        'created_by'           => auth()->id(),
+                        'created_at'           => now(),
+                        'updated_at'           => now(),
+                    ]);
 
                     $generadas[] = [
                         'local_transaction_id' => $tx->local_transaction_id,
@@ -460,6 +487,33 @@ class FacturacionIndividualController extends Controller
             ], 500);
         }
 
+        // Conservar la historia fiscal: marcar el CFDI como cancelado en individual_invoices
+        // (si la factura es anterior al backfill, se crea el registro ya cancelado)
+        $updated = DB::table('individual_invoices')
+            ->where('uuid', $tx->fiscal_invoice)
+            ->where('local_transaction_id', $localTransactionId)
+            ->update([
+                'status'        => 'cancelada',
+                'cancelada_at'  => now(),
+                'cancel_motivo' => '02',
+                'updated_at'    => now(),
+            ]);
+
+        if (!$updated) {
+            DB::table('individual_invoices')->insertOrIgnore([
+                'uuid'                 => $tx->fiscal_invoice,
+                'local_transaction_id' => $localTransactionId,
+                'total'                => $tx->Total,
+                'status'               => 'cancelada',
+                'cancelada_at'         => now(),
+                'cancel_motivo'        => '02',
+                'origen'               => 'staff',
+                'created_by'           => auth()->id(),
+                'created_at'           => now(),
+                'updated_at'           => now(),
+            ]);
+        }
+
         DB::table('local_transaction')
             ->where('local_transaction_id', $localTransactionId)
             ->update([
@@ -475,18 +529,21 @@ class FacturacionIndividualController extends Controller
      */
     public function downloadPdf($fileName)
     {
-        // Buscar en pdfs/ (AquaFacturacion) y en invoices/ (AquaStaff global)
+        // Buscar en pdfs/ e invoices/ (AquaStaff) y en pdfs/ de facturacion_aqua
+        // (las autofacturas del cliente solo se guardan en facturacion_aqua)
         $paths = [
             storage_path('app/public/pdfs/' . $fileName . '.pdf'),
             storage_path('app/public/invoices/' . $fileName . '.pdf'),
+            base_path('../facturacion_aqua/storage/app/public/pdfs/' . $fileName . '.pdf'),
         ];
 
         foreach ($paths as $path) {
-            if (file_exists($path)) {
+            if (file_exists($path) && filesize($path) > 0) {
                 return response()->download($path, $fileName . '.pdf', ['Content-Type' => 'application/pdf']);
             }
         }
 
+        Log::warning('[FacturacionIndividual] PDF no encontrado en disco', ['file' => $fileName]);
         abort(404, 'PDF no encontrado.');
     }
 
@@ -498,14 +555,16 @@ class FacturacionIndividualController extends Controller
         $paths = [
             storage_path('app/public/xmls/' . $fileName . '.xml'),
             storage_path('app/public/invoices/' . $fileName . '.xml'),
+            base_path('../facturacion_aqua/storage/app/public/xmls/' . $fileName . '.xml'),
         ];
 
         foreach ($paths as $path) {
-            if (file_exists($path)) {
+            if (file_exists($path) && filesize($path) > 0) {
                 return response()->download($path, $fileName . '.xml', ['Content-Type' => 'text/xml']);
             }
         }
 
+        Log::warning('[FacturacionIndividual] XML no encontrado en disco', ['file' => $fileName]);
         abort(404, 'XML no encontrado.');
     }
 
