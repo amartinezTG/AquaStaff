@@ -227,6 +227,10 @@ class FacturacionIndividualController extends Controller
         }
         $token = $tokenResult['token'];
 
+        $maxFolioInd = (int) DB::table('individual_invoices')->where('serie', 'AB')->max('folio');
+        $maxFolioGlb = (int) DB::table('global_invoice')->where('serie', 'AB')->max('folio');
+        $nextFolio   = max($maxFolioInd, $maxFolioGlb, 100) + 1;
+
         $txTypes = [
             0 => 'COMPRA DE MEMBRESIA',
             1 => 'RENOVACION DE MEMBRESIA',
@@ -289,7 +293,7 @@ class FacturacionIndividualController extends Controller
                         ],
                         'Fecha'           => $fechaEmision,
                         'Serie'           => 'AB',
-                        'Folio'           => '100',
+                        'Folio'           => (string) $nextFolio,
                         'MetodoPago'      => 'PUE',
                         'FormaPago'       => $formaPago,
                         'Moneda'          => 'MXN',
@@ -372,7 +376,7 @@ class FacturacionIndividualController extends Controller
                         'local_transaction_id' => $tx->local_transaction_id,
                         'fiscal_account_id'    => $fiscalAccountId,
                         'serie'                => 'AB',
-                        'folio'                => '100',
+                        'folio'                => (string) $nextFolio,
                         'subtotal'             => $base,
                         'iva'                  => $iva,
                         'total'                => $total,
@@ -392,6 +396,7 @@ class FacturacionIndividualController extends Controller
                         'total'                => $total,
                         'file_name'            => $fileName,
                     ];
+                    $nextFolio++;
                 } else {
                     DB::rollBack();
                     return response()->json([

@@ -171,6 +171,10 @@ class FacturacionController extends Controller
 
         $token = $tokenResult['token'];
 
+        $maxFolioInd = (int) DB::table('individual_invoices')->where('serie', 'AB')->max('folio');
+        $maxFolioGlb = (int) DB::table('global_invoice')->where('serie', 'AB')->max('folio');
+        $nextFolio   = max($maxFolioInd, $maxFolioGlb, 100) + 1;
+
         $generatedInvoices = [];
 
         DB::beginTransaction();
@@ -257,7 +261,7 @@ class FacturacionController extends Controller
                         ],
                         'Fecha'           => $fechaEmision->format('Y-m-d\TH:i:s'),
                         'Serie'           => 'AB',
-                        'Folio'           => '100',
+                        'Folio'           => (string) $nextFolio,
                         'MetodoPago'      => 'PUE',
                         'FormaPago'       => $this->catalogs->payment_method[$paymentTypeName] ?? '99',
                         'Moneda'          => 'MXN',
@@ -357,6 +361,7 @@ class FacturacionController extends Controller
                         'total'       => $total,
                         'transacciones' => $group->count(),
                     ];
+                    $nextFolio++;
                 } else {
                     DB::rollBack();
                     $infoTecnica = $response['estatus']['informacionTecnica'] ?? '';
