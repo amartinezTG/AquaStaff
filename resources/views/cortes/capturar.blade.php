@@ -1,6 +1,6 @@
 @include('layout.shared')
 
-<body class="toggle-sidebar">
+<body>
 
 <header id="header" class="header fixed-top d-flex align-items-center">
   <div class="d-flex align-items-center justify-content-between">
@@ -170,7 +170,7 @@
               <div class="col-3 text-end">Total</div>
             </div>
             @php
-              $ordenPaq = ['Express','Ultra','Deluxe','Basico','Otro'];
+              $ordenPaq = ['Deluxe','Express','Ultra'];
               $todosPaq = collect($ordenPaq)->filter(fn($n) =>
                 isset($sistemaData['paquetes'][$n]) || isset($sistemaData['interlogic']['paquetes'])
               );
@@ -270,11 +270,16 @@
             </div>
             @php
               $ordenMem = ['Express','Ultra','Deluxe','Basico','Otro'];
+              $corteMemNombres = $corteExistente ? $corteExistente->membresias->pluck('paquete') : collect();
               $todosMem = collect($ordenMem)->filter(fn($n) =>
                 isset($sistemaData['membresias'][$n]) ||
-                collect($sistemaData['interlogic']['membresias'] ?? [])->contains('paquete', $n)
+                collect($sistemaData['interlogic']['membresias'] ?? [])->contains('paquete', $n) ||
+                $corteMemNombres->contains($n)
               );
               foreach(($sistemaData['membresias'] ?? []) as $nombre => $info) {
+                if (!in_array($nombre, $ordenMem)) $todosMem->push($nombre);
+              }
+              foreach($corteMemNombres as $nombre) {
                 if (!in_array($nombre, $ordenMem)) $todosMem->push($nombre);
               }
               $todosMem = $todosMem->unique()->values();
@@ -288,7 +293,7 @@
                   ? ($corteExistente->membresias->firstWhere('paquete', $nombre)?->autos_cajero ?? ($cajIlMem['autos'] ?? ''))
                   : ($cajIlMem['autos'] ?? '');
               @endphp
-              <div class="row g-0 align-items-center border-bottom py-2">
+              <div class="row g-0 align-items-center border-bottom py-2" data-mem="{{ $nombre }}">
                 <div class="col-4 fw-semibold small">{{ $nombre }}</div>
                 {{-- Sistema (amarillo) --}}
                 <div class="col-4 px-2">
@@ -342,58 +347,21 @@
               <div class="col-5 text-center">Cajero / Captura</div>
             </div>
 
-            {{-- Tarjeta --}}
-            <div class="row g-0 align-items-center border-bottom py-2">
-              <div class="col-4 text-muted small">Tarjetas</div>
-              <div class="col-3 pe-1">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text" style="background:#fef9c3;border-color:#fbbf24;color:#92400e;font-size:.70rem"
-                        id="sis_num_tarjeta_badge">{{ $sistemaData['num_pagos_tarjeta'] }}x</span>
-                  <input type="text" id="sis_importe_tarjeta" readonly tabindex="-1"
-                         value="{{ '$'.number_format($sistemaData['importe_tarjeta'],2) }}"
-                         class="form-control form-control-sm text-end" style="background:#fef9c3;border-color:#fbbf24;color:#92400e;font-weight:600">
-                </div>
-              </div>
-              <div class="col-2 pe-1">
-                <input type="number" min="0" name="num_pagos_tarjeta" id="f_num_tarjeta"
-                       value="{{ old('num_pagos_tarjeta', $corteExistente->num_pagos_tarjeta ?? ($sistemaData['interlogic']['tarjeta_numero_pagos'] ?? '')) }}"
-                       class="form-control form-control-sm text-end" style="background:#f1f3f5;border-color:#adb5bd" placeholder="# pagos">
-              </div>
-              <div class="col-3">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
-                  <input type="number" step="0.01" min="0" name="importe_tarjeta" id="f_tarjeta"
-                         value="{{ old('importe_tarjeta', $corteExistente->importe_tarjeta ?? ($sistemaData['interlogic']['tarjeta_importe_pagado'] ?? '')) }}"
-                         class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd" placeholder="0.00">
-                </div>
-              </div>
-            </div>
-            <div class="row g-0 align-items-center py-1">
-              <div class="col-7 text-muted small ps-2">Total Tarjeta</div>
-              <div class="col-5 text-end small fw-semibold pe-1" id="txt_prosepago">$0.00</div>
-            </div>
-
             {{-- Efectivo MXN --}}
             @php
-              $ilPesos = collect($sistemaData['interlogic']['totales_efectivo'] ?? [])->firstWhere('moneda', 'Pesos');
-              $ilDlls  = collect($sistemaData['interlogic']['totales_efectivo'] ?? [])->firstWhere('moneda', 'Dólares');
+              $ilPesos = collect($sistemaData['interlogic']['totales_efectivo'] ?? [])->first(fn($t) => strtoupper($t['moneda']) === 'PESOS');
+              $ilDlls  = collect($sistemaData['interlogic']['totales_efectivo'] ?? [])->first(fn($t) => strtoupper($t['moneda']) === 'DOLARES');
             @endphp
-            <div class="row g-0 align-items-center border-top border-bottom py-2 mt-1">
+            <div class="row g-0 align-items-center border-bottom py-2">
               <div class="col-4 text-muted small">Efectivo MXN</div>
-              <div class="col-3 pe-1">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text" style="background:#fef9c3;border-color:#fbbf24"><i class="bi bi-database" style="color:#92400e;font-size:.70rem"></i></span>
-                  <input type="text" id="sis_efectivo_mxn" readonly tabindex="-1"
-                         value="{{ '$'.number_format($sistemaData['efectivo_mxn'],2) }}"
-                         class="form-control form-control-sm text-end" style="background:#fef9c3;border-color:#fbbf24;color:#92400e;font-weight:600">
-                </div>
-              </div>
+              <div class="col-3 pe-1"></div>
               <div class="col-5">
                 <div class="input-group input-group-sm">
                   <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
                   <input type="number" step="0.01" min="0" name="efectivo_mxn" id="f_mxn"
                          value="{{ old('efectivo_mxn', $corteExistente->efectivo_mxn ?? ($ilPesos['cantidad'] ?? '')) }}"
-                         class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd" placeholder="0.00">
+                         class="form-control text-end bg-light" style="border-color:#adb5bd" placeholder="0.00"
+                         readonly tabindex="-1">
                 </div>
               </div>
             </div>
@@ -422,9 +390,45 @@
             </div>
 
             <div class="row g-0 align-items-center py-1 border-bottom">
-              <div class="col-7 text-muted small ps-2">Total Efectivo</div>
+              <div class="col-4 text-muted small ps-2">Total Efectivo</div>
+              <div class="col-3 pe-1">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text" style="background:#fef9c3;border-color:#fbbf24"><i class="bi bi-database" style="color:#92400e;font-size:.70rem"></i></span>
+                  <input type="text" id="sis_efectivo_mxn" readonly tabindex="-1"
+                         value="{{ '$'.number_format($sistemaData['efectivo_mxn'],2) }}"
+                         class="form-control form-control-sm text-end" style="background:#fef9c3;border-color:#fbbf24;color:#92400e;font-weight:600">
+                </div>
+              </div>
               <div class="col-5 text-end small fw-semibold pe-1" id="txt_efectivo">$0.00</div>
             </div>
+
+            {{-- Tarjeta --}}
+            <div class="row g-0 align-items-center border-bottom py-2 mt-1">
+              <div class="col-4 text-muted small">Tarjetas</div>
+              <div class="col-3 pe-1">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text" style="background:#fef9c3;border-color:#fbbf24;color:#92400e;font-size:.70rem"
+                        id="sis_num_tarjeta_badge">{{ $sistemaData['num_pagos_tarjeta'] }}x</span>
+                  <input type="text" id="sis_importe_tarjeta" readonly tabindex="-1"
+                         value="{{ '$'.number_format($sistemaData['importe_tarjeta'],2) }}"
+                         class="form-control form-control-sm text-end" style="background:#fef9c3;border-color:#fbbf24;color:#92400e;font-weight:600">
+                </div>
+              </div>
+              <div class="col-2 pe-1">
+                <input type="number" min="0" name="num_pagos_tarjeta" id="f_num_tarjeta"
+                       value="{{ old('num_pagos_tarjeta', $corteExistente->num_pagos_tarjeta ?? ($sistemaData['interlogic']['tarjeta_numero_pagos'] ?? '')) }}"
+                       class="form-control form-control-sm text-end" style="background:#f1f3f5;border-color:#adb5bd" placeholder="# pagos">
+              </div>
+              <div class="col-3">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
+                  <input type="number" step="0.01" min="0" name="importe_tarjeta" id="f_tarjeta"
+                         value="{{ old('importe_tarjeta', $corteExistente->importe_tarjeta ?? ($sistemaData['interlogic']['tarjeta_importe_pagado'] ?? '')) }}"
+                         class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd" placeholder="0.00">
+                </div>
+              </div>
+            </div>
+
             <div class="row g-0 align-items-center py-2 rounded mt-1" style="background:#e0f2fe">
               <div class="col-7 fw-bold small ps-2">TOTAL DE VENTA</div>
               <div class="col-5 text-end fw-bold small pe-1" id="txt_venta">$0.00</div>
@@ -472,15 +476,15 @@
                 </tbody>
               </table>
             </div>
-            @if(count($sistemaData['interlogic']['pagos_error'] ?? []) > 0)
-              <div class="text-end pe-2 pt-1" style="font-size:.72rem;color:#856404;font-weight:600">
-                Total faltante: ${{ number_format(array_sum(array_column($sistemaData['interlogic']['pagos_error'], 'cambio_faltante')), 2) }}
-              </div>
-            @endif
+            <div class="text-end pe-2 pt-1" id="wrap_total_faltante" style="font-size:.72rem;color:#856404;font-weight:600; display:{{ count($sistemaData['interlogic']['pagos_error'] ?? []) > 0 ? 'block' : 'none' }}">
+              Total faltante: $<span id="total_faltante_valor">{{ number_format(array_sum(array_column($sistemaData['interlogic']['pagos_error'] ?? [], 'cambio_faltante')), 2) }}</span>
+            </div>
           </div>
         </div>
 
-        {{-- ══ RESUMEN DE CORTE (interlogic) ══ --}}
+        {{-- ══ RESUMEN DE CORTE (interlogic) — OCULTO (comentado a petición) ══ --}}
+        @php $il2 = $sistemaData['interlogic']; @endphp
+        {{--
         <div class="card mb-2">
           <div class="card-header py-2 px-4 border-bottom" style="background:#f1f5f9">
             <span class="fw-bold small text-uppercase text-secondary">
@@ -488,9 +492,6 @@
             </span>
           </div>
           <div class="card-body px-4 py-3">
-            @php
-              $il2 = $sistemaData['interlogic'];
-            @endphp
             @foreach([
               ['TOTAL INGRESADO EN PAGOS CORRECTOS',  'corte_total_ingresado_correctos'],
               ['TOTAL INGRESADO EN PAGOS CON ERROR',  'corte_total_ingresado_error'],
@@ -500,11 +501,12 @@
               ['CAMBIO ENTREGADO EN PAGOS CON ERROR', 'corte_total_cambio_entregado_error'],
               ['DEVUELTO EN PAGOS CANCELADOS',        'corte_total_devuelto_cancelados'],
               ['TOTAL DE CAMBIO ENTREGADO',           'corte_total_cambio_entregado'],
+              ['DOTACIÓN',                            'corte_total_dotaciones'],
             ] as [$label, $key])
             <div class="row g-0 align-items-center border-bottom py-1">
               <div class="col-8 text-muted small">{{ $label }}</div>
               <div class="col-4 text-end">
-                <span class="fw-semibold small" style="color:{{ $il2 ? '#495057' : '#adb5bd' }}">
+                <span class="fw-semibold small" id="resumen_{{ $key }}" style="color:{{ $il2 ? '#495057' : '#adb5bd' }}">
                   ${{ number_format($il2[$key] ?? 0, 2) }}
                 </span>
               </div>
@@ -512,6 +514,7 @@
             @endforeach
           </div>
         </div>
+        --}}
 
         {{-- ══ BALANCE GENERAL (interlogic) ══ --}}
         <div class="card mb-2">
@@ -526,14 +529,13 @@
               ['(-) Total de Venta',     'balance_total_venta',       false],
               ['(-) Cambio Entregado',   'balance_cambio_entregado',  false],
               ['(-) Cambio No Entregado','balance_cambio_no_entregado',false],
-              ['(-) Dotación',           'corte_total_dotaciones',    false],
               ['(=) RESULTADO',          'balance_resultado',         true],
             ] as [$label, $key, $bold])
             <div class="row g-0 align-items-center border-bottom py-1 {{ $bold ? 'fw-bold' : '' }}">
               <div class="col-8 small {{ $bold ? '' : 'text-muted' }}">{{ $label }}</div>
               <div class="col-4 text-end">
                 @php $val = $il2[$key] ?? 0; @endphp
-                <span class="small {{ $bold ? 'fs-6' : '' }}" style="color:{{ $bold ? ($val == 0 ? '#166534' : ($val > 0 ? '#0c4a6e' : '#991b1b')) : '#495057' }}">
+                <span class="small {{ $bold ? 'fs-6' : '' }}" id="{{ $key }}" style="color:{{ $bold ? ($val == 0 ? '#166534' : ($val > 0 ? '#0c4a6e' : '#991b1b')) : '#495057' }}">
                   ${{ number_format($val, 2) }}
                 </span>
               </div>
@@ -542,7 +544,148 @@
           </div>
         </div>
 
+        {{-- ══ DENOMINACIONES DEL OPERADOR MXN ══ --}}
+        <div class="card mb-2">
+          <div class="card-header py-2 px-4 border-bottom" style="background:#f0fdf4">
+            <span class="fw-bold small text-uppercase" style="color:#166534">
+              <i class="bi bi-currency-exchange me-1"></i>(Aceptado por el cajero) Conteo del Operador — Pesos MXN
+            </span>
+          </div>
+          <div class="card-body px-4 py-3">
+            <div class="row g-0 py-1 mb-1" style="font-size:.72rem;color:#888;font-weight:600;text-transform:uppercase">
+              <div class="col-5">Denominación</div>
+              <div class="col-3 text-center">Cantidad</div>
+              <div class="col-4 text-end">Monto</div>
+            </div>
+
+            @php
+              // Prellenado con lo que el cajero (interlogic) reportó como
+              // "aceptado" — esa tabla sí distingue moneda (tipo aceptado_mxp
+              // vs aceptado_usd), a diferencia de "conteo_operador".
+              $aceptadoMxn = collect($sistemaData['interlogic']['denominaciones'] ?? [])
+                ->where('tipo', 'aceptado_mxp')
+                ->keyBy(fn($d) => (int) $d['valor']);
+            @endphp
+            <div class="fw-semibold text-muted mb-1" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.04em">Billetes</div>
+            @foreach(['b500'=>['B. $500',500],'b200'=>['B. $200',200],'b100'=>['B. $100',100],'b50'=>['B. $50',50],'b20'=>['B. $20',20]] as $k => [$lbl,$val])
+            <div class="row g-0 align-items-center border-bottom py-1" data-den-mxn="{{ $k }}" data-val="{{ $val }}">
+              <div class="col-5 small">{{ $lbl }}</div>
+              <div class="col-3 px-1">
+                <input type="number" min="0" name="den_mxn[{{ $k }}]" id="f_mxn_{{ $k }}"
+                       value="{{ old('den_mxn.'.$k, $denMxn[$k]->cantidad ?? ($aceptadoMxn[$val]['cantidad'] ?? '')) }}"
+                       class="form-control form-control-sm text-end den-mxn-input" placeholder="0">
+              </div>
+              <div class="col-4 text-end small text-muted monto-den" id="mto_mxn_{{ $k }}">$0.00</div>
+            </div>
+            @endforeach
+
+            <div class="fw-semibold text-muted mb-1 mt-2" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.04em">Monedas</div>
+            @foreach(['m10'=>['M. $10',10],'m5'=>['M. $5',5],'m2'=>['M. $2',2],'m1'=>['M. $1',1]] as $k => [$lbl,$val])
+            <div class="row g-0 align-items-center border-bottom py-1" data-den-mxn="{{ $k }}" data-val="{{ $val }}">
+              <div class="col-5 small">{{ $lbl }}</div>
+              <div class="col-3 px-1">
+                <input type="number" min="0" name="den_mxn[{{ $k }}]" id="f_mxn_{{ $k }}"
+                       value="{{ old('den_mxn.'.$k, $denMxn[$k]->cantidad ?? ($aceptadoMxn[$val]['cantidad'] ?? '')) }}"
+                       class="form-control form-control-sm text-end den-mxn-input" placeholder="0">
+              </div>
+              <div class="col-4 text-end small text-muted monto-den" id="mto_mxn_{{ $k }}">$0.00</div>
+            </div>
+            @endforeach
+
+            <div class="row g-0 align-items-center py-1 bg-light rounded mt-1">
+              <div class="col-8 fw-semibold small ps-1">Total</div>
+              <div class="col-4 text-end fw-semibold small pe-1" id="txt_total_mxn">$0.00</div>
+            </div>
+          </div>
+        </div>
+
+        {{-- ══ DENOMINACIONES USD ══ --}}
+        <div class="card mb-2">
+          <div class="card-header py-2 px-4 border-bottom" style="background:#eff6ff">
+            <span class="fw-bold small text-uppercase" style="color:#1e40af">
+              <i class="bi bi-currency-dollar me-1"></i>(Aceptado por el cajero) Conteo del Operador — USD
+              <span class="fw-normal text-muted ms-2">(TC ${{ number_format($tipoCambio,2) }})</span>
+            </span>
+          </div>
+          <div class="card-body px-4 py-3">
+            <div class="row g-0 py-1 mb-1" style="font-size:.72rem;color:#888;font-weight:600;text-transform:uppercase">
+              <div class="col-2">Denom.</div>
+              <div class="col-2 text-center">TC</div>
+              <div class="col-2 text-center">Cantidad</div>
+              <div class="col-3 text-end">Monto USD</div>
+              <div class="col-3 text-end">Monto MXN</div>
+            </div>
+            @php
+              $aceptadoUsd = collect($sistemaData['interlogic']['denominaciones'] ?? [])
+                ->where('tipo', 'aceptado_usd')
+                ->keyBy(fn($d) => (int) $d['valor']);
+            @endphp
+            @foreach(['usd_b50'=>['B. $50',50],'usd_b20'=>['B. $20',20],'usd_b10'=>['B. $10',10],'usd_b5'=>['B. $5',5],'usd_b2'=>['B. $2',2],'usd_b1'=>['B. $1',1]] as $k => [$lbl,$val])
+            <div class="row g-0 align-items-center border-bottom py-1" data-val="{{ $val }}">
+              <div class="col-2 small">{{ $lbl }}</div>
+              <div class="col-2 text-center small text-muted">${{ number_format($tipoCambio,0) }}</div>
+              <div class="col-2 px-1">
+                <input type="number" min="0" name="den_usd[{{ $k }}]" id="f_usd_{{ $k }}"
+                       value="{{ old('den_usd.'.$k, $denUsd[$k]->cantidad ?? ($aceptadoUsd[$val]['cantidad'] ?? '')) }}"
+                       class="form-control form-control-sm text-end den-usd-input" placeholder="0"
+                       data-val="{{ $val }}">
+              </div>
+              <div class="col-3 text-end small text-muted" id="mto_usd_{{ $k }}_usd">$0.00</div>
+              <div class="col-3 text-end small text-muted" id="mto_usd_{{ $k }}">$0.00</div>
+            </div>
+            @endforeach
+            <div class="row g-0 align-items-center py-1 bg-light rounded mt-1">
+              <div class="col-6 fw-semibold small ps-1">Total USD</div>
+              <div class="col-3 text-end fw-semibold small" id="txt_total_usd_usd">$0.00</div>
+              <div class="col-3 text-end fw-semibold small pe-1" id="txt_total_usd">$0.00</div>
+            </div>
+          </div>
+        </div>
+
+        {{-- ══ CAMBIOS ENTREGADOS ══ --}}
+        @php
+          $cambioEntregadoIL   = $il2['corte_total_cambio_entregado'] ?? 0;
+          $cambioNoEntregadoIL = array_sum(array_column($il2['pagos_error'] ?? [], 'cambio_faltante'));
+        @endphp
+        <div class="card mb-2">
+          <div class="card-header py-2 px-4 border-bottom" style="background:#eef2ff">
+            <span class="fw-bold small text-uppercase" style="color:#3730a3">
+              <i class="bi bi-arrow-left-right me-1"></i>Cambios Entregados
+            </span>
+          </div>
+          <div class="card-body px-4 py-3">
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label small mb-1 text-muted">Cambio Entregado</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
+                  <input type="number" step="0.01" min="0" name="cambio_entregado" id="f_cambio_e"
+                         value="{{ old('cambio_entregado', $corteExistente->cambio_entregado ?? $cambioEntregadoIL) }}"
+                         class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd" placeholder="0.00">
+                </div>
+              </div>
+              <div class="col-6">
+                <label class="form-label small mb-1 text-muted">Cambio No Entregado</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
+                  <input type="number" step="0.01" min="0" name="cambio_no_entregado" id="f_cambio_ne"
+                         value="{{ old('cambio_no_entregado', $corteExistente->cambio_no_entregado ?? $cambioNoEntregadoIL) }}"
+                         class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd" placeholder="0.00">
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label small mb-1 text-muted">Referencia / Justificación</label>
+                <input type="text" name="referencia_cambio" id="f_referencia"
+                       value="{{ old('referencia_cambio', $corteExistente->referencia_cambio ?? '') }}"
+                       class="form-control form-control-sm"
+                       placeholder="Ej: cambio entregado a cliente, devolución...">
+              </div>
+            </div>
+          </div>
+        </div>
+
         {{-- ══ EGRESOS ══ --}}
+        @php $saldoFinalDisp = array_sum(array_column($il2['saldo_dispensadores'] ?? [], 'total')); @endphp
         <div class="card mb-2">
           <div class="card-header py-2 px-4 bg-warning bg-opacity-10 border-bottom">
             <span class="fw-bold text-warning small text-uppercase">
@@ -550,14 +693,82 @@
             </span>
           </div>
           <div class="card-body px-4 py-3">
-            <div class="row g-0 align-items-center border-bottom py-2">
-              <div class="col-7 text-muted small">Dotación</div>
-              <div class="col-5">
+            <div class="row g-2 border-bottom pb-3 mb-1">
+              <div class="col-4">
+                <label class="form-label small mb-1 text-muted">Saldo Final</label>
                 <div class="input-group input-group-sm">
                   <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
+                  <input type="text" readonly tabindex="-1" name="saldo_final" id="f_saldo_final"
+                         value="{{ number_format(old('saldo_final', $corteExistente->saldo_dispensador ?? $saldoFinalDisp), 2, '.', '') }}"
+                         class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd">
+                </div>
+              </div>
+              <div class="col-4">
+                <label class="form-label small mb-1 fw-semibold">Dotación</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text">$</span>
                   <input type="number" step="0.01" min="0" name="dotacion" id="f_dotacion"
-                         value="{{ old('dotacion', $corteExistente->dotacion ?? ($il2['corte_total_dotaciones'] ?? '')) }}"
-                         class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd" placeholder="0.00">
+                         value="{{ old('dotacion', $corteExistente->dotacion ?? (($il2['corte_total_dotaciones'] ?? 0) - $saldoFinalDisp)) }}"
+                         class="form-control text-end" placeholder="0.00">
+                  <button type="button" class="btn btn-outline-secondary" id="btn_desglose_dotacion"
+                          data-bs-toggle="collapse" data-bs-target="#desgloseDotacion"
+                          aria-expanded="false" aria-controls="desgloseDotacion"
+                          title="Desglose de dotación por denominación">
+                    <i class="bi bi-calculator"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-4">
+                <label class="form-label small mb-1 text-muted">Dotación Final</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
+                  <input type="text" readonly tabindex="-1" name="dotacion_final" id="f_dotacion_final"
+                         value="{{ number_format(old('dotacion_final', $corteExistente->dotacion_final ?? ($il2['corte_total_dotaciones'] ?? 0)), 2, '.', '') }}"
+                         class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd">
+                </div>
+              </div>
+
+              {{-- Desglose de dotación (se despliega con el botón de la calculadora) --}}
+              <div class="col-12">
+                <div class="collapse" id="desgloseDotacion">
+                  <div class="border rounded p-2 mt-1" style="background:#fffbf5;border-color:#fde5c8!important">
+                    <div class="fw-bold small text-uppercase mb-1" style="color:#9a3412">
+                      <i class="bi bi-cash-coin me-1"></i>Desglose de Dotación
+                    </div>
+                    <div class="row g-0 py-1" style="font-size:.72rem;color:#888;font-weight:600;text-transform:uppercase">
+                      <div class="col-5">Denominación</div>
+                      <div class="col-3 text-center">Unidades</div>
+                      <div class="col-4 text-end">Importe</div>
+                    </div>
+                    @foreach([['db50','B. $50',50],['db20','B. $20',20],['dm5','M. $5',5],['dm1','M. $1',1]] as [$k,$lbl,$val])
+                    <div class="row g-0 align-items-center border-bottom py-1">
+                      <div class="col-5 small">{{ $lbl }}</div>
+                      <div class="col-3 px-1">
+                        <input type="number" min="0" step="1" data-key="{{ $k }}" data-val="{{ $val }}"
+                               name="den_dot[{{ $k }}]" id="f_dot_{{ $k }}"
+                               value="{{ old('den_dot.'.$k, ($denDot[$k]->cantidad ?? 0) ?: '') }}"
+                               class="form-control form-control-sm text-end dot-den-input" placeholder="0">
+                      </div>
+                      <div class="col-4 text-end small text-muted" id="mto_dot_{{ $k }}">$0.00</div>
+                    </div>
+                    @endforeach
+
+                    <div class="row g-0 align-items-center py-1 bg-light rounded mt-2">
+                      <div class="col-7 fw-bold small ps-2">TOTAL</div>
+                      <div class="col-5 text-end fw-bold small pe-1" id="txt_dot_total">$0.00</div>
+                    </div>
+                    <div class="row g-0 align-items-center py-1">
+                      <div class="col-7 text-muted small ps-2">Objetivo (Dotación)</div>
+                      <div class="col-5 text-end fw-semibold small pe-1" id="txt_dot_objetivo">$0.00</div>
+                    </div>
+                    <div class="row g-0 align-items-center py-1">
+                      <div class="col-7 text-muted small ps-2">Diferencia</div>
+                      <div class="col-5 text-end fw-bold small pe-1" id="txt_dot_diferencia">$0.00</div>
+                    </div>
+                    <div class="text-muted mt-1" style="font-size:.72rem">
+                      <i class="bi bi-info-circle me-1"></i>El desglose se guarda junto con el corte.
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -579,274 +790,73 @@
           </div>
         </div>
 
-        {{-- ══ SALDO EN DISPENSADORES ══ --}}
+        {{-- ══ DOTACIÓN ══ --}}
         <div class="card mb-2">
-          <div class="card-header py-2 px-4 bg-info bg-opacity-10 border-bottom">
-            <span class="fw-bold text-info small text-uppercase">
-              <i class="bi bi-safe me-1"></i>Saldo en Dispensadores
+          <div class="card-header py-2 px-4 border-bottom" style="background:#fff7ed">
+            <span class="fw-bold small text-uppercase" style="color:#9a3412">
+              <i class="bi bi-cash-coin me-1"></i>Dotación
             </span>
           </div>
           <div class="card-body px-4 py-3">
-            {{-- Saldo dispensadores de interlogic --}}
-            @if(count($sistemaData['interlogic']['saldo_dispensadores'] ?? []) > 0)
-              <div class="mb-3">
-                <div class="text-muted small fw-semibold mb-1" style="font-size:.72rem;text-transform:uppercase">Saldo Final según Cajero</div>
-                <table class="table table-sm table-bordered mb-0" style="font-size:.75rem">
-                  <thead class="table-light">
-                    <tr><th>Denominación</th><th>Divisa</th><th class="text-end">Total</th></tr>
-                  </thead>
-                  <tbody>
-                    @foreach($sistemaData['interlogic']['saldo_dispensadores'] as $sd)
-                      <tr style="background:#f1f3f5">
-                        <td>${{ number_format($sd['denominacion'],0) }}</td>
-                        <td>{{ $sd['divisa'] }}</td>
-                        <td class="text-end">${{ number_format($sd['total'],2) }}</td>
-                      </tr>
-                    @endforeach
-                  </tbody>
-                </table>
-              </div>
-            @endif
-
-            <div class="row g-0 py-1 mb-1" style="font-size:.75rem;color:#666">
-              <div class="col-4"></div>
-              <div class="col-4 text-center">Saldo Inicial</div>
-              <div class="col-4 text-center">Dotación Final</div>
-            </div>
-            <div class="row g-0 align-items-center border-bottom py-2">
-              <div class="col-4 text-muted small">Dispensador</div>
-              <div class="col-4 pe-1">
+            <div class="row g-2">
+              <div class="col-4">
+                <label class="form-label small mb-1 text-muted">Dotación Fija</label>
                 <div class="input-group input-group-sm">
-                  <span class="input-group-text">$</span>
-                  <input type="number" step="0.01" min="0" name="saldo_inicial_dispensador" id="f_saldo_disp"
-                         value="{{ old('saldo_inicial_dispensador', $corteExistente->saldo_inicial_dispensador ?? '') }}"
-                         class="form-control text-end" placeholder="0.00">
+                  <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
+                  <input type="text" readonly tabindex="-1" name="dotacion_determinada" id="f_dotacion_determinada"
+                         value="15000.00" class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd">
                 </div>
               </div>
               <div class="col-4">
+                <label class="form-label small mb-1 text-muted">Dotación de Dispensadores</label>
                 <div class="input-group input-group-sm">
-                  <span class="input-group-text">$</span>
-                  <input type="number" step="0.01" min="0" name="dotacion_final" id="f_dot_final"
-                         value="{{ old('dotacion_final', $corteExistente->dotacion_final ?? '') }}"
-                         class="form-control text-end bg-light" placeholder="0.00" readonly tabindex="-1">
+                  <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
+                  <input type="text" readonly tabindex="-1" id="f_dotacion_final_dup"
+                         value="{{ number_format(old('dotacion_final', $corteExistente->dotacion_final ?? ($il2['corte_total_dotaciones'] ?? 0)), 2, '.', '') }}"
+                         class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd">
                 </div>
               </div>
-            </div>
-            <div class="row g-0 align-items-center py-1 bg-light rounded mt-1">
-              <div class="col-7 fw-bold small ps-2">Saldo en Dispensadores</div>
-              <div class="col-5 text-end fw-bold small pe-1" id="txt_dispensador">$0.00</div>
-            </div>
-          </div>
-        </div>
-
-        {{-- ══ ACEPTADO POR EL CAJERO MXN (interlogic) ══ --}}
-        @php
-          $denAceptadoMxn = collect($sistemaData['interlogic']['denominaciones'] ?? [])->where('tipo','aceptado_mxp');
-          $denAceptadoUsd = collect($sistemaData['interlogic']['denominaciones'] ?? [])->where('tipo','aceptado_usd');
-          $denConteoMxn   = collect($sistemaData['interlogic']['denominaciones'] ?? [])->where('tipo','conteo_operador')->filter(fn($d) => $d['valor'] >= 1);
-        @endphp
-        @if($denAceptadoMxn->isNotEmpty() || $denAceptadoUsd->isNotEmpty())
-        <div class="card mb-2">
-          <div class="card-header py-2 px-4 border-bottom" style="background:#f1f5f9">
-            <span class="fw-bold small text-uppercase text-secondary">
-              <i class="bi bi-cash-coin me-1"></i>Aceptado por el Cajero
-            </span>
-          </div>
-          <div class="card-body px-4 py-3">
-            @if($denAceptadoMxn->isNotEmpty())
-              <div class="text-muted small fw-semibold mb-1" style="font-size:.72rem;text-transform:uppercase">MXN</div>
-              <table class="table table-sm table-bordered mb-2" style="font-size:.75rem">
-                <thead class="table-light"><tr><th>Valor</th><th class="text-center">Cantidad</th><th class="text-end">Importe</th></tr></thead>
-                <tbody>
-                  @foreach($denAceptadoMxn as $den)
-                    <tr style="background:#f1f3f5">
-                      <td>${{ number_format($den['valor'],0) }}</td>
-                      <td class="text-center">{{ $den['cantidad'] }}</td>
-                      <td class="text-end">${{ number_format($den['importe'],2) }}</td>
-                    </tr>
-                  @endforeach
-                  <tr class="fw-bold">
-                    <td colspan="2">Total</td>
-                    <td class="text-end">${{ number_format($denAceptadoMxn->sum('importe'),2) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            @endif
-            @if($denAceptadoUsd->isNotEmpty())
-              <div class="text-muted small fw-semibold mb-1 mt-2" style="font-size:.72rem;text-transform:uppercase">USD</div>
-              <table class="table table-sm table-bordered mb-0" style="font-size:.75rem">
-                <thead class="table-light"><tr><th>Valor</th><th class="text-center">Cantidad</th><th class="text-end">Importe</th></tr></thead>
-                <tbody>
-                  @foreach($denAceptadoUsd as $den)
-                    <tr style="background:#f1f3f5">
-                      <td>${{ number_format($den['valor'],0) }}</td>
-                      <td class="text-center">{{ $den['cantidad'] }}</td>
-                      <td class="text-end">${{ number_format($den['importe'],2) }}</td>
-                    </tr>
-                  @endforeach
-                  <tr class="fw-bold">
-                    <td colspan="2">Total</td>
-                    <td class="text-end">${{ number_format($denAceptadoUsd->sum('importe'),2) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            @endif
-          </div>
-        </div>
-        @endif
-
-        {{-- ══ DENOMINACIONES DEL OPERADOR MXN ══ --}}
-        <div class="card mb-2">
-          <div class="card-header py-2 px-4 border-bottom" style="background:#f0fdf4">
-            <span class="fw-bold small text-uppercase" style="color:#166534">
-              <i class="bi bi-currency-exchange me-1"></i>Conteo del Operador — Pesos MXN
-            </span>
-          </div>
-          <div class="card-body px-4 py-3">
-            <div class="row g-0 py-1 mb-1" style="font-size:.72rem;color:#888;font-weight:600;text-transform:uppercase">
-              <div class="col-5">Denominación</div>
-              <div class="col-3 text-center">Cantidad</div>
-              <div class="col-4 text-end">Monto</div>
-            </div>
-
-            <div class="fw-semibold text-muted mb-1" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.04em">Billetes</div>
-            @foreach(['b500'=>['B. $500',500],'b200'=>['B. $200',200],'b100'=>['B. $100',100],'b50'=>['B. $50',50],'b20'=>['B. $20',20],'b10'=>['B. $10',10],'b5'=>['B. $5',5],'b2'=>['B. $2',2],'b1'=>['B. $1',1]] as $k => [$lbl,$val])
-            <div class="row g-0 align-items-center border-bottom py-1" data-den-mxn="{{ $k }}" data-val="{{ $val }}">
-              <div class="col-5 small">{{ $lbl }}</div>
-              <div class="col-3 px-1">
-                <input type="number" min="0" name="den_mxn[{{ $k }}]" id="f_mxn_{{ $k }}"
-                       value="{{ old('den_mxn.'.$k, $denMxn[$k]->cantidad ?? '') }}"
-                       class="form-control form-control-sm text-end den-mxn-input" placeholder="0">
+              <div class="col-4">
+                <label class="form-label small mb-1 text-muted">Entregada</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
+                  <input type="text" readonly tabindex="-1" name="dotacion_diferencia" id="f_dotacion_diferencia"
+                         value="{{ number_format(15000 - old('dotacion_final', $corteExistente->dotacion_final ?? ($il2['corte_total_dotaciones'] ?? 0)), 2, '.', '') }}"
+                         class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd">
+                </div>
               </div>
-              <div class="col-4 text-end small text-muted monto-den" id="mto_mxn_{{ $k }}">$0.00</div>
-            </div>
-            @endforeach
-
-            <div class="row g-0 align-items-center py-1 bg-light rounded mt-1 mb-2">
-              <div class="col-8 fw-semibold small ps-1">Total Billetes M.N</div>
-              <div class="col-4 text-end fw-semibold small pe-1" id="txt_total_billetes">$0.00</div>
-            </div>
-
-            <div class="fw-semibold text-muted mb-1 mt-2" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.04em">Monedas</div>
-            @foreach(['m10'=>['M. $10',10],'m5'=>['M. $5',5],'m2'=>['M. $2',2],'m1'=>['M. $1',1]] as $k => [$lbl,$val])
-            <div class="row g-0 align-items-center border-bottom py-1" data-den-mxn="{{ $k }}" data-val="{{ $val }}">
-              <div class="col-5 small">{{ $lbl }}</div>
-              <div class="col-3 px-1">
-                <input type="number" min="0" name="den_mxn[{{ $k }}]" id="f_mxn_{{ $k }}"
-                       value="{{ old('den_mxn.'.$k, $denMxn[$k]->cantidad ?? '') }}"
-                       class="form-control form-control-sm text-end den-mxn-input" placeholder="0">
-              </div>
-              <div class="col-4 text-end small text-muted monto-den" id="mto_mxn_{{ $k }}">$0.00</div>
-            </div>
-            @endforeach
-
-            <div class="row g-0 align-items-center py-1 bg-light rounded mt-1">
-              <div class="col-8 fw-semibold small ps-1">Total Monedas M.N</div>
-              <div class="col-4 text-end fw-semibold small pe-1" id="txt_total_monedas">$0.00</div>
-            </div>
-          </div>
-        </div>
-
-        {{-- ══ DENOMINACIONES USD ══ --}}
-        <div class="card mb-2">
-          <div class="card-header py-2 px-4 border-bottom" style="background:#eff6ff">
-            <span class="fw-bold small text-uppercase" style="color:#1e40af">
-              <i class="bi bi-currency-dollar me-1"></i>Conteo del Operador — USD
-              <span class="fw-normal text-muted ms-2">(TC ${{ number_format($tipoCambio,2) }})</span>
-            </span>
-          </div>
-          <div class="card-body px-4 py-3">
-            <div class="row g-0 py-1 mb-1" style="font-size:.72rem;color:#888;font-weight:600;text-transform:uppercase">
-              <div class="col-3">Denom.</div>
-              <div class="col-3 text-center">TC</div>
-              <div class="col-3 text-center">Cantidad</div>
-              <div class="col-3 text-end">Monto MXN</div>
-            </div>
-            @foreach(['usd_b50'=>['B. $50',50],'usd_b20'=>['B. $20',20],'usd_b10'=>['B. $10',10],'usd_b5'=>['B. $5',5],'usd_b2'=>['B. $2',2],'usd_b1'=>['B. $1',1]] as $k => [$lbl,$val])
-            <div class="row g-0 align-items-center border-bottom py-1" data-val="{{ $val }}">
-              <div class="col-3 small">{{ $lbl }}</div>
-              <div class="col-3 text-center small text-muted">${{ number_format($tipoCambio,0) }}</div>
-              <div class="col-3 px-1">
-                <input type="number" min="0" name="den_usd[{{ $k }}]" id="f_usd_{{ $k }}"
-                       value="{{ old('den_usd.'.$k, $denUsd[$k]->cantidad ?? '') }}"
-                       class="form-control form-control-sm text-end den-usd-input" placeholder="0"
-                       data-val="{{ $val }}">
-              </div>
-              <div class="col-3 text-end small text-muted" id="mto_usd_{{ $k }}">$0.00</div>
-            </div>
-            @endforeach
-            <div class="row g-0 align-items-center py-1 bg-light rounded mt-1">
-              <div class="col-8 fw-semibold small ps-1">Total USD (en MXN)</div>
-              <div class="col-4 text-end fw-semibold small pe-1" id="txt_total_usd">$0.00</div>
             </div>
           </div>
         </div>
 
         {{-- ══ DIFERENCIA CAJERO (interlogic) ══ --}}
-        @if($il2)
-        <div class="card mb-2">
+        <div class="card mb-2" id="card_diferencia">
           <div class="card-header py-2 px-4 border-bottom" style="background:#fef2f2">
             <span class="fw-bold small text-uppercase" style="color:#991b1b">
               <i class="bi bi-arrow-left-right me-1"></i>Diferencia (Cajero Interlogic)
             </span>
           </div>
           <div class="card-body px-4 py-3">
-            @foreach([
-              ['Registrado en Cajero',    number_format($il2['aceptado_cajero_total'],2)],
-              ['Reportado por Operador',  number_format($il2['conteo_operador_total'],2)],
-            ] as [$label, $valor])
             <div class="row g-0 align-items-center border-bottom py-1">
-              <div class="col-7 text-muted small">{{ $label }}</div>
-              <div class="col-5 text-end fw-semibold small">${{ $valor }}</div>
+              <div class="col-7 text-muted small">Registrado en Cajero</div>
+              <div class="col-5 text-end fw-semibold small" id="dif_aceptado_cajero">${{ number_format($il2['balance_total_venta'] ?? 0, 2) }}</div>
             </div>
-            @endforeach
-            <div class="row g-0 align-items-center py-2 mt-1 rounded px-2 fw-bold"
-                 style="background:{{ $il2['diferencia_total'] == 0 ? '#d1fae5' : '#fee2e2' }};
-                        color:{{ $il2['diferencia_total'] == 0 ? '#065f46' : '#991b1b' }}">
+            <div class="row g-0 align-items-center border-bottom py-1">
+              <div class="col-7 text-muted small">Reportado por Operador</div>
+              <div class="col-5 text-end fw-semibold small" id="dif_conteo_operador">${{ number_format($il2['conteo_operador_total'] ?? 0, 2) }}</div>
+            </div>
+            <div class="row g-0 align-items-center py-2 mt-1 rounded px-2 fw-bold" id="dif_total_wrap"
+                 style="background:{{ ($il2['diferencia_total'] ?? 0) == 0 ? '#d1fae5' : '#fee2e2' }};
+                        color:{{ ($il2['diferencia_total'] ?? 0) == 0 ? '#065f46' : '#991b1b' }}">
               <div class="col-7 small">DIFERENCIA</div>
-              <div class="col-5 text-end">${{ number_format($il2['diferencia_total'],2) }}</div>
+              <div class="col-5 text-end" id="dif_total">${{ number_format($il2['diferencia_total'] ?? 0, 2) }}</div>
             </div>
-          </div>
-        </div>
-        @endif
 
-        {{-- ══ CAMBIOS ENTREGADOS ══ --}}
-        <div class="card mb-2">
-          <div class="card-header py-2 px-4 bg-secondary bg-opacity-10 border-bottom">
-            <span class="fw-bold text-secondary small text-uppercase">
-              <i class="bi bi-arrow-left-right me-1"></i>Cambios Entregados
-            </span>
-          </div>
-          <div class="card-body px-4 py-3">
-            <div class="row g-0 align-items-center border-bottom py-2">
-              <div class="col-7 text-muted small">Cambio Entregado</div>
-              <div class="col-5">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
-                  <input type="number" step="0.01" min="0" name="cambio_entregado" id="f_cambio_e"
-                         value="{{ old('cambio_entregado', $corteExistente->cambio_entregado ?? ($il2['corte_total_cambio_entregado'] ?? '')) }}"
-                         class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd" placeholder="0.00">
-                </div>
-              </div>
-            </div>
-            <div class="row g-0 align-items-center border-bottom py-2">
-              <div class="col-7 text-muted small">Cambio No Entregado</div>
-              <div class="col-5">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text">$</span>
-                  <input type="number" step="0.01" min="0" name="cambio_no_entregado" id="f_cambio_ne"
-                         value="{{ old('cambio_no_entregado', $corteExistente->cambio_no_entregado ?? '') }}"
-                         class="form-control text-end" placeholder="0.00">
-                </div>
-              </div>
-            </div>
-            <div class="row g-0 align-items-center py-2">
-              <div class="col-4 text-muted small">Referencia</div>
-              <div class="col-8">
-                <input type="text" name="referencia_cambio" id="f_referencia"
-                       value="{{ old('referencia_cambio', $corteExistente->referencia_cambio ?? '') }}"
-                       class="form-control form-control-sm" placeholder="Justificación del cambio...">
-              </div>
+            <div class="mt-3">
+              <label class="form-label small fw-semibold mb-1">Observaciones</label>
+              <textarea name="observaciones" id="f_observaciones"
+                        class="form-control form-control-sm" rows="2"
+                        placeholder="Notas opcionales...">{{ old('observaciones', $corteExistente->observaciones ?? '') }}</textarea>
             </div>
           </div>
         </div>
@@ -862,62 +872,16 @@
             <div class="row g-2">
               <div class="col-6">
                 <label class="form-label small mb-1 text-muted">Promociones Aplicadas</label>
-                <input type="text" readonly tabindex="-1"
+                <input type="text" readonly tabindex="-1" id="il_promo_qr"
                        value="{{ $il2['promociones_qr_aplicadas'] ?? 0 }}"
                        class="form-control form-control-sm text-center" style="background:#f1f3f5;border-color:#adb5bd">
               </div>
               <div class="col-6">
                 <label class="form-label small mb-1 text-muted">Cortesías Aplicadas</label>
-                <input type="text" readonly tabindex="-1"
+                <input type="text" readonly tabindex="-1" id="il_cortesias"
                        value="{{ $il2['cortesias_aplicadas'] ?? 0 }}"
                        class="form-control form-control-sm text-center" style="background:#f1f3f5;border-color:#adb5bd">
               </div>
-            </div>
-          </div>
-        </div>
-
-        {{-- ══ CIERRE ══ --}}
-        <div class="card mb-2 border-dark border-opacity-25">
-          <div class="card-header py-2 px-4 bg-dark text-white">
-            <span class="fw-bold small text-uppercase">
-              <i class="bi bi-check2-circle me-1"></i>Corte Total en Efectivo
-            </span>
-          </div>
-          <div class="card-body px-4 py-3">
-            <div class="row g-0 align-items-center border-bottom py-2">
-              <div class="col-7 fw-semibold small">Corte Total Efectivo (cajero)</div>
-              <div class="col-5">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
-                  <input type="number" step="0.01" min="0" name="corte_total_efectivo" id="f_corte"
-                         value="{{ old('corte_total_efectivo', $corteExistente->corte_total_efectivo ?? ($il2['corte_total_ingresado'] ?? '')) }}"
-                         class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd" placeholder="0.00">
-                </div>
-              </div>
-            </div>
-            <div class="row g-0 align-items-center border-bottom py-2">
-              <div class="col-7 fw-semibold small">Efectivo Entregado por Operador</div>
-              <div class="col-5">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text">$</span>
-                  <input type="number" step="0.01" min="0" name="efectivo_entregado" id="f_entregado"
-                         value="{{ old('efectivo_entregado', $corteExistente->efectivo_entregado ?? '') }}"
-                         class="form-control text-end" placeholder="0.00">
-                </div>
-              </div>
-            </div>
-
-            <div class="row g-0 align-items-center py-2 px-2 mt-2 rounded fw-bold fs-6" id="diff_badge"
-                 style="background:#f8f9fa;border:2px solid #dee2e6">
-              <div class="col-6">Diferencia</div>
-              <div class="col-6 text-end" id="txt_diff">$0.00</div>
-            </div>
-
-            <div class="mt-3">
-              <label class="form-label small fw-semibold mb-1">Observaciones</label>
-              <textarea name="observaciones" id="f_observaciones"
-                        class="form-control form-control-sm" rows="2"
-                        placeholder="Notas opcionales...">{{ old('observaciones', $corteExistente->observaciones ?? '') }}</textarea>
             </div>
           </div>
         </div>
@@ -956,12 +920,26 @@
   var TC  = {{ $tipoCambio }};
   var URL_JSON = "{{ route('cortes.datos_cajero') }}";
   var SISTEMA_INIT = @json($sistemaData);
+  // "Registrado en Cajero" = Total de Venta del Balance General (interlogic);
+  // se usa para recalcular la diferencia en vivo cuando el operador ajusta sus
+  // denominaciones MXN/USD.
+  var ACEPTADO_CAJERO = {{ $il2['balance_total_venta'] ?? 0 }};
+  // Saldo Final = sumatoria de cortes_interlogic_saldo_dispensadores.total
+  var SALDO_FINAL = {{ old('saldo_final', $corteExistente->saldo_dispensador ?? $saldoFinalDisp) + 0 }};
+  // Dotación Determinada: valor fijo de referencia
+  var DOTACION_DETERMINADA = 15000;
 
-  function fmt(n) { return '$' + parseFloat(n || 0).toFixed(2); }
+  function fmt(n) {
+    return '$' + parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
   function num(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
   function set(id, val) {
     var el = document.getElementById(id);
     if (el && val !== null && val !== undefined) el.value = val;
+  }
+  function setText(id, val) {
+    var el = document.getElementById(id);
+    if (el && val !== null && val !== undefined) el.textContent = val;
   }
   function setGray(id, val) {
     var el = document.getElementById(id);
@@ -1023,20 +1001,67 @@
     setGray('f_tarjeta',     il.tarjeta_importe_pagado);
 
     // Efectivo
-    var pesos = (il.totales_efectivo || []).find(function(t){ return t.moneda === 'Pesos'; });
-    var dlls  = (il.totales_efectivo || []).find(function(t){ return t.moneda === 'Dólares'; });
+    var pesos = (il.totales_efectivo || []).find(function(t){ return (t.moneda || '').toUpperCase() === 'PESOS'; });
+    var dlls  = (il.totales_efectivo || []).find(function(t){ return (t.moneda || '').toUpperCase() === 'DOLARES'; });
     if (pesos) setGray('f_mxn',  pesos.cantidad);
     if (dlls)  { setGray('f_dlls', dlls.cantidad); setGray('f_tc', dlls.tc); }
 
     // Egresos
-    setGray('f_dotacion',   il.corte_total_dotaciones);
+    SALDO_FINAL = (il.saldo_dispensadores || []).reduce(function (s, r) {
+      return s + (parseFloat(r.total) || 0);
+    }, 0);
+    var elSaldo = document.getElementById('f_saldo_final');
+    if (elSaldo) elSaldo.value = SALDO_FINAL.toFixed(2);
+    // Dotación (editable) precargada = Dotación Final del sistema − Saldo Final
+    var dotSistema = parseFloat(il.corte_total_dotaciones) || 0;
+    set('f_dotacion', (dotSistema - SALDO_FINAL).toFixed(2));
     setGray('f_cancelados', il.corte_total_devuelto_cancelados);
 
-    // Cambio
+    // Cambios: entregado (interlogic) y no entregado (suma de pagos con error)
     setGray('f_cambio_e', il.corte_total_cambio_entregado);
+    var cambioNoEntr = (il.pagos_error || []).reduce(function (s, p) {
+      return s + (parseFloat(p.cambio_faltante) || 0);
+    }, 0);
+    setGray('f_cambio_ne', cambioNoEntr);
 
-    // Corte total
-    setGray('f_corte', il.corte_total_ingresado);
+    // Resumen de Corte de Caja
+    ['corte_total_ingresado_correctos', 'corte_total_ingresado_error', 'corte_total_ingresado_cancelados',
+     'corte_total_ingresado', 'corte_total_cambio_entregado_correctos', 'corte_total_cambio_entregado_error',
+     'corte_total_devuelto_cancelados', 'corte_total_cambio_entregado', 'corte_total_dotaciones'
+    ].forEach(function (key) {
+      var el = document.getElementById('resumen_' + key);
+      if (el) { el.textContent = fmt(il[key]); el.style.color = '#495057'; }
+    });
+
+    // Balance General
+    [['balance_total_ingresado', false], ['balance_total_venta', false], ['balance_cambio_entregado', false],
+     ['balance_cambio_no_entregado', false], ['balance_resultado', true]
+    ].forEach(function (item) {
+      var key = item[0], bold = item[1];
+      var el = document.getElementById(key);
+      if (!el) return;
+      var val = il[key] || 0;
+      el.textContent = fmt(val);
+      el.style.color = bold ? (val == 0 ? '#166534' : (val > 0 ? '#0c4a6e' : '#991b1b')) : '#495057';
+    });
+
+    // Diferencia (Cajero Interlogic)
+    var cardDif = document.getElementById('card_diferencia');
+    if (cardDif) cardDif.style.display = 'block';
+    ACEPTADO_CAJERO = parseFloat(il.balance_total_venta) || 0;
+    setText('dif_aceptado_cajero', fmt(il.balance_total_venta));
+    setText('dif_conteo_operador', fmt(il.conteo_operador_total));
+    setText('dif_total', fmt(il.diferencia_total));
+    var difWrap = document.getElementById('dif_total_wrap');
+    if (difWrap) {
+      var esCero = (il.diferencia_total || 0) == 0;
+      difWrap.style.background = esCero ? '#d1fae5' : '#fee2e2';
+      difWrap.style.color = esCero ? '#065f46' : '#991b1b';
+    }
+
+    // Promociones QR / Cortesías
+    set('il_promo_qr', il.promociones_qr_aplicadas || 0);
+    set('il_cortesias', il.cortesias_aplicadas || 0);
 
     // Paquetes cajero (gris)
     (il.paquetes || []).forEach(function(p) {
@@ -1048,6 +1073,27 @@
     // Membresías cajero (gris)
     (il.membresias || []).forEach(function(m) {
       setGray('mem_cajero_' + slugify(m.paquete), m.autos);
+    });
+
+    // Conteo del operador (MXN/USD) — se toma de "aceptado_mxp"/"aceptado_usd"
+    // (lo que el cajero reportó), que sí distingue moneda a diferencia de
+    // "conteo_operador".
+    var den = il.denominaciones || [];
+    function buscarDen(tipo, valor) {
+      var row = den.find(function (d) { return d.tipo === tipo && Math.round(parseFloat(d.valor)) === valor; });
+      return row ? row.cantidad : undefined;
+    }
+    [500, 200, 100, 50, 20].forEach(function (v) {
+      var c = buscarDen('aceptado_mxp', v);
+      if (c !== undefined) setGray('f_mxn_b' + v, c);
+    });
+    [10, 5, 2, 1].forEach(function (v) {
+      var c = buscarDen('aceptado_mxp', v);
+      if (c !== undefined) setGray('f_mxn_m' + v, c);
+    });
+    [50, 20, 10, 5, 2, 1].forEach(function (v) {
+      var c = buscarDen('aceptado_usd', v);
+      if (c !== undefined) setGray('f_usd_usd_b' + v, c);
     });
 
     // Pagos con error - actualizar tabla
@@ -1068,8 +1114,15 @@
   function renderPagosError(rows) {
     var tbody = document.getElementById('tbody_errores');
     var badge = document.getElementById('badge_num_errores');
+    var wrapTotal = document.getElementById('wrap_total_faltante');
+    var totalEl = document.getElementById('total_faltante_valor');
     if (!tbody) return;
     if (badge) badge.textContent = rows.length;
+
+    var totalFaltante = rows.reduce(function (sum, r) { return sum + (parseFloat(r.cambio_faltante) || 0); }, 0);
+    if (totalEl) totalEl.textContent = totalFaltante.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (wrapTotal) wrapTotal.style.display = rows.length > 0 ? 'block' : 'none';
+
     if (rows.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">Sin pagos con error</td></tr>';
       return;
@@ -1077,10 +1130,10 @@
     tbody.innerHTML = rows.map(function(r) {
       var fh = r.fecha_hora ? formatFecha(r.fecha_hora) : '—';
       return '<tr><td class="text-nowrap">' + fh + '</td>' +
-             '<td class="text-end">$' + parseFloat(r.a_pagar||0).toFixed(2) + '</td>' +
-             '<td class="text-end">$' + parseFloat(r.ingresado||0).toFixed(2) + '</td>' +
-             '<td class="text-end">$' + parseFloat(r.cambio_entregado||0).toFixed(2) + '</td>' +
-             '<td class="text-end text-danger">$' + parseFloat(r.cambio_faltante||0).toFixed(2) + '</td></tr>';
+             '<td class="text-end">' + fmt(r.a_pagar) + '</td>' +
+             '<td class="text-end">' + fmt(r.ingresado) + '</td>' +
+             '<td class="text-end">' + fmt(r.cambio_entregado) + '</td>' +
+             '<td class="text-end text-danger">' + fmt(r.cambio_faltante) + '</td></tr>';
     }).join('');
   }
 
@@ -1092,18 +1145,19 @@
     set('f_mxn',              d.efectivo_mxn);
     set('f_dlls',             d.efectivo_dlls_cantidad);
     set('f_tc',               d.efectivo_dlls_tc);
+    if (d.saldo_dispensador !== undefined && d.saldo_dispensador !== null) {
+      SALDO_FINAL = parseFloat(d.saldo_dispensador) || 0;
+      set('f_saldo_final', SALDO_FINAL.toFixed(2));
+    }
     set('f_dotacion',         d.dotacion);
     set('f_cancelados',       d.pagos_cancelados);
-    set('f_saldo_disp',       d.saldo_inicial_dispensador);
-    set('f_dot_final',        d.dotacion_final);
     set('f_cambio_e',         d.cambio_entregado);
     set('f_cambio_ne',        d.cambio_no_entregado);
     set('f_referencia',       d.referencia_cambio);
-    set('f_corte',            d.corte_total_efectivo);
-    set('f_entregado',        d.efectivo_entregado);
     set('f_observaciones',    d.observaciones);
     setDen('mxn', d.den_mxn);
     setDen('usd', d.den_usd);
+    setDenDot(d.den_dot);
 
     // Paquetes guardados
     if (d.paq_cajero) {
@@ -1128,30 +1182,42 @@
   // ── Recalcular totales ────────────────────────────────────────────────────
   function recalc() {
     var tarjeta    = num('f_tarjeta');
-    var mxn        = num('f_mxn');
     var dlls       = num('f_dlls');
     var tc         = num('f_tc') || TC;
     var dotacion   = num('f_dotacion');
     var cancelados = num('f_cancelados');
-    var saldo_disp = num('f_saldo_disp');
 
     var dlls_mxn = dlls * tc;
+
+    // Efectivo MXN = Total de Venta (Balance General interlogic) − importe USD.
+    var mxn = ACEPTADO_CAJERO - dlls_mxn;
+    var elMxn = document.getElementById('f_mxn');
+    if (elMxn) elMxn.value = (mxn || 0).toFixed(2);
+
     var efectivo = mxn + dlls_mxn;
     var venta    = tarjeta + efectivo;
-    var egresos  = dotacion + cancelados;
-    var disp     = saldo_disp + dotacion;
+
+    // Dotación Final = Saldo Final + Dotación (capturada por el operador)
+    var dotacionFinal = SALDO_FINAL + dotacion;
+    var elDotFinal = document.getElementById('f_dotacion_final');
+    if (elDotFinal) elDotFinal.value = dotacionFinal.toFixed(2);
+
+    // Card Dotación: Dotación de Dispensadores (= Dotación Final) y
+    // Entregada (= Dotación Fija − Dotación de Dispensadores)
+    var elDotFinalDup = document.getElementById('f_dotacion_final_dup');
+    if (elDotFinalDup) elDotFinalDup.value = dotacionFinal.toFixed(2);
+    var elDotDif = document.getElementById('f_dotacion_diferencia');
+    if (elDotDif) elDotDif.value = (DOTACION_DETERMINADA - dotacionFinal).toFixed(2);
+
+    var egresos  = dotacionFinal + cancelados;
 
     var elTV = document.getElementById('f_total_ventas');
     if (elTV) elTV.value = venta.toFixed(2);
 
-    document.getElementById('txt_prosepago').textContent   = fmt(tarjeta);
     document.getElementById('txt_dlls_importe').value      = fmt(dlls_mxn);
     document.getElementById('txt_efectivo').textContent    = fmt(efectivo);
     document.getElementById('txt_venta').textContent       = fmt(venta);
     document.getElementById('txt_egresos').textContent     = fmt(egresos);
-    document.getElementById('txt_dispensador').textContent = fmt(disp);
-    var elDotFinal = document.getElementById('f_dot_final');
-    if (elDotFinal) elDotFinal.value = disp.toFixed(2);
 
     // Denominaciones MXN
     var totalBilletes = 0, totalMonedas = 0;
@@ -1167,21 +1233,50 @@
       if (billetesKeys.includes(key)) totalBilletes += monto;
       else totalMonedas += monto;
     });
-    document.getElementById('txt_total_billetes').textContent = fmt(totalBilletes);
-    document.getElementById('txt_total_monedas').textContent  = fmt(totalMonedas);
+    document.getElementById('txt_total_mxn').textContent = fmt(totalBilletes + totalMonedas);
 
     // Denominaciones USD
-    var totalUsd = 0;
+    var totalUsd = 0, totalUsdUsd = 0;
     document.querySelectorAll('.den-usd-input').forEach(function(inp) {
       var val  = parseFloat(inp.dataset.val || 0);
       var cant = parseFloat(inp.value) || 0;
-      var monto = cant * val * tc;
+      var montoUsd = cant * val;
+      var monto    = montoUsd * tc;
       var key  = inp.name.match(/\[(\w+)\]/)?.[1];
-      var mtoEl = document.getElementById('mto_usd_' + key);
-      if (mtoEl) mtoEl.textContent = fmt(monto);
-      totalUsd += monto;
+      var mtoElUsd = document.getElementById('mto_usd_' + key + '_usd');
+      var mtoEl    = document.getElementById('mto_usd_' + key);
+      if (mtoElUsd) mtoElUsd.textContent = fmt(montoUsd);
+      if (mtoEl)    mtoEl.textContent    = fmt(monto);
+      totalUsdUsd += montoUsd;
+      totalUsd    += monto;
     });
-    document.getElementById('txt_total_usd').textContent = fmt(totalUsd);
+    document.getElementById('txt_total_usd_usd').textContent = fmt(totalUsdUsd);
+    document.getElementById('txt_total_usd').textContent     = fmt(totalUsd);
+
+    // Registrado en Cajero = Total de Venta (Balance General) − Dotación
+    //                        + Cambio Entregado + Cambio No Entregado
+    var cambioEntregado   = num('f_cambio_e');
+    var cambioNoEntregado = num('f_cambio_ne');
+    var registradoCajero  = ACEPTADO_CAJERO - dotacion + cambioEntregado + cambioNoEntregado;
+    var difAceptEl = document.getElementById('dif_aceptado_cajero');
+    if (difAceptEl) difAceptEl.textContent = fmt(registradoCajero);
+
+    // Diferencia (Cajero Interlogic): "Reportado por Operador" en vivo = suma
+    // de lo que el operador captura en denominaciones MXN + USD (en MXN).
+    var conteoOperador = totalBilletes + totalMonedas + totalUsd;
+    var difOperadorEl  = document.getElementById('dif_conteo_operador');
+    if (difOperadorEl) difOperadorEl.textContent = fmt(conteoOperador);
+    var difTotalEl = document.getElementById('dif_total');
+    if (difTotalEl) {
+      var difOperador = conteoOperador - registradoCajero;
+      difTotalEl.textContent = fmt(difOperador);
+      var difWrap2 = document.getElementById('dif_total_wrap');
+      if (difWrap2) {
+        var esCero2 = Math.abs(difOperador) < 0.005;
+        difWrap2.style.background = esCero2 ? '#d1fae5' : '#fee2e2';
+        difWrap2.style.color      = esCero2 ? '#065f46' : '#991b1b';
+      }
+    }
 
     // Paquetes: total cajero y gran total
     var totalCajAutos = 0, granTotal = 0;
@@ -1210,23 +1305,6 @@
     });
     var elMemTotal = document.getElementById('mem_caj_total');
     if (elMemTotal) elMemTotal.textContent = totalCajMem;
-
-    calcDiff();
-  }
-
-  function calcDiff() {
-    var corte     = num('f_corte');
-    var entregado = num('f_entregado');
-    var diff      = entregado - corte;
-    var badge     = document.getElementById('diff_badge');
-    document.getElementById('txt_diff').textContent = fmt(diff);
-    if (diff === 0) {
-      badge.style.cssText = 'background:#d1fae5;border:2px solid #10b981;color:#065f46';
-    } else if (diff > 0) {
-      badge.style.cssText = 'background:#fff3cd;border:2px solid #fbbf24;color:#856404';
-    } else {
-      badge.style.cssText = 'background:#fee2e2;border:2px solid #f87171;color:#991b1b';
-    }
   }
 
   function setDen(prefix, obj) {
@@ -1256,6 +1334,19 @@
       var bi    = document.getElementById('badge_interlogic');
       var bs    = document.getElementById('badge_sin_interlogic');
 
+      if (!d.existe) {
+        // Limpiar campos de captura del operador ANTES del prellenado de
+        // interlogic, para no borrar encima los valores recién puestos.
+        set('f_observaciones', '');
+        set('f_cambio_e', '');
+        set('f_cambio_ne', '');
+        set('f_referencia', '');
+        setDen('mxn', null);
+        setDen('usd', null);
+        setDenDot(null);
+        if (badge) badge.classList.add('d-none');
+      }
+
       // Si hay interlogic, prellenar grises
       if (d.sistema && d.sistema.interlogic) {
         setInterlogic(d.sistema.interlogic);
@@ -1268,23 +1359,53 @@
         // Corte guardado: sobrescribe prellenado de interlogic
         setCorte(d);
         if (badge) badge.classList.remove('d-none');
-      } else {
-        // Limpiar campos de captura del operador (no los grises de interlogic)
-        set('f_cambio_ne', '');
-        set('f_referencia', '');
-        set('f_entregado', '');
-        set('f_observaciones', '');
-        setDen('mxn', null);
-        setDen('usd', null);
-        if (badge) badge.classList.add('d-none');
       }
       recalc();
     });
   }
 
+  // ── Desglose de dotación (desplegable) ────────────────────────────────────
+  var boxDot = document.getElementById('desgloseDotacion');
+  function recalcDesgloseDot() {
+    var total = 0;
+    boxDot.querySelectorAll('.dot-den-input').forEach(function(inp) {
+      var monto = (parseFloat(inp.dataset.val) || 0) * (parseInt(inp.value, 10) || 0);
+      total += monto;
+      var mto = document.getElementById('mto_dot_' + inp.dataset.key);
+      if (mto) mto.textContent = fmt(monto);
+    });
+    var objetivo = num('f_dotacion');
+    var dif = objetivo - total;
+    document.getElementById('txt_dot_total').textContent = fmt(total);
+    document.getElementById('txt_dot_objetivo').textContent = fmt(objetivo);
+    var elDif = document.getElementById('txt_dot_diferencia');
+    elDif.textContent = fmt(dif);
+    elDif.style.color = Math.abs(dif) < 0.005 ? '#059669' : '#dc2626';
+    return total;
+  }
+  // Rellena las unidades del desglose (o las limpia si obj es null)
+  function setDenDot(obj) {
+    if (!boxDot) return;
+    boxDot.querySelectorAll('.dot-den-input').forEach(function(inp) {
+      var v = obj ? obj[inp.dataset.key] : null;
+      inp.value = v ? v : '';
+    });
+    recalcDesgloseDot();
+  }
+  if (boxDot) {
+    // Refresca el objetivo con el valor vigente de Dotación al desplegarse
+    boxDot.addEventListener('show.bs.collapse', recalcDesgloseDot);
+    // ...y en vivo si el usuario edita Dotación con el desglose abierto
+    document.getElementById('f_dotacion')?.addEventListener('input', recalcDesgloseDot);
+    boxDot.querySelectorAll('.dot-den-input').forEach(function(inp) {
+      inp.addEventListener('input', recalcDesgloseDot);
+    });
+    // Importes iniciales (por si el corte ya traía desglose guardado)
+    recalcDesgloseDot();
+  }
+
   // ── Listeners ─────────────────────────────────────────────────────────────
-  ['f_tarjeta','f_mxn','f_dlls','f_tc','f_dotacion','f_cancelados',
-   'f_saldo_disp','f_corte','f_entregado'].forEach(function(id) {
+  ['f_tarjeta','f_dlls','f_tc','f_dotacion','f_cancelados','f_cambio_e','f_cambio_ne'].forEach(function(id) {
     document.getElementById(id)?.addEventListener('input', recalc);
   });
   document.querySelectorAll('.den-mxn-input, .den-usd-input, .paq-cajero-input, .paq-precio-input, .mem-cajero-input').forEach(function(el) {

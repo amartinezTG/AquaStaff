@@ -28,16 +28,24 @@ class CortesController extends Controller
         'usd_b5'  => 5,  'usd_b2'  => 2,  'usd_b1'  => 1,
     ];
 
-    // Mapeo de plan _id (MongoDB) → nombre de paquete
+    // Desglose de la dotación (billetes/monedas que se dejan en caja),
+    // se guarda en la misma tabla de denominaciones con moneda 'DOT'.
+    // Para dotar solo se usan billetes de $50/$20 y monedas de $5/$1.
+    private array $denominacionesDOT = [
+        'db50' => 50, 'db20' => 20, 'dm5' => 5, 'dm1' => 1,
+    ];
+
+    // Orden fijo de paquetes en el corte
+    private array $ordenPaquetes = ['Express', 'Ultra', 'Deluxe', 'Basico', 'Otro'];
+
+    // En lavados cubiertos por membresía, "Package" guarda el _id del PLAN de
+    // membresía (no un _id de la tabla "packages"), por eso se mapea aparte.
     private array $membershipPlanMap = [
         '61344ae637a5f00383106c7a' => 'Express',
         '61344b5937a5f00383106c80' => 'Basico',
         '61344b9137a5f00383106c84' => 'Ultra',
         '61344bab37a5f00383106c88' => 'Deluxe',
     ];
-
-    // Orden fijo de paquetes en el corte
-    private array $ordenPaquetes = ['Express', 'Ultra', 'Deluxe', 'Basico', 'Otro'];
 
     // ── GET /cortes  — lista mensual ────────────────────────────────────────
     public function index(Request $request)
@@ -77,7 +85,15 @@ class CortesController extends Controller
 
         $ordenOpuesto = $orden === 'asc' ? 'desc' : 'asc';
 
-        return view('cortes.index', compact('activePage', 'mes', 'cajas', 'cortes', 'fechas', 'orden', 'ordenOpuesto'));
+        // Día más reciente YA CERRADO (excluye hoy) que aún no tiene corte
+        // guardado. Evita que "Capturar Corte" abra siempre en "hoy", cuando
+        // ese día normalmente todavía no tiene ventas sincronizadas.
+        $hoyStr = now()->format('Y-m-d');
+        $fechaSugerida = $fechas->sortDesc()
+            ->first(fn($f) => $f !== $hoyStr && $cortes->get($f, collect())->isEmpty())
+            ?? $hoyStr;
+
+        return view('cortes.index', compact('activePage', 'mes', 'cajas', 'cortes', 'fechas', 'orden', 'ordenOpuesto', 'fechaSugerida'));
     }
 
     // ── GET /cortes/capturar ────────────────────────────────────────────────
@@ -106,12 +122,15 @@ class CortesController extends Controller
         $denUsd = $corteExistente
             ? $corteExistente->denominaciones->where('moneda', 'USD')->keyBy('denominacion')
             : collect();
+        $denDot = $corteExistente
+            ? $corteExistente->denominaciones->where('moneda', 'DOT')->keyBy('denominacion')
+            : collect();
 
         $sistemaData = $this->sistemaDatos($cajaSeleccionada->codigo, $fechaCorte);
 
         return view('cortes.capturar', compact(
             'activePage', 'tipoCambio', 'facility', 'cajas',
-            'fechaCorte', 'cajaSeleccionada', 'corteExistente', 'denMxn', 'denUsd',
+            'fechaCorte', 'cajaSeleccionada', 'corteExistente', 'denMxn', 'denUsd', 'denDot',
             'sistemaData'
         ));
     }
@@ -138,9 +157,16 @@ class CortesController extends Controller
         );
         $totalEfectivo    = ($request->efectivo_mxn ?? 0) + $efectivoDllsImporte;
         $totalDeVenta     = $totalEfectivo + ($request->importe_tarjeta ?? 0);
-        $totalEgresos     = ($request->dotacion ?? 0) + ($request->pagos_cancelados ?? 0);
-        $saldoDispensador = ($request->saldo_inicial_dispensador ?? 0) + ($request->dotacion ?? 0);
+        // Egresos: Saldo Final (sumatoria dispensadores) + Dotación (capturada);
+        // Dotación Final = Saldo Final + Dotación (se recalcula en servidor).
+        $saldoFinal       = (float) ($request->saldo_final ?? 0);
+        $dotacion         = (float) ($request->dotacion ?? 0);
+        $dotacionFinal    = $saldoFinal + $dotacion;
+        $totalEgresos     = $dotacionFinal + ($request->pagos_cancelados ?? 0);
         $saldoCambio      = ($request->cambio_entregado ?? 0) + ($request->cambio_no_entregado ?? 0);
+        // Dotación determinada (fija) y su diferencia contra la dotación final.
+        $dotacionDeterminada = 15000;
+        $dotacionDiferencia  = $dotacionDeterminada - $dotacionFinal;
 
         $interlogicId = $sistemaData['interlogic']['id'] ?? null;
 
@@ -159,12 +185,14 @@ class CortesController extends Controller
                 'efectivo_dlls_importe'     => $efectivoDllsImporte,
                 'total_efectivo'            => $totalEfectivo,
                 'total_de_venta'            => $totalDeVenta,
-                'dotacion'                  => $request->dotacion                  ?? 0,
+                'dotacion'                  => $dotacion,
                 'pagos_cancelados'          => $request->pagos_cancelados          ?? 0,
                 'total_egresos'             => $totalEgresos,
                 'saldo_inicial_dispensador' => $request->saldo_inicial_dispensador ?? 0,
-                'dotacion_final'            => $request->dotacion_final            ?? 0,
-                'saldo_dispensador'         => $saldoDispensador,
+                'dotacion_final'            => $dotacionFinal,
+                'dotacion_determinada'      => $dotacionDeterminada,
+                'dotacion_diferencia'       => $dotacionDiferencia,
+                'saldo_dispensador'         => $saldoFinal,
                 'cambio_entregado'          => $request->cambio_entregado          ?? 0,
                 'cambio_no_entregado'       => $request->cambio_no_entregado       ?? 0,
                 'saldo_cambio_entregado'    => $saldoCambio,
@@ -179,6 +207,7 @@ class CortesController extends Controller
 
         $this->guardarDenominaciones($corte->id, 'MXN', $request->input('den_mxn', []));
         $this->guardarDenominaciones($corte->id, 'USD', $request->input('den_usd', []));
+        $this->guardarDenominaciones($corte->id, 'DOT', $request->input('den_dot', []));
         $this->guardarPaquetes($corte->id, $sistemaData, $request->input('paq_cajero', []), $request->input('paq_precio', []));
         $this->guardarMembresias($corte->id, $sistemaData, $request->input('mem_cajero', []));
 
@@ -208,6 +237,8 @@ class CortesController extends Controller
             ->map(fn($d) => $d->cantidad);
         $denUsd = $corte->denominaciones->where('moneda', 'USD')->keyBy('denominacion')
             ->map(fn($d) => $d->cantidad);
+        $denDot = $corte->denominaciones->where('moneda', 'DOT')->keyBy('denominacion')
+            ->map(fn($d) => $d->cantidad);
 
         $paqCajero  = $corte->paquetes->keyBy('paquete')
             ->map(fn($p) => ['autos_cajero' => $p->autos_cajero, 'precio' => $p->precio]);
@@ -229,6 +260,7 @@ class CortesController extends Controller
             'pagos_cancelados'          => $corte->pagos_cancelados,
             'saldo_inicial_dispensador' => $corte->saldo_inicial_dispensador,
             'dotacion_final'            => $corte->dotacion_final,
+            'saldo_dispensador'         => $corte->saldo_dispensador,
             'cambio_entregado'          => $corte->cambio_entregado,
             'cambio_no_entregado'       => $corte->cambio_no_entregado,
             'referencia_cambio'         => $corte->referencia_cambio,
@@ -237,6 +269,7 @@ class CortesController extends Controller
             'observaciones'             => $corte->observaciones,
             'den_mxn'                   => $denMxn,
             'den_usd'                   => $denUsd,
+            'den_dot'                   => $denDot,
             'paq_cajero'                => $paqCajero,
             'mem_cajero'                => $memCajero,
         ]);
@@ -263,7 +296,7 @@ class CortesController extends Controller
             'prosepago'  => $cortes->sum('importe_tarjeta'),
             'efectivo'   => $cortes->sum('total_efectivo'),
             'venta'      => $cortes->sum('total_de_venta'),
-            'diferencia' => $cortes->sum('diferencia'),
+            'diferencia' => $cortes->sum(fn($c) => $c->diferencia_real),
         ];
 
         return view('cortes.show', compact('activePage', 'fecha', 'cortes', 'facility', 'totalDia', 'tipoCambio'));
@@ -309,7 +342,7 @@ class CortesController extends Controller
                 'id'                        => $c->id,
                 'caja_nombre'               => $c->caja->nombre,
                 'caja_codigo'               => $c->caja->codigo,
-                'diferencia'                => (float) $c->diferencia,
+                'diferencia'                => (float) $c->diferencia_real,
                 'total_ventas'              => (float) $c->total_ventas,
                 'num_pagos_tarjeta'         => $c->num_pagos_tarjeta,
                 'importe_tarjeta'           => (float) $c->importe_tarjeta,
@@ -350,7 +383,7 @@ class CortesController extends Controller
                 'prosepago'  => (float) $cortes->sum('importe_tarjeta'),
                 'efectivo'   => (float) $cortes->sum('total_efectivo'),
                 'venta'      => (float) $cortes->sum('total_de_venta'),
-                'diferencia' => (float) $cortes->sum('diferencia'),
+                'diferencia' => (float) $cortes->sum(fn($c) => $c->diferencia_real),
             ],
             'cortes' => $data,
         ]);
@@ -374,7 +407,7 @@ class CortesController extends Controller
             'prosepago'  => (float) $cortes->sum('importe_tarjeta'),
             'efectivo'   => (float) $cortes->sum('total_efectivo'),
             'venta'      => (float) $cortes->sum('total_de_venta'),
-            'diferencia' => (float) $cortes->sum('diferencia'),
+            'diferencia' => (float) $cortes->sum(fn($c) => $c->diferencia_real),
         ];
 
         $billetesMxn = ['b500'=>['lbl'=>'B. $500','val'=>500],'b200'=>['lbl'=>'B. $200','val'=>200],'b100'=>['lbl'=>'B. $100','val'=>100],'b50'=>['lbl'=>'B. $50','val'=>50],'b20'=>['lbl'=>'B. $20','val'=>20],'b10'=>['lbl'=>'B. $10','val'=>10],'b5'=>['lbl'=>'B. $5','val'=>5],'b2'=>['lbl'=>'B. $2','val'=>2],'b1'=>['lbl'=>'B. $1','val'=>1],'m10'=>['lbl'=>'M. $10','val'=>10],'m5'=>['lbl'=>'M. $5','val'=>5],'m2'=>['lbl'=>'M. $2','val'=>2],'m1'=>['lbl'=>'M. $1','val'=>1]];
@@ -425,9 +458,16 @@ class CortesController extends Controller
         );
         $totalEfectivo    = ($request->efectivo_mxn ?? 0) + $efectivoDllsImporte;
         $totalDeVenta     = $totalEfectivo + ($request->importe_tarjeta ?? 0);
-        $totalEgresos     = ($request->dotacion ?? 0) + ($request->pagos_cancelados ?? 0);
-        $saldoDispensador = ($request->saldo_inicial_dispensador ?? 0) + ($request->dotacion ?? 0);
+        // Egresos: Saldo Final (sumatoria dispensadores) + Dotación (capturada);
+        // Dotación Final = Saldo Final + Dotación (se recalcula en servidor).
+        $saldoFinal       = (float) ($request->saldo_final ?? 0);
+        $dotacion         = (float) ($request->dotacion ?? 0);
+        $dotacionFinal    = $saldoFinal + $dotacion;
+        $totalEgresos     = $dotacionFinal + ($request->pagos_cancelados ?? 0);
         $saldoCambio      = ($request->cambio_entregado ?? 0) + ($request->cambio_no_entregado ?? 0);
+        // Dotación determinada (fija) y su diferencia contra la dotación final.
+        $dotacionDeterminada = 15000;
+        $dotacionDiferencia  = $dotacionDeterminada - $dotacionFinal;
 
         $interlogicId = $sistemaData['interlogic']['id'] ?? $corte->corte_interlogic_id;
 
@@ -443,12 +483,14 @@ class CortesController extends Controller
             'efectivo_dlls_importe'     => $efectivoDllsImporte,
             'total_efectivo'            => $totalEfectivo,
             'total_de_venta'            => $totalDeVenta,
-            'dotacion'                  => $request->dotacion                  ?? 0,
+            'dotacion'                  => $dotacion,
             'pagos_cancelados'          => $request->pagos_cancelados          ?? 0,
             'total_egresos'             => $totalEgresos,
             'saldo_inicial_dispensador' => $request->saldo_inicial_dispensador ?? 0,
-            'dotacion_final'            => $request->dotacion_final            ?? 0,
-            'saldo_dispensador'         => $saldoDispensador,
+            'dotacion_final'            => $dotacionFinal,
+            'dotacion_determinada'      => $dotacionDeterminada,
+            'dotacion_diferencia'       => $dotacionDiferencia,
+            'saldo_dispensador'         => $saldoFinal,
             'cambio_entregado'          => $request->cambio_entregado          ?? 0,
             'cambio_no_entregado'       => $request->cambio_no_entregado       ?? 0,
             'saldo_cambio_entregado'    => $saldoCambio,
@@ -462,6 +504,11 @@ class CortesController extends Controller
 
         $this->guardarDenominaciones($corte->id, 'MXN', $request->input('den_mxn', []));
         $this->guardarDenominaciones($corte->id, 'USD', $request->input('den_usd', []));
+        // Solo si el formulario trae el desglose de dotación (la vista de
+        // editar no lo tiene; así no se borra lo capturado en capturar).
+        if ($request->has('den_dot')) {
+            $this->guardarDenominaciones($corte->id, 'DOT', $request->input('den_dot', []));
+        }
         $this->guardarPaquetes($corte->id, $sistemaData, $request->input('paq_cajero', []), $request->input('paq_precio', []));
         $this->guardarMembresias($corte->id, $sistemaData, $request->input('mem_cajero', []));
 
@@ -518,32 +565,32 @@ class CortesController extends Controller
             ];
         }
 
-        // ── Membresías utilizadas (TransactionType=1) por tipo de plan ──
+        // ── Membresías utilizadas: lavados cubiertos por membresía (gratis) ──
+        // TransactionType=2 es el lavado en sí (igual que "Paquetes Comprados"),
+        // pero con Total=0 porque el auto ya estaba pagado por la membresía.
+        // OJO: TransactionType=1 es "renovación" (compra/renovación de la
+        // membresía), no el uso de la membresía para lavar — por eso antes
+        // salían números muy bajos (1-2 al día, solo las renovaciones).
         $memRows = DB::select("
-            SELECT
-                COALESCE(cm.membership_id, lt.Membership) AS plan_id,
-                COUNT(*) AS autos
+            SELECT lt.Package AS plan_id, COUNT(*) AS autos
             FROM local_transaction lt
-            LEFT JOIN client_membership cm ON lt.Membership = cm._id
             WHERE lt.TransationDate BETWEEN ? AND ?
               AND lt.Atm = ?
-              AND lt.TransactionType = 1
-              AND lt.Membership IS NOT NULL
-              AND lt.Membership NOT IN ('0','')
-              AND lt.Total > 0
+              AND lt.TransactionType = 2
+              AND lt.Total = 0
+              AND lt.PaymentType <> 3
+              AND lt.Package IS NOT NULL
               AND lt.deleted_at IS NULL
-            GROUP BY plan_id
+            GROUP BY lt.Package
         ", [$inicio, $fin, $codigoCaja]);
 
-        $membresias = [];
+        $membresiasArr = [];
         foreach ($memRows as $r) {
             $nombre = $this->membershipPlanMap[$r->plan_id] ?? 'Otro';
-            $membresias[$nombre] = ($membresias[$nombre] ?? 0) + (int) $r->autos;
-        }
-        // Convertir a array con estructura uniforme
-        $membresiasArr = [];
-        foreach ($membresias as $nombre => $autos) {
-            $membresiasArr[$nombre] = ['paquete' => $nombre, 'autos' => $autos];
+            $membresiasArr[$nombre] = [
+                'paquete' => $nombre,
+                'autos'   => ($membresiasArr[$nombre]['autos'] ?? 0) + (int) $r->autos,
+            ];
         }
 
         // ── Corte interlogic correspondiente (gris, puede ser null) ──
@@ -589,7 +636,7 @@ class CortesController extends Controller
         $cancelados = DB::select("SELECT fecha_hora, cuenta, a_pagar, ingresado, cambio_entregado, cambio_faltante FROM cortes_interlogic_cancelados WHERE corte_id = ?", [$ci->id]);
         $denominaciones = DB::select("SELECT tipo, valor, cantidad, importe FROM cortes_interlogic_denominaciones WHERE corte_id = ? ORDER BY tipo, valor DESC", [$ci->id]);
         $totalesEfectivo = DB::select("SELECT moneda, tc, cantidad, total FROM cortes_interlogic_totales_efectivo WHERE corte_id = ?", [$ci->id]);
-        $saldoDispensadores = DB::select("SELECT denominacion, divisa, total FROM cortes_interlogic_saldo_dispensadores WHERE corte_id = ? ORDER BY divisa, denominacion DESC", [$ci->id]);
+        $saldoDispensadores = DB::select("SELECT denominacion, divisa, total FROM cortes_interlogic_saldo_dispensadores WHERE corte_id = ? ORDER BY divisa, denominacion ASC", [$ci->id]);
 
         return [
             'id'                                => $ci->id,
@@ -634,7 +681,11 @@ class CortesController extends Controller
     // ── Guardar denominaciones ──────────────────────────────────────────────
     private function guardarDenominaciones(int $corteId, string $moneda, array $datos): void
     {
-        $mapa = $moneda === 'MXN' ? $this->denominacionesMXN : $this->denominacionesUSD;
+        $mapa = match ($moneda) {
+            'MXN'   => $this->denominacionesMXN,
+            'USD'   => $this->denominacionesUSD,
+            'DOT'   => $this->denominacionesDOT,
+        };
 
         foreach ($mapa as $den => $valor) {
             $cantidad = (int) ($datos[$den] ?? 0);

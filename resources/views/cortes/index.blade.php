@@ -42,7 +42,7 @@
             <input type="month" name="mes" value="{{ $mes }}" class="form-control form-control-sm" style="width:160px">
             <button type="submit" class="btn btn-sm btn-secondary">Ver</button>
           </form>
-          <a href="{{ route('cortes.create') }}?fecha={{ now()->format('Y-m-d') }}"
+          <a href="{{ route('cortes.create') }}?fecha={{ $fechaSugerida }}"
              class="btn btn-sm btn-primary ms-auto">
             <i class="bi bi-plus-circle me-1"></i> Capturar Corte
           </a>

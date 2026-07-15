@@ -119,15 +119,35 @@
               <i class="bi bi-arrow-down-circle me-1"></i> Egresos
             </div>
             <div class="card-body p-3">
-              <div class="row g-2">
-                <div class="col-6">
-                  <label class="form-label small mb-1">Dotación</label>
+              <div class="row g-2 border-bottom pb-2 mb-2">
+                <div class="col-4">
+                  <label class="form-label small mb-1 text-muted">Saldo Final</label>
                   <div class="input-group input-group-sm">
-                    <span class="input-group-text">$</span>
-                    <input type="number" step="0.01" min="0" name="dotacion"
-                           value="{{ $corte->dotacion }}" class="form-control">
+                    <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
+                    <input type="text" readonly tabindex="-1" name="saldo_final" id="e_saldo_final"
+                           value="{{ number_format($corte->saldo_dispensador, 2, '.', '') }}"
+                           class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd">
                   </div>
                 </div>
+                <div class="col-4">
+                  <label class="form-label small mb-1 fw-semibold">Dotación</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">$</span>
+                    <input type="number" step="0.01" min="0" name="dotacion" id="e_dotacion"
+                           value="{{ $corte->dotacion }}" class="form-control text-end">
+                  </div>
+                </div>
+                <div class="col-4">
+                  <label class="form-label small mb-1 text-muted">Dotación Final</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text" style="background:#f1f3f5;border-color:#adb5bd">$</span>
+                    <input type="text" readonly tabindex="-1" name="dotacion_final" id="e_dotacion_final"
+                           value="{{ number_format($corte->dotacion_final, 2, '.', '') }}"
+                           class="form-control text-end" style="background:#f1f3f5;border-color:#adb5bd">
+                  </div>
+                </div>
+              </div>
+              <div class="row g-2">
                 <div class="col-6">
                   <label class="form-label small mb-1">Pagos Cancelados</label>
                   <div class="input-group input-group-sm">
@@ -140,37 +160,10 @@
             </div>
           </div>
 
-          {{-- DISPENSADORES --}}
+          {{-- CAMBIOS ENTREGADOS --}}
           <div class="card mb-2">
-            <div class="card-header py-2 bg-info text-white fw-semibold">
-              <i class="bi bi-safe me-1"></i> Dispensadores
-            </div>
-            <div class="card-body p-3">
-              <div class="row g-2">
-                <div class="col-6">
-                  <label class="form-label small mb-1">Saldo Final</label>
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text">$</span>
-                    <input type="number" step="0.01" min="0" name="saldo_inicial_dispensador"
-                           value="{{ $corte->saldo_inicial_dispensador }}" class="form-control">
-                  </div>
-                </div>
-                <div class="col-6">
-                  <label class="form-label small mb-1">Dotación Final</label>
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text">$</span>
-                    <input type="number" step="0.01" min="0" name="dotacion_final"
-                           value="{{ $corte->dotacion_final }}" class="form-control">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {{-- CAMBIOS --}}
-          <div class="card mb-2">
-            <div class="card-header py-2 bg-secondary text-white fw-semibold">
-              <i class="bi bi-arrow-left-right me-1"></i> Cambios
+            <div class="card-header py-2 fw-semibold text-white" style="background:#4f46e5">
+              <i class="bi bi-arrow-left-right me-1"></i> Cambios Entregados
             </div>
             <div class="card-body p-3">
               <div class="row g-2">
@@ -191,9 +184,11 @@
                   </div>
                 </div>
                 <div class="col-12">
-                  <label class="form-label small mb-1">Referencia</label>
+                  <label class="form-label small mb-1">Referencia / Justificación</label>
                   <input type="text" name="referencia_cambio"
-                         value="{{ $corte->referencia_cambio }}" class="form-control form-control-sm">
+                         value="{{ $corte->referencia_cambio }}"
+                         class="form-control form-control-sm"
+                         placeholder="Ej: cambio entregado a cliente, devolución...">
                 </div>
               </div>
             </div>
@@ -255,7 +250,7 @@
             </div>
           </div>
 
-          {{-- CIERRE --}}
+          {{-- CIERRE (Diferencia Cajero Interlogic) --}}
           <div class="card border-dark">
             <div class="card-header py-2 bg-dark text-white fw-semibold">
               <i class="bi bi-check2-circle me-1"></i> Cierre
@@ -263,19 +258,19 @@
             <div class="card-body p-3">
               <div class="row g-2">
                 <div class="col-6">
-                  <label class="form-label small mb-1">Corte Total Efectivo</label>
+                  <label class="form-label small mb-1">Reportado por Operador</label>
                   <div class="input-group input-group-sm">
                     <span class="input-group-text">$</span>
-                    <input type="number" step="0.01" min="0" name="corte_total_efectivo"
-                           value="{{ $corte->corte_total_efectivo }}" class="form-control" id="e_corte">
+                    <input type="text" readonly tabindex="-1" id="e_reportado"
+                           class="form-control text-end" style="background:#f1f3f5" value="0.00">
                   </div>
                 </div>
                 <div class="col-6">
-                  <label class="form-label small mb-1">Efectivo Entregado</label>
+                  <label class="form-label small mb-1">Total Efectivo</label>
                   <div class="input-group input-group-sm">
                     <span class="input-group-text">$</span>
-                    <input type="number" step="0.01" min="0" name="efectivo_entregado"
-                           value="{{ $corte->efectivo_entregado }}" class="form-control" id="e_entregado">
+                    <input type="text" readonly tabindex="-1" id="e_venta"
+                           class="form-control text-end" style="background:#f1f3f5" value="0.00">
                   </div>
                 </div>
                 <div class="col-12">
@@ -315,18 +310,56 @@
 
 <script>
 (function () {
+  // Diferencia recalculada: efectivo físico contado (denominaciones) contra el
+  // Total de Venta (tarjeta + efectivo), igual que el card Diferencia Interlogic.
+  var MXN = {b500:500,b200:200,b100:100,b50:50,b20:20,b10:10,b5:5,b2:2,b1:1,m10:10,m5:5,m2:2,m1:1};
+  var USD = {usd_b50:50,usd_b20:20,usd_b10:10,usd_b5:5,usd_b2:2,usd_b1:1};
+  var TC  = {{ $tipoCambio }};
+
+  function num(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+  function fmt(n)  { return '$' + (n || 0).toFixed(2); }
+
   function calcDiff() {
-    var corte     = parseFloat(document.getElementById('e_corte')?.value)     || 0;
-    var entregado = parseFloat(document.getElementById('e_entregado')?.value) || 0;
-    var diff      = entregado - corte;
-    var badge     = document.getElementById('diff-badge');
-    var txt       = document.getElementById('txt-diff');
-    txt.textContent = '$' + diff.toFixed(2);
-    if (diff === 0)      { badge.style.background='#d4edda'; badge.style.borderColor='#28a745'; badge.style.color='#155724'; }
-    else if (diff > 0)   { badge.style.background='#fff3cd'; badge.style.borderColor='#ffc107'; badge.style.color='#856404'; }
-    else                 { badge.style.background='#f8d7da'; badge.style.borderColor='#dc3545'; badge.style.color='#721c24'; }
+    var tc = num('e_tc') || TC;
+    var mxn = 0, usd = 0;
+    document.querySelectorAll('[name^="den_mxn["]').forEach(function (inp) {
+      var k = (inp.name.match(/\[(\w+)\]/) || [])[1];
+      mxn += (parseFloat(inp.value) || 0) * (MXN[k] || 0);
+    });
+    document.querySelectorAll('[name^="den_usd["]').forEach(function (inp) {
+      var k = (inp.name.match(/\[(\w+)\]/) || [])[1];
+      usd += (parseFloat(inp.value) || 0) * (USD[k] || 0);
+    });
+    var reportado = mxn + usd * tc;
+    var efectivo  = num('e_mxn') + num('e_dlls') * tc;
+    var diff      = reportado - efectivo;
+
+    var elRep = document.getElementById('e_reportado');
+    var elVen = document.getElementById('e_venta');
+    if (elRep) elRep.value = reportado.toFixed(2);
+    if (elVen) elVen.value = efectivo.toFixed(2);
+
+    var badge = document.getElementById('diff-badge');
+    var txt   = document.getElementById('txt-diff');
+    txt.textContent = fmt(diff);
+    if (Math.abs(diff) < 0.005) { badge.style.background='#d4edda'; badge.style.borderColor='#28a745'; badge.style.color='#155724'; }
+    else if (diff > 0)          { badge.style.background='#fff3cd'; badge.style.borderColor='#ffc107'; badge.style.color='#856404'; }
+    else                        { badge.style.background='#f8d7da'; badge.style.borderColor='#dc3545'; badge.style.color='#721c24'; }
   }
-  ['e_corte','e_entregado'].forEach(id => document.getElementById(id)?.addEventListener('input', calcDiff));
+
+  ['e_mxn','e_dlls','e_tc'].forEach(id => document.getElementById(id)?.addEventListener('input', calcDiff));
+  document.querySelectorAll('[name^="den_mxn["], [name^="den_usd["]').forEach(function (inp) {
+    inp.addEventListener('input', calcDiff);
+  });
   calcDiff();
+
+  // Dotación Final = Saldo Final + Dotación (capturada)
+  function calcDotacion() {
+    var dotFinal = num('e_saldo_final') + num('e_dotacion');
+    var el = document.getElementById('e_dotacion_final');
+    if (el) el.value = dotFinal.toFixed(2);
+  }
+  document.getElementById('e_dotacion')?.addEventListener('input', calcDotacion);
+  calcDotacion();
 })();
 </script>

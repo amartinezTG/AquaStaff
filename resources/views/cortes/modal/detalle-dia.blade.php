@@ -65,5 +65,25 @@
         body.innerHTML = '<div class="text-center py-4 text-danger p-3">Error al cargar los datos.</div>';
       });
   });
+
+  // Tabs de cajero dentro del modal. Delegado en document porque el contenido
+  // se inyecta con innerHTML (los <script> inyectados así no se ejecutan).
+  document.addEventListener('click', function (e) {
+    var tab = e.target.closest('.btn-cajero-modal');
+    if (!tab) return;
+
+    var container = document.getElementById('modalCorteBody');
+    if (!container) return;
+
+    var idx = parseInt(tab.dataset.idx, 10);
+    container.querySelectorAll('.panel-modal').forEach(function (p) { p.style.display = 'none'; });
+    var panel = document.getElementById('panel-modal-' + idx);
+    if (panel) panel.style.display = '';
+
+    container.querySelectorAll('.btn-cajero-modal').forEach(function (b) {
+      b.classList.remove('btn-dark'); b.classList.add('btn-outline-dark');
+    });
+    tab.classList.remove('btn-outline-dark'); tab.classList.add('btn-dark');
+  });
 })();
 </script>

@@ -21,7 +21,7 @@
 <div class="px-3 py-2 border-bottom bg-light d-flex align-items-center gap-2 flex-wrap">
   <span class="fw-semibold text-muted small me-1">Ver cajero:</span>
   @foreach($cortes as $i => $c)
-    @php $diff = (float)$c->diferencia; @endphp
+    @php $diff = (float)$c->diferencia_real; @endphp
     <button type="button"
             class="btn btn-sm btn-cajero-modal {{ $i===0 ? 'btn-dark' : 'btn-outline-dark' }}"
             data-idx="{{ $i }}">
@@ -38,7 +38,10 @@
   @php
     $denMxn    = $corte->denominaciones->where('moneda','MXN')->keyBy('denominacion');
     $denUsd    = $corte->denominaciones->where('moneda','USD')->keyBy('denominacion');
-    $diff      = (float)$corte->diferencia;
+    $denDot    = $corte->denominaciones->where('moneda','DOT')->keyBy('denominacion');
+    $efectivoContado = (float) $denMxn->sum('monto') + (float) $denUsd->sum('monto') * ($corte->efectivo_dlls_tc ?: $tipoCambio);
+    $registradoCajero = (float) $corte->total_efectivo - (float) $corte->dotacion + (float) $corte->cambio_entregado + (float) $corte->cambio_no_entregado;
+    $diff      = (float)$corte->diferencia_real;
     $colorDiff = $diff==0 ? 'bg-success text-white' : ($diff>0 ? 'bg-warning text-dark' : 'bg-danger text-white');
     $totalBil  = 0; $totalMon = 0; $totalUsd = 0;
   @endphp
@@ -80,29 +83,51 @@
           <i class="bi bi-arrow-down-circle me-1"></i>Egresos
         </div>
         <table class="table table-sm table-borderless mb-3">
+          <tr><td class="text-muted">Saldo Final</td><td class="text-end">${{ number_format($corte->saldo_dispensador,2) }}</td></tr>
           <tr><td class="text-muted">Dotación</td><td class="text-end">${{ number_format($corte->dotacion,2) }}</td></tr>
+          <tr><td class="text-muted">Dotación Final</td><td class="text-end">${{ number_format($corte->dotacion_final,2) }}</td></tr>
+          <tr><td class="text-muted">Dotación Fija</td><td class="text-end">${{ number_format($corte->dotacion_determinada,2) }}</td></tr>
+          <tr><td class="text-muted">Entregada</td><td class="text-end">${{ number_format($corte->dotacion_diferencia,2) }}</td></tr>
           <tr><td class="text-muted">Pagos Cancelados</td><td class="text-end">${{ number_format($corte->pagos_cancelados,2) }}</td></tr>
           <tr class="table-light fw-semibold"><td>Total Egresos</td><td class="text-end">${{ number_format($corte->total_egresos,2) }}</td></tr>
         </table>
 
+        {{-- Desglose de Dotación --}}
+        @if($denDot->sum('cantidad') > 0)
         <div class="mb-1 text-uppercase text-muted fw-semibold" style="font-size:.72rem;letter-spacing:.06em">
-          <i class="bi bi-safe me-1"></i>Dispensadores
+          <i class="bi bi-cash-coin me-1"></i>Desglose de Dotación
         </div>
-        <table class="table table-sm table-borderless mb-3">
-          <tr><td class="text-muted">Saldo Final</td><td class="text-end">${{ number_format($corte->saldo_inicial_dispensador,2) }}</td></tr>
-          <tr><td class="text-muted">Dotación Final</td><td class="text-end">${{ number_format($corte->dotacion_final,2) }}</td></tr>
-          <tr class="table-light fw-semibold"><td>Saldo en Dispensadores</td><td class="text-end">${{ number_format($corte->saldo_dispensador,2) }}</td></tr>
-        </table>
+        <div class="mb-3 p-2 rounded" style="background:#fff7ed">
+          @php
+            $densDot = ['db50'=>['lbl'=>'B. $50','val'=>50],'db20'=>['lbl'=>'B. $20','val'=>20],'dm5'=>['lbl'=>'M. $5','val'=>5],'dm1'=>['lbl'=>'M. $1','val'=>1]];
+            $totalDot = 0;
+          @endphp
+          <div class="row g-1">
+            @foreach($densDot as $k => $info)
+              @php $cant = $denDot[$k]->cantidad ?? 0; $totalDot += $cant*$info['val']; @endphp
+              @if($cant > 0)
+              <div class="col-6 d-flex justify-content-between" style="font-size:.8rem">
+                <span class="text-muted">{{ $info['lbl'] }} × {{ $cant }}</span>
+                <span class="fw-semibold">${{ number_format($cant*$info['val'],2) }}</span>
+              </div>
+              @endif
+            @endforeach
+          </div>
+          <div class="d-flex justify-content-between mt-1 pt-1 border-top small fw-semibold">
+            <span>Total Dotación</span><span>${{ number_format($totalDot,2) }}</span>
+          </div>
+        </div>
+        @endif
 
         <div class="mb-1 text-uppercase text-muted fw-semibold" style="font-size:.72rem;letter-spacing:.06em">
-          <i class="bi bi-arrow-left-right me-1"></i>Cambios
+          <i class="bi bi-arrow-left-right me-1"></i>Cambios Entregados
         </div>
-        <table class="table table-sm table-borderless mb-0">
+        <table class="table table-sm table-borderless mb-3">
           <tr><td class="text-muted">Cambio Entregado</td><td class="text-end">${{ number_format($corte->cambio_entregado,2) }}</td></tr>
           <tr><td class="text-muted">Cambio No Entregado</td><td class="text-end">${{ number_format($corte->cambio_no_entregado,2) }}</td></tr>
           <tr class="table-light fw-semibold"><td>Saldo en Cambio</td><td class="text-end">${{ number_format($corte->saldo_cambio_entregado,2) }}</td></tr>
           @if($corte->referencia_cambio)
-          <tr><td colspan="2" class="text-muted fst-italic small"><i class="bi bi-chat-left-text me-1"></i>{{ $corte->referencia_cambio }}</td></tr>
+          <tr><td colspan="2" class="text-muted fst-italic small pt-0"><i class="bi bi-chat-left-text me-1"></i>{{ $corte->referencia_cambio }}</td></tr>
           @endif
         </table>
 
@@ -174,13 +199,13 @@
         </div>
         @endif
 
-        {{-- Cierre --}}
+        {{-- Cierre (Diferencia Cajero Interlogic) --}}
         <div class="p-3 rounded fw-semibold {{ $colorDiff }} mt-2">
           <div class="d-flex justify-content-between mb-1">
-            <span>Corte Total Efectivo</span><span>${{ number_format($corte->corte_total_efectivo,2) }}</span>
+            <span>Registrado en Cajero</span><span>${{ number_format($registradoCajero,2) }}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
-            <span>Efectivo Entregado</span><span>${{ number_format($corte->efectivo_entregado,2) }}</span>
+            <span>Reportado por Operador</span><span>${{ number_format($efectivoContado,2) }}</span>
           </div>
           <div class="d-flex justify-content-between fs-6 fw-bold border-top pt-2">
             <span>DIFERENCIA</span><span>${{ number_format($diff,2) }}</span>
@@ -203,19 +228,5 @@
   </div>{{-- panel-modal --}}
 @endforeach
 
-{{-- Script de tabs de cajero (se ejecuta al inyectar el HTML) --}}
-<script>
-(function() {
-  document.querySelectorAll('#modalCorteBody .btn-cajero-modal').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      var idx = parseInt(this.dataset.idx);
-      document.querySelectorAll('#modalCorteBody .panel-modal').forEach(function(p) { p.style.display = 'none'; });
-      document.getElementById('panel-modal-' + idx).style.display = '';
-      document.querySelectorAll('#modalCorteBody .btn-cajero-modal').forEach(function(b) {
-        b.classList.remove('btn-dark'); b.classList.add('btn-outline-dark');
-      });
-      this.classList.remove('btn-outline-dark'); this.classList.add('btn-dark');
-    });
-  });
-})();
-</script>
+{{-- Los tabs de cajero se manejan por delegación en cortes/modal/detalle-dia.blade.php
+     (el <script> inyectado con innerHTML no se ejecutaría aquí). --}}

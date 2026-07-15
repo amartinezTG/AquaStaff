@@ -16,6 +16,7 @@ class CorteCajero extends Model
         'efectivo_dlls_importe', 'total_efectivo', 'total_de_venta',
         'dotacion', 'pagos_cancelados', 'total_egresos',
         'saldo_inicial_dispensador', 'dotacion_final', 'saldo_dispensador',
+        'dotacion_determinada', 'dotacion_diferencia',
         'cambio_entregado', 'cambio_no_entregado', 'saldo_cambio_entregado',
         'referencia_cambio',
         'corte_total_efectivo', 'efectivo_entregado',
@@ -26,6 +27,30 @@ class CorteCajero extends Model
         'fecha_corte' => 'date',
     ];
  
+    /**
+     * Diferencia recalculada, igual que el card "Diferencia (Cajero Interlogic)"
+     * de la vista de captura:
+     *   Diferencia = Reportado por Operador − Registrado en Cajero
+     *   · Reportado por Operador = efectivo físico contado (denominaciones
+     *     MXN + USD·TC).
+     *   · Registrado en Cajero   = Total Efectivo (= Total de Venta del Balance
+     *     General) − Dotación + Cambio Entregado + Cambio No Entregado.
+     */
+    public function getDiferenciaRealAttribute(): float
+    {
+        $tc  = (float) ($this->efectivo_dlls_tc ?: 20);
+        $mxn = (float) $this->denominaciones->where('moneda', 'MXN')->sum('monto');
+        $usd = (float) $this->denominaciones->where('moneda', 'USD')->sum('monto');
+
+        $reportadoOperador = $mxn + $usd * $tc;
+        $registradoCajero  = (float) $this->total_efectivo
+                           - (float) $this->dotacion
+                           + (float) $this->cambio_entregado
+                           + (float) $this->cambio_no_entregado;
+
+        return round($reportadoOperador - $registradoCajero, 2);
+    }
+
     public function caja()
     {
         return $this->belongsTo(FacilityCaja::class, 'caja_id');
