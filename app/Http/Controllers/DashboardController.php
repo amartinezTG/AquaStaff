@@ -137,15 +137,23 @@ class DashboardController extends Controller
     public function info_dashboard(Request $request)
     { 
         try {
-            $date = $request->input('date', now()->toDateString());
+            // Rango desde/hasta; se acepta 'date' (un solo día) por compatibilidad
+            $dateFrom = $request->input('date_from', $request->input('date', now()->toDateString()));
+            $dateTo   = $request->input('date_to', $dateFrom);
+            if ($dateTo < $dateFrom) {
+                [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+            }
 
-            $startDate = $date . ' 00:00:00';
-            $endDate = $date . ' 23:59:59';
+            $startDate = $dateFrom . ' 00:00:00';
+            $endDate   = $dateTo . ' 23:59:59';
 
-            // Calcular datos del día anterior para comparaciones
-            $yesterday = Carbon::parse($date)->subDay();
-            $yesterdayStart = $yesterday->format('Y-m-d') . ' 00:00:00';
-            $yesterdayEnd = $yesterday->format('Y-m-d') . ' 23:59:59';
+            // Rango anterior equivalente (mismo número de días, inmediatamente
+            // antes del 'desde') para las comparaciones porcentuales.
+            $dias      = Carbon::parse($dateFrom)->diffInDays(Carbon::parse($dateTo)) + 1;
+            $prevEnd   = Carbon::parse($dateFrom)->subDay();
+            $prevStart = $prevEnd->copy()->subDays($dias - 1);
+            $yesterdayStart = $prevStart->format('Y-m-d') . ' 00:00:00';
+            $yesterdayEnd   = $prevEnd->format('Y-m-d') . ' 23:59:59';
             
             $data = [
                 'summary' => $this->getDailySummary($startDate, $endDate, $yesterdayStart, $yesterdayEnd),
@@ -172,10 +180,10 @@ class DashboardController extends Controller
     
     private function getDailySummary($startDate, $endDate, $yesterdayStart, $yesterdayEnd)
     {
-        // Datos del día actual
+        // Datos del rango seleccionado (una sola fila agregada, sin GROUP BY
+        // por día: con rangos de varios días debe sumarse todo el periodo)
         $today = DB::select("
            SELECT
-                CAST(t1.TransationDate AS DATE) AS fecha,
                 COUNT(*) AS total_ordenes,
                 SUM(t1.Total) AS total_ingresos,
                 COALESCE(SUM(t1.Total) / NULLIF(COUNT(*), 0), 0) as ticket_promedio,
@@ -189,15 +197,13 @@ class DashboardController extends Controller
                 COUNT(CASE WHEN t1.TransactionType = 1 THEN 1 END) AS membresias_renovaciones
             FROM local_transaction AS t1
             WHERE t1.TransationDate >= ?
-            AND t1.TransationDate <  ?
+            AND t1.TransationDate <=  ?
             AND t1.deleted_at IS NULL
-            GROUP BY CAST(t1.TransationDate AS DATE)
-            ORDER BY fecha DESC
-        ", [$startDate, $endDate])[0] ?? (object)['total_ingresos' => 0, 'total_ordenes' => 0, 'ticket_promedio' => 0, 'lavados_comprados' => 0, 'lavados_membresia' => 0, 'lavados_otros' => 0, 'ingresos_lavados' => 0, 'ingresos_membresia' => 0, 'ingresos_renovacion' => 0, 'membresias_nuevas' => 0, 'membresias_renovaciones' => 0];
-        // Datos del día anterior
+        ", [$startDate, $endDate])[0];
+
+        // Datos del rango anterior equivalente (para comparaciones)
         $yesterday = DB::select("
            SELECT
-                CAST(t1.TransationDate AS DATE) AS fecha,
                 COUNT(*) AS total_ordenes,
                 SUM(t1.Total) AS total_ingresos,
                 COALESCE(SUM(t1.Total) / NULLIF(COUNT(*), 0), 0) as ticket_promedio,
@@ -211,20 +217,17 @@ class DashboardController extends Controller
                 COUNT(CASE WHEN t1.TransactionType = 1 THEN 1 END) AS membresias_renovaciones
             FROM local_transaction AS t1
             WHERE t1.TransationDate >= ?
-            AND t1.TransationDate <  ?
+            AND t1.TransationDate <=  ?
             AND t1.deleted_at IS NULL
-            GROUP BY CAST(t1.TransationDate AS DATE)
-            ORDER BY fecha DESC
-        ", [$yesterdayStart, $yesterdayEnd])[0] ?? (object)['total_ingresos' => 0, 'total_ordenes' => 0, 'ticket_promedio' => 0, 'lavados_comprados' => 0, 'lavados_membresia' => 0, 'lavados_otros' => 0, 'ingresos_lavados' => 0, 'ingresos_membresia' => 0, 'ingresos_renovacion' => 0, 'membresias_nuevas' => 0, 'membresias_renovaciones' => 0];
+        ", [$yesterdayStart, $yesterdayEnd])[0];
 
-        // Membresías nuevas del día
+        // Membresías nuevas del rango
         $membresiasHoy = DB::select("
             SELECT
                 SUM(CASE WHEN t1.TransactionType = 0 THEN 1 ELSE 0 END) AS `total`
             FROM local_transaction AS t1
             WHERE t1.TransationDate between ? AND  ?
             AND t1.deleted_at IS NULL
-            GROUP BY CAST(t1.TransationDate AS DATE)
         ",  [$startDate, $endDate])[0]->total ?? 0;
 
         $membresiasAyer = DB::select("
@@ -233,7 +236,6 @@ class DashboardController extends Controller
             FROM local_transaction AS t1
             WHERE t1.TransationDate between ? AND  ?
             AND t1.deleted_at IS NULL
-            GROUP BY CAST(t1.TransationDate AS DATE)
         ", [$yesterdayStart, $yesterdayEnd])[0]->total ?? 0;
 
        
@@ -337,6 +339,9 @@ class DashboardController extends Controller
     
     private function getTopCajeros($startDate, $endDate)
     {
+        // PaymentType 3: garantía solo con membresía de garantía; el resto es promoción
+        $garantiasIn = "'" . implode("','", \App\Models\LocalTransaction::MEMBRESIAS_GARANTIA) . "'";
+
         return DB::select("
         SELECT
             t1.Atm AS cajero,
@@ -346,7 +351,8 @@ class DashboardController extends Controller
             SUM(CASE WHEN t1.PaymentType IN (1,2) THEN t1.Total ELSE 0 END) AS tarjeta,
             COUNT(CASE WHEN t1.TransactionType = 2 AND t1.Total > 0 THEN 1 END) AS lavados_paquete,
             COUNT(CASE WHEN t1.TransactionType = 2 AND t1.Total = 0 AND t1.PaymentType != 3 THEN 1 END) AS lavados_membresia,
-            COUNT(CASE WHEN t1.TransactionType = 2 AND t1.PaymentType = 3 THEN 1 END) AS garantia,
+            COUNT(CASE WHEN t1.TransactionType = 2 AND t1.PaymentType = 3 AND t1.Membership IN ($garantiasIn) THEN 1 END) AS garantia,
+            COUNT(CASE WHEN t1.TransactionType = 2 AND t1.PaymentType = 3 AND (t1.Membership IS NULL OR t1.Membership NOT IN ($garantiasIn)) THEN 1 END) AS promocion,
             COUNT(CASE WHEN t1.TransactionType = 0 THEN 1 END) AS compras_membresia,
             COUNT(CASE WHEN t1.TransactionType = 1 THEN 1 END) AS renovaciones
         FROM local_transaction t1
@@ -401,6 +407,9 @@ class DashboardController extends Controller
 
     private function getServiciosDelDia($startDate, $endDate)
     {
+        // PaymentType 3: garantía solo con membresía de garantía; el resto es promoción
+        $garantiasIn = "'" . implode("','", \App\Models\LocalTransaction::MEMBRESIAS_GARANTIA) . "'";
+
         return DB::select("
             SELECT
                 CASE
@@ -416,7 +425,16 @@ class DashboardController extends Controller
                     WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Lavado Express'
                     WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Lavado Ultra'
                     WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Lavado Básico'
-                    WHEN TransactionType = 2 AND PaymentType = 3 THEN 'Cortesía'
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND Membership IN ($garantiasIn) AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Garantía Deluxe'
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND Membership IN ($garantiasIn) AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Garantía Express'
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND Membership IN ($garantiasIn) AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Garantía Ultra'
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND Membership IN ($garantiasIn) AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Garantía Básico'
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND Membership IN ($garantiasIn) THEN 'Garantía'
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Promoción Deluxe'
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Promoción Express'
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Promoción Ultra'
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 'Promoción Básico'
+                    WHEN TransactionType = 2 AND PaymentType = 3 THEN 'Promoción'
                     WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 'Uso Membresía Deluxe'
                     WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 'Uso Membresía Express'
                     WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 'Uso Membresía Ultra'
@@ -437,12 +455,21 @@ class DashboardController extends Controller
                     WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 10
                     WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 11
                     WHEN TransactionType = 2 AND Total > 0 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 12
-                    WHEN TransactionType = 2 AND PaymentType = 3 THEN 13
-                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 14
-                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 15
-                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 16
-                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 17
-                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 THEN 18
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND Membership IN ($garantiasIn) AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 13
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND Membership IN ($garantiasIn) AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 14
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND Membership IN ($garantiasIn) AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 15
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND Membership IN ($garantiasIn) AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 16
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND Membership IN ($garantiasIn) THEN 17
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 18
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 19
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 20
+                    WHEN TransactionType = 2 AND PaymentType = 3 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 21
+                    WHEN TransactionType = 2 AND PaymentType = 3 THEN 22
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344bab37a5f00383106c88','612abcd1c4ce4c141237a356') THEN 23
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344ae637a5f00383106c7a','612f057787e473107fda56aa') THEN 24
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344b9137a5f00383106c84','612f1c4f30b90803837e7969') THEN 25
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 AND COALESCE(Package, Membership) IN ('61344b5937a5f00383106c80','612f067387e473107fda56b0') THEN 26
+                    WHEN TransactionType = 2 AND Total = 0 AND PaymentType != 3 THEN 27
                     ELSE 99
                 END AS sort_order,
                 COUNT(*) AS pagos,
@@ -557,13 +584,40 @@ class DashboardController extends Controller
                 }
             }
 
+            // Clientes con membresía vigente cuya recurrencia está domiciliada en Procepago
+            $domiciliadas = DB::selectOne("
+                SELECT COUNT(DISTINCT c._id) AS count
+                FROM clients c
+                LEFT JOIN (
+                    SELECT cm.*
+                    FROM client_membership cm
+                    INNER JOIN (
+                        SELECT client_id, MAX(start_date) AS max_start
+                        FROM client_membership
+                        WHERE deleted_at IS NULL
+                        GROUP BY client_id
+                    ) latest ON cm.client_id = latest.client_id
+                             AND cm.start_date = latest.max_start
+                    WHERE cm.deleted_at IS NULL
+                ) cm ON cm.client_id = c._id
+                INNER JOIN (
+                    SELECT referencia
+                    FROM procepago_domiciliaciones
+                    WHERE deleted_at IS NULL
+                    GROUP BY referencia
+                ) pd ON pd.referencia = c._id
+                WHERE c.deleted_at IS NULL
+                  AND cm.end_date >= NOW()
+            ")->count;
+
             return response()->json([
-                'total'     => $total,
-                'express'   => $packages['express'],
-                'basico'    => $packages['basico'],
-                'ultra'     => $packages['ultra'],
-                'delux'     => $packages['delux'],
-                'timestamp' => now()->format('Y-m-d H:i:s'),
+                'total'         => $total,
+                'domiciliadas'  => (int)$domiciliadas,
+                'express'       => $packages['express'],
+                'basico'        => $packages['basico'],
+                'ultra'         => $packages['ultra'],
+                'delux'         => $packages['delux'],
+                'timestamp'     => now()->format('Y-m-d H:i:s'),
             ]);
 
         } catch (\Exception $e) {

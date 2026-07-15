@@ -18,6 +18,16 @@
   
     <main id="main" class="main">
         <style>
+            /* Badges del modal de clientes (Activas / Domiciliaciones) */
+            .badge-vigente   { background-color: #198754; color: #fff; }
+            .badge-vencida   { background-color: #dc3545; color: #fff; }
+            .badge-sin       { background-color: #6c757d; color: #fff; }
+            .badge-express   { background-color: #ffc107; color: #212529; }
+            .badge-basico    { background-color: #17a2b8; color: #fff; }
+            .badge-ultra     { background-color: #28a745; color: #fff; }
+            .badge-delux     { background-color: #dc3545; color: #fff; }
+            .badge-na        { background-color: #adb5bd; color: #fff; }
+
             /* =============================================
                PALETA PROFESIONAL — acento #1a56db (azul)
                fondo cards blanco, textos #1e293b / #64748b
@@ -222,7 +232,11 @@
                 </nav>
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
+                <small class="text-muted">Desde</small>
                 <input type="date" class="form-control form-control-sm" id="dashboard_date"
+                       value="{{ date('Y-m-d') }}" style="width:150px;">
+                <small class="text-muted">Hasta</small>
+                <input type="date" class="form-control form-control-sm" id="dashboard_date_end"
                        value="{{ date('Y-m-d') }}" style="width:150px;">
                 <button class="btn refresh-btn btn-sm" onclick="loadDashboardData(); loadActiveMemberships();">
                     <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
@@ -240,7 +254,7 @@
                         <div class="card-body">
                             <div class="row align-items-center">
                                 <div class="col-8">
-                                    <div class="metric-label">Lavados en el Día</div>
+                                    <div class="metric-label">Lavados en el Periodo</div>
                                     <h3 class="metric-value" id="total_ordenes">0</h3>
                                     <div class="metric-change" id="lavados_breakdown" style="font-size:0.72rem;color:var(--text-muted);margin-bottom:2px;">--</div>
                                     <div class="metric-change" id="ordenes_change">--</div>
@@ -374,14 +388,34 @@
                     </div>
                 </div>
 
-                <!-- Garantía -->
+                <!-- Garantía / Promoción -->
                 <div class="col-xl col-lg-4 col-md-6">
                     <div class="card dashboard-card h-100">
                         <div class="card-body py-2 px-3">
-                            <div class="card-section-title mb-2"><i class="bi bi-shield-check me-1"></i>Garantía</div>
-                            <div class="d-flex flex-column gap-1">
-                                <div class="cajero-stat"><span class="stat-label">Cortesía</span><span class="stat-value" id="gar_cortesia">0</span></div>
-                                <div class="cajero-stat" style="border-top:2px solid var(--border); margin-top:4px; padding-top:6px;"><span class="stat-label fw-bold">Total</span><span class="stat-value fw-bold" id="gar_total">0</span></div>
+                            <div class="card-section-title mb-2"><i class="bi bi-shield-check me-1"></i>Garantía / Promoción</div>
+                            <div class="row g-2">
+                                <div class="col-6 border-end">
+                                    <div class="text-muted fw-semibold mb-1" style="font-size:.72rem;text-transform:uppercase">Garantía</div>
+                                    <div class="d-flex flex-column gap-1">
+                                        <div class="cajero-stat"><span class="stat-label">Express</span><span class="stat-value" id="gar_express">0</span></div>
+                                        <div class="cajero-stat"><span class="stat-label">Básico</span><span class="stat-value" id="gar_basico">0</span></div>
+                                        <div class="cajero-stat"><span class="stat-label">Ultra</span><span class="stat-value" id="gar_ultra">0</span></div>
+                                        <div class="cajero-stat"><span class="stat-label">Delux</span><span class="stat-value" id="gar_delux">0</span></div>
+                                        <div class="cajero-stat d-none" id="gar_otra_row"><span class="stat-label">Otra</span><span class="stat-value" id="gar_otra">0</span></div>
+                                        <div class="cajero-stat" style="border-top:2px solid var(--border); margin-top:4px; padding-top:6px;"><span class="stat-label fw-bold">Total</span><span class="stat-value fw-bold" id="gar_total">0</span></div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-muted fw-semibold mb-1" style="font-size:.72rem;text-transform:uppercase">Promoción</div>
+                                    <div class="d-flex flex-column gap-1">
+                                        <div class="cajero-stat"><span class="stat-label">Express</span><span class="stat-value" id="promo_express">0</span></div>
+                                        <div class="cajero-stat"><span class="stat-label">Básico</span><span class="stat-value" id="promo_basico">0</span></div>
+                                        <div class="cajero-stat"><span class="stat-label">Ultra</span><span class="stat-value" id="promo_ultra">0</span></div>
+                                        <div class="cajero-stat"><span class="stat-label">Delux</span><span class="stat-value" id="promo_delux">0</span></div>
+                                        <div class="cajero-stat d-none" id="promo_otra_row"><span class="stat-label">Otra</span><span class="stat-value" id="promo_otra">0</span></div>
+                                        <div class="cajero-stat" style="border-top:2px solid var(--border); margin-top:4px; padding-top:6px;"><span class="stat-label fw-bold">Total</span><span class="stat-value fw-bold" id="promo_total">0</span></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -396,7 +430,7 @@
                     <div class="card dashboard-card h-100">
                         <div class="card-body p-0">
                             <div class="d-flex align-items-center px-3 pt-3 pb-2">
-                                <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2 text-muted"></i>Resumen de Servicios del Día</h6>
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2 text-muted"></i>Resumen de Servicios del Periodo</h6>
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-sm table-hover mb-0" id="servicios_table" style="font-size:0.82rem;">
@@ -434,11 +468,23 @@
                             <h6 class="fw-bold mb-3"><i class="bi bi-star-fill me-2 text-warning"></i>Membresías Activas</h6>
                             <!-- Total grande -->
                             <div class="text-center mb-3">
-                                <div class="mini-membership-card total d-inline-flex mx-auto" style="width:100%; justify-content:center; padding: 18px 20px;">
+                                <div class="mini-membership-card total d-inline-flex mx-auto" style="width:100%; justify-content:center; padding: 18px 20px; cursor:pointer;"
+                                     onclick="abrirModalClientes('activas')" title="Ver listado de membresías activas">
                                     <i class="bi bi-people-fill mini-icon" style="font-size:2.2rem;"></i>
                                     <div>
                                         <div class="mini-label" style="font-size:0.85rem; font-weight:600; opacity:1;">Total Activas</div>
                                         <div class="mini-count" id="total_active_memberships" style="font-size:2.4rem;">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Domiciliaciones -->
+                            <div class="text-center mb-3">
+                                <div class="mini-membership-card d-inline-flex mx-auto" style="width:100%; justify-content:center; padding: 12px 20px; cursor:pointer;"
+                                     onclick="abrirModalClientes('domiciliadas')" title="Ver listado de domiciliaciones">
+                                    <i class="bi bi-bank mini-icon" style="font-size:1.6rem;"></i>
+                                    <div>
+                                        <div class="mini-label" style="font-size:0.78rem; font-weight:600; opacity:1;">Domiciliaciones</div>
+                                        <div class="mini-count" id="total_domiciliadas" style="font-size:1.6rem;">0</div>
                                     </div>
                                 </div>
                             </div>
@@ -505,6 +551,10 @@
                                 <span class="stat-label"><i class="bi bi-shield-check me-1"></i>Garantía</span>
                                 <span class="stat-value" id="aqua01_garantia">0</span>
                             </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-tag me-1"></i>Promoción</span>
+                                <span class="stat-value" id="aqua01_promocion">0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -540,6 +590,10 @@
                             <div class="cajero-stat">
                                 <span class="stat-label"><i class="bi bi-shield-check me-1"></i>Garantía</span>
                                 <span class="stat-value" id="aqua02_garantia">0</span>
+                            </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-tag me-1"></i>Promoción</span>
+                                <span class="stat-value" id="aqua02_promocion">0</span>
                             </div>
                         </div>
                     </div>
@@ -577,6 +631,10 @@
                                 <span class="stat-label"><i class="bi bi-shield-check me-1"></i>Garantía</span>
                                 <span class="stat-value" id="total_garantia">0</span>
                             </div>
+                            <div class="cajero-stat">
+                                <span class="stat-label"><i class="bi bi-tag me-1"></i>Promoción</span>
+                                <span class="stat-value" id="total_promocion">0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -611,7 +669,7 @@
                 <div class="col-lg-6">
                     <div class="card dashboard-card h-100">
                         <div class="card-body">
-                            <h5 class="chart-title">Cajeros del Día</h5>
+                            <h5 class="chart-title">Cajeros del Periodo</h5>
                             <div style="position: relative; height: 220px;">
                                 <canvas id="cajerosChart"></canvas>
                             </div>
@@ -659,8 +717,59 @@
             });
 
             // Función para cargar membresías activas
-            
+
         </script>
+
+        <!-- Modal Clientes (Activas / Domiciliaciones) -->
+        <div class="modal fade" id="modalClientesDashboard" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header" style="background:linear-gradient(135deg,#0d6efd,#0a58ca);color:#fff;">
+                        <h5 class="modal-title mb-0">
+                            <i class="bi bi-people-fill me-2"></i>
+                            <span id="modalClientesDashboardTitulo">Clientes</span>
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="table-responsive">
+                            <table id="dash_clientes_table" class="table table-bordered table-hover nowrap" style="width:100%; font-size:0.80rem;">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Cliente</th>
+                                        <th>Tag</th>
+                                        <th>Placa</th>
+                                        <th>Auto</th>
+                                        <th>Teléfono</th>
+                                        <th>Email</th>
+                                        <th>Membresía</th>
+                                        <th>Estatus</th>
+                                        <th>Registro</th>
+                                        <th>Inicio</th>
+                                        <th>Vence</th>
+                                        <th>Recurrente</th>
+                                        <th>Recurrente Procepago</th>
+                                        <th>Renovaciones</th>
+                                        <th>Lavados</th>
+                                        <th>Último lavado</th>
+                                        <th>Prosepago ID</th>
+                                        <th>Titular</th>
+                                        <th>Tarjeta</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="{{ asset('assets/js/dashboard-clientes-modal.js') }}?v={{ filemtime(public_path('assets/js/dashboard-clientes-modal.js')) }}"></script>
     </main>
 
     <!-- ======= Footer ======= -->

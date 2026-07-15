@@ -14,6 +14,23 @@ class LocalTransaction extends Model
     protected $table = 'local_transaction';
     protected $fillable = ['TransationDate', 'TransactionType', 'Total', 'PaymentType', 'fiscal_invoice'];
 
+    // Membresías cuyo PaymentType 3 cuenta como GARANTÍA en indicadores;
+    // cualquier otro PaymentType 3 se reporta como PROMOCIÓN.
+    public const MEMBRESIAS_GARANTIA = [
+        '9bdc3638-46f4-4511-adb9-43b92387318f',
+        '2ac7f311-92ba-41b3-97c9-3f3bb07c9956',
+        '81e4abd3-0ead-4d5b-a834-08a1e7a6a9ca',
+        'edb15040-0e3a-4c71-acd2-34ac97ac1aa5',
+        'd09eeaf4-5181-434a-bbfe-27f6220cae87',
+        'f6d158ca-7922-43ec-b110-4822f4a1586e',
+        'f104f389-103f-44fa-bd41-f948af1ecbb7',
+        'e7089f5a-8d86-40e2-8b87-c092fd026f5d',
+        '927aed84-1b14-4679-8646-2d8963d82ba0',
+        '9aa7cda5-b6fd-473c-964a-03055786c031',
+        '92a43e72-4e6e-4ecc-8b80-b6a921166cdb',
+        '318484e9-a7c9-43fc-b94f-5ffd790472cf',
+    ];
+
    public function compaqIntegration()
     {
         return $this->hasOne(CompaqIntegration::class, 'id', 'integrate_cp');
@@ -23,7 +40,9 @@ class LocalTransaction extends Model
     {
         $from  = $from  ? Carbon::parse($from)->startOfDay() : now()->startOfMonth();
         $until = $until ? Carbon::parse($until)->endOfDay()   : now()->endOfMonth();
-   
+
+        $garantiasIn = "'" . implode("','", self::MEMBRESIAS_GARANTIA) . "'";
+
         return self::withoutGlobalScopes()
             ->from('local_transaction as t1')
             ->selectRaw("
@@ -53,8 +72,10 @@ class LocalTransaction extends Model
                 SUM(CASE WHEN t1.TransactionType IN (0) AND t1.Total <> 0 THEN t1.Total ELSE 0 END) AS sum_compra_membresia,
                 SUM(CASE WHEN t1.TransactionType IN (1) AND t1.Total <> 0 THEN t1.Total ELSE 0 END) AS sum__renovacion_membresia,
 
-                -- Cortesía 
-                SUM(CASE WHEN t1.PaymentType = 3 THEN 1 ELSE 0 END) AS lavados_cortesia,
+                -- Garantía: PaymentType 3 con membresía de garantía
+                SUM(CASE WHEN t1.PaymentType = 3 AND t1.Membership IN ($garantiasIn) THEN 1 ELSE 0 END) AS lavados_garantia,
+                -- Promoción: PaymentType 3 sin membresía de garantía
+                SUM(CASE WHEN t1.PaymentType = 3 AND (t1.Membership IS NULL OR t1.Membership NOT IN ($garantiasIn)) THEN 1 ELSE 0 END) AS lavados_promocion,
 
                 -- Total del día
                 SUM(t1.Total) AS suma_total_dia,
@@ -280,7 +301,10 @@ class LocalTransaction extends Model
 
         ";
 
-        return DB::select($sql, [$from, $until]);
+        $fromDateTime  = $from  ? $from.' 00:00:00'  : null;
+        $untilDateTime = $until ? $until.' 23:59:59' : null;
+
+        return DB::select($sql, [$fromDateTime, $untilDateTime]);
     }
-    
+
 }

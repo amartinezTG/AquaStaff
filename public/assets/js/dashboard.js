@@ -28,10 +28,15 @@ const COLORS = {
  * Función principal para cargar todos los datos del dashboard
  */
 async function loadDashboardData() {
-    const selectedDate = document.getElementById('dashboard_date').value;
-     
-    if (!selectedDate) {
-        showError('Por favor selecciona una fecha');
+    const dateFrom = document.getElementById('dashboard_date').value;
+    const dateTo   = document.getElementById('dashboard_date_end')?.value || dateFrom;
+
+    if (!dateFrom || !dateTo) {
+        showError('Por favor selecciona las fechas del periodo');
+        return;
+    }
+    if (dateTo < dateFrom) {
+        showError('La fecha "Desde" no puede ser mayor que "Hasta"');
         return;
     }
 
@@ -47,7 +52,8 @@ async function loadDashboardData() {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content            },
             body: JSON.stringify({
-                date: selectedDate
+                date_from: dateFrom,
+                date_to: dateTo
             })
         });
 
@@ -88,6 +94,7 @@ async function loadActiveMemberships() {
             if (data) {
                     // Actualizar total
                 document.getElementById('total_active_memberships').textContent = data.total || 0;
+                document.getElementById('total_domiciliadas').textContent = data.domiciliadas || 0;
 
                 // Actualizar contadores por paquete
                 document.getElementById('count_express').textContent = data.express || 0;
@@ -436,8 +443,9 @@ function updateCajeroCards(cajerosData) {
         acc.compras_membresia  += parseInt(c.compras_membresia)     || 0;
         acc.renovaciones       += parseInt(c.renovaciones)          || 0;
         acc.garantia           += parseInt(c.garantia)              || 0;
+        acc.promocion          += parseInt(c.promocion)             || 0;
         return acc;
-    }, { efectivo: 0, tarjeta: 0, lavados_paquete: 0, lavados_membresia: 0, compras_membresia: 0, renovaciones: 0, garantia: 0 });
+    }, { efectivo: 0, tarjeta: 0, lavados_paquete: 0, lavados_membresia: 0, compras_membresia: 0, renovaciones: 0, garantia: 0, promocion: 0 });
 
     // AQUA01
     const a1 = cajeros['AQUA01'] || {};
@@ -448,6 +456,7 @@ function updateCajeroCards(cajerosData) {
     setVal('aqua01_compras_membresia',  formatNumber(a1.compras_membresia   || 0));
     setVal('aqua01_renovaciones',       formatNumber(a1.renovaciones        || 0));
     setVal('aqua01_garantia',           formatNumber(a1.garantia            || 0));
+    setVal('aqua01_promocion',          formatNumber(a1.promocion           || 0));
 
     // AQUA02
     const a2 = cajeros['AQUA02'] || {};
@@ -458,6 +467,7 @@ function updateCajeroCards(cajerosData) {
     setVal('aqua02_compras_membresia',  formatNumber(a2.compras_membresia   || 0));
     setVal('aqua02_renovaciones',       formatNumber(a2.renovaciones        || 0));
     setVal('aqua02_garantia',           formatNumber(a2.garantia            || 0));
+    setVal('aqua02_promocion',          formatNumber(a2.promocion           || 0));
 
     // Totales
     setVal('total_efectivo',           formatCurrency(totals.efectivo));
@@ -467,6 +477,7 @@ function updateCajeroCards(cajerosData) {
     setVal('total_compras_membresia',  formatNumber(totals.compras_membresia));
     setVal('total_renovaciones',       formatNumber(totals.renovaciones));
     setVal('total_garantia',           formatNumber(totals.garantia));
+    setVal('total_promocion',          formatNumber(totals.promocion));
 }
 
 function setVal(id, value) {
@@ -653,7 +664,8 @@ function updateLavadosPorTipo(servicios) {
     const um  = { express: 0, basico: 0, ultra: 0, delux: 0 }; // Uso Membresía
     const ren = { express: 0, basico: 0, ultra: 0, delux: 0 }; // Renovación
     const cm  = { express: 0, basico: 0, ultra: 0, delux: 0 }; // Compra Membresía
-    let   gar = 0;                                               // Garantía / Cortesía
+    const gar   = { express: 0, basico: 0, ultra: 0, delux: 0, otra: 0 }; // Garantía (membresías de garantía)
+    const promo = { express: 0, basico: 0, ultra: 0, delux: 0, otra: 0 }; // Promoción (PaymentType 3 sin membresía de garantía)
 
     servicios.forEach(s => {
         const n = parseInt(s.pagos) || 0;
@@ -675,7 +687,16 @@ function updateLavadosPorTipo(servicios) {
             case 'Compra Membresía Básico':      cm.basico   += n; break;
             case 'Compra Membresía Ultra':       cm.ultra    += n; break;
             case 'Compra Membresía Deluxe':      cm.delux    += n; break;
-            case 'Cortesía':                     gar         += n; break;
+            case 'Garantía Express':             gar.express += n; break;
+            case 'Garantía Básico':              gar.basico  += n; break;
+            case 'Garantía Ultra':               gar.ultra   += n; break;
+            case 'Garantía Deluxe':              gar.delux   += n; break;
+            case 'Garantía':                     gar.otra    += n; break;
+            case 'Promoción Express':            promo.express += n; break;
+            case 'Promoción Básico':             promo.basico  += n; break;
+            case 'Promoción Ultra':              promo.ultra   += n; break;
+            case 'Promoción Deluxe':             promo.delux   += n; break;
+            case 'Promoción':                    promo.otra    += n; break;
         }
     });
 
@@ -708,8 +729,22 @@ function updateLavadosPorTipo(servicios) {
     setVal('cm_total',   formatNumber(cm.express + cm.basico + cm.ultra + cm.delux));
 
     // Garantía
-    setVal('gar_cortesia', formatNumber(gar));
-    setVal('gar_total',    formatNumber(gar));
+    setVal('gar_express', formatNumber(gar.express));
+    setVal('gar_basico',  formatNumber(gar.basico));
+    setVal('gar_ultra',   formatNumber(gar.ultra));
+    setVal('gar_delux',   formatNumber(gar.delux));
+    setVal('gar_otra',    formatNumber(gar.otra));
+    document.getElementById('gar_otra_row')?.classList.toggle('d-none', gar.otra === 0);
+    setVal('gar_total',   formatNumber(gar.express + gar.basico + gar.ultra + gar.delux + gar.otra));
+
+    // Promoción
+    setVal('promo_express', formatNumber(promo.express));
+    setVal('promo_basico',  formatNumber(promo.basico));
+    setVal('promo_ultra',   formatNumber(promo.ultra));
+    setVal('promo_delux',   formatNumber(promo.delux));
+    setVal('promo_otra',    formatNumber(promo.otra));
+    document.getElementById('promo_otra_row')?.classList.toggle('d-none', promo.otra === 0);
+    setVal('promo_total',   formatNumber(promo.express + promo.basico + promo.ultra + promo.delux + promo.otra));
 }
 
 /**
@@ -794,12 +829,18 @@ function formatNumber(number) {
 }
 
 function formatChange(change) {
-    if (!change && change !== 0) return '0% vs ayer';
-    
+    // Comparación contra el periodo anterior equivalente (un día → vs ayer;
+    // un rango de N días → vs los N días previos)
+    const dateFrom = document.getElementById('dashboard_date')?.value;
+    const dateTo   = document.getElementById('dashboard_date_end')?.value || dateFrom;
+    const vsLabel  = dateFrom === dateTo ? 'vs ayer' : 'vs periodo anterior';
+
+    if (!change && change !== 0) return `0% ${vsLabel}`;
+
     const icon = change >= 0 ? 'bi-arrow-up text-success' : 'bi-arrow-down text-danger';
     const sign = change >= 0 ? '+' : '';
-    
-    return `<i class="bi ${icon}"></i> ${sign}${change.toFixed(1)}% vs ayer`;
+
+    return `<i class="bi ${icon}"></i> ${sign}${change.toFixed(1)}% ${vsLabel}`;
 }
 
 function formatHour(hour) {
@@ -917,8 +958,11 @@ function exportDashboardData() {
         return;
     }
     
-    const selectedDate = document.getElementById('dashboard_date').value;
-    const filename = `Dashboard_AQUACAR_${selectedDate}.json`;
+    const dateFrom = document.getElementById('dashboard_date').value;
+    const dateTo   = document.getElementById('dashboard_date_end')?.value || dateFrom;
+    const filename = dateFrom === dateTo
+        ? `Dashboard_AQUACAR_${dateFrom}.json`
+        : `Dashboard_AQUACAR_${dateFrom}_a_${dateTo}.json`;
     
     const dataStr = JSON.stringify(dashboardData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);

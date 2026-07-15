@@ -108,7 +108,8 @@ function indicadoresTable(){
                 { data: 'renovacion_membresia'},
                 { data: 'sum_compra_membresia' ,render: $.fn.dataTable.render.number(',', '.', 2)},
                 { data: 'sum__renovacion_membresia', render: $.fn.dataTable.render.number(',', '.', 2)}, // ojo: doble underscore según tu alias
-                { data: 'lavados_cortesia'},
+                { data: 'lavados_garantia'},
+                { data: 'lavados_promocion'},
 
                 { data: 'domiciliaciones_cnt', className: 'text-center fw-bold',
                   render: d => d > 0 ? `<span style="color:#0d6efd;font-weight:700;">${d}</span>` : '<span class="text-muted">—</span>' },
@@ -141,8 +142,8 @@ function indicadoresTable(){
                 // 0=fecha,1=total_eventos,2=lav_paquete,3=lav_express,4=lav_basico,5=lav_ultra,
                 // 6=lav_deluxe,7=$paquetes,8=lav_memb,9=lav_exp_memb,10=lav_bas_memb,
                 // 11=lav_ult_memb,12=lav_del_memb,13=compra,14=renov,15=$compra,16=$renov,
-                // 17=cortesia,18=dom_cnt,19=dom_deposito,20=$total,21=$sinIVA,22=comentario
-                var intCols = [1,2,3,4,5,6,8,9,10,11,12,13,14,17,18];
+                // 17=garantia,18=promocion,19=dom_cnt,20=dom_deposito,21=$total,22=$sinIVA,23=comentario
+                var intCols = [1,2,3,4,5,6,8,9,10,11,12,13,14,17,18,19];
                 intCols.forEach(function(col) {
                     var total = api.column(col, { page: 'all' }).data().reduce(function(a, b) {
                         var val = typeof b === 'string' ? parseInt(b.replace(/<[^>]+>/g,'').trim()) : parseInt(b);
@@ -152,7 +153,7 @@ function indicadoresTable(){
                 });
 
                 // Columnas monetarias (formateadas con 2 decimales)
-                var moneyCols = [7, 15, 16, 19, 20, 21];
+                var moneyCols = [7, 15, 16, 20, 21, 22];
                 moneyCols.forEach(function(col) {
                     var total = api.column(col, { page: 'all' }).data().reduce(function(a, b) {
                         var val = typeof b === 'string' ? parseFloat(b.replace(/[<][^>]+[>]|\$|,/g, '')) : parseFloat(b);
@@ -219,7 +220,8 @@ function prepareChartData(data) {
             renovacionMembresia: sortedData.map(row => parseFloat(row.sum__renovacion_membresia) || 0),
             totalDia: sortedData.map(row => parseFloat(row.suma_total_dia) || 0)
         },
-        cortesia: sortedData.map(row => parseInt(row.lavados_cortesia) || 0)
+        garantia: sortedData.map(row => parseInt(row.lavados_garantia) || 0),
+        promocion: sortedData.map(row => parseInt(row.lavados_promocion) || 0)
     };
 }
 
@@ -326,18 +328,26 @@ function createPaquetesChart(chartData) {
                     borderWidth: 1,
                     stack: 'membresias'
                 },
-                // Cortesías
+                // Garantías y Promociones (PaymentType 3)
                 {
-                    label: 'Cortesías',
-                    data: chartData.cortesia,
+                    label: 'Garantías',
+                    data: chartData.garantia,
                     backgroundColor: 'rgba(108, 117, 125, 0.8)',
                     borderColor: '#6c757d',
                     borderWidth: 1,
-                    stack: 'cortesias'
+                    stack: 'garantias'
+                },
+                {
+                    label: 'Promociones',
+                    data: chartData.promocion,
+                    backgroundColor: 'rgba(108, 117, 125, 0.45)',
+                    borderColor: '#6c757d',
+                    borderWidth: 1,
+                    stack: 'garantias'
                 }
             ]
         },
-        options: getChartOptions('Distribución de Servicios (Paquetes, Membresías y Cortesías)', true)
+        options: getChartOptions('Distribución de Servicios (Paquetes, Membresías y Garantías)', true)
     });
 }
 

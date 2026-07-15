@@ -88,7 +88,8 @@ class IndicadoresController extends Controller
                     'renovacion_membresia'      => $row['renovacion_membresia'],
                     'sum_compra_membresia'      => $row['sum_compra_membresia'],
                     'sum__renovacion_membresia' => $row['sum__renovacion_membresia'], // ojo: doble underscore según tu alias
-                    'lavados_cortesia'          => $row['lavados_cortesia'],
+                    'lavados_garantia'          => $row['lavados_garantia'],
+                    'lavados_promocion'         => $row['lavados_promocion'],
                     'domiciliaciones_cnt'       => $dom ? (int)$dom->cnt : 0,
                     'domiciliaciones_deposito'  => $dom ? (float)$dom->total_deposito : 0,
 
@@ -288,10 +289,10 @@ class IndicadoresController extends Controller
                     SELECT r.referencia, r.tarjeta
                     FROM recurrent_log_domiciliaciones r
                     INNER JOIN (
-                        SELECT referencia, MAX(created_at) AS max_created
+                        SELECT referencia, MAX(id) AS max_id
                         FROM recurrent_log_domiciliaciones
                         GROUP BY referencia
-                    ) latest_rld ON r.referencia = latest_rld.referencia AND r.created_at = latest_rld.max_created
+                    ) latest_rld ON r.referencia = latest_rld.referencia AND r.id = latest_rld.max_id
                 ) rld ON rld.referencia = c._id
                 LEFT JOIN (
                     SELECT referencia, 1 AS en_procepago

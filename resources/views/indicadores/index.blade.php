@@ -274,6 +274,7 @@
                                             <th colspan="4" class="text-center">Mov. Membresía</th>
 
                                             <th rowspan="2">Garantia</th>
+                                            <th rowspan="2">Promoción</th>
                                             <th colspan="2" class="text-center">Domiciliaciones (Procepago)</th>
                                             <th rowspan="2">$ Total día</th>
                                             <th rowspan="2">$ Total Sin IVA</th>
@@ -326,7 +327,8 @@
                                                 <th></th><!-- renovacion_membresia -->
                                                 <th></th><!-- sum_compra_membresia -->
                                                 <th></th><!-- sum__renovacion_membresia -->
-                                                <th></th><!-- lavados_cortesia -->
+                                                <th></th><!-- lavados_garantia -->
+                                                <th></th><!-- lavados_promocion -->
                                                 <th></th><!-- domiciliaciones_cnt -->
                                                 <th></th><!-- domiciliaciones_deposito -->
                                                 <th></th><!-- suma_total_dia -->
@@ -483,7 +485,7 @@
                 }
             </style>
         </section>
-          <script  src="{{ asset('assets/js/indicadores.js') }}"></script>
+          <script  src="{{ asset('assets/js/indicadores.js') }}?v={{ filemtime(public_path('assets/js/indicadores.js')) }}"></script>
             <script>
                 document.addEventListener("DOMContentLoaded", function () {
                     indicadoresTable();
