@@ -99,7 +99,8 @@ class SyncActualizarClientes extends Command
             ->whereNull('deleted_at')
             ->whereNotNull('_id')
             ->get(['_id','first_name','last_name','email','phone','plate',
-                   'brand','model','color','is_recurrent','prosepago_id','banco','titular'])
+                   'brand','model','color','is_recurrent','prosepago_id','banco','titular',
+                   'tag','tag_code'])
             ->keyBy('_id');
 
         foreach ($clientsDetail as $cid => $c) {
@@ -211,10 +212,14 @@ class SyncActualizarClientes extends Command
             'prosepago_id' => 'prosepago_id',
             'banco'        => 'banco',
             'titular'      => 'titular',
+            'tag'          => 'tag',
+            'tagCode'      => 'tag_code',
         ];
+        $maxLengths = ['tag_code' => 20, 'tag' => 200];
         foreach ($map as $ak => $bk) {
             $av = trim($api[$ak] ?? '');
             $bv = trim($bd->$bk ?? '');
+            if (isset($maxLengths[$bk]) && strlen($av) > $maxLengths[$bk]) continue;
             if ($av && strtolower($av) !== strtolower($bv)) {
                 $changes[$bk] = $av;
                 if ($bk === 'first_name' || $bk === 'last_name') {
@@ -240,6 +245,12 @@ class SyncActualizarClientes extends Command
             $changes['uses'] = $m['uses'] ?? 0;
         if (($m['extension_days'] ?? 0) != ($bd->extension_days ?? 0))
             $changes['extension_days'] = $m['extension_days'] ?? 0;
+        $startDate = $this->parseDate($m['start_date'] ?? null);
+        if ($startDate && $startDate !== $bd->start_date)
+            $changes['start_date'] = $startDate;
+        $endDate = $this->parseDate($m['end_date'] ?? null);
+        if ($endDate && $endDate !== $bd->end_date)
+            $changes['end_date'] = $endDate;
         $blocked = $m['isBlocked'] ? 1 : 0;
         if ($blocked != ($bd->isBlocked ?? 0)) {
             $changes['isBlocked']  = $blocked;
@@ -249,7 +260,7 @@ class SyncActualizarClientes extends Command
         if ($isSync !== strtolower(trim($bd->IsSync ?? '')))
             $changes['IsSync'] = $isSync;
         $lastSync = $this->parseDate($m['lastSync'] ?? null);
-        if ($lastSync) $changes['lastSync'] = $lastSync;
+        if ($lastSync && $lastSync !== $bd->lastSync) $changes['lastSync'] = $lastSync;
         return $changes;
     }
 

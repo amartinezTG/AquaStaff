@@ -149,7 +149,19 @@
       "Bash(mv /tmp/fiel_acc/*.cer /tmp/fiel_acc/*.key /var/www/html/AquaStaff/storage/app/fiel/)",
       "Bash(chown www-data:www-data /var/www/html/AquaStaff/storage/app/fiel/*)",
       "Bash(chmod 640 /var/www/html/AquaStaff/storage/app/fiel/*)",
-      "Bash(rm -rf /tmp/fiel_acc)"
+      "Bash(rm -rf /tmp/fiel_acc)",
+      "Bash(find AquaStaff/storage facturacion_aqua/storage -name \"*65dcd265*\" -o -name \"*191869*\" -o -name \"*191915*\")",
+      "Bash(grep -rl \"65dcd265-f109-474c-9633-efc17e45dd4c\" AquaStaff/storage/app/public/xmls/ facturacion_aqua/storage/app/public/xmls/)",
+      "Bash(mysql -u 4qu4 -p4qu4.2025 aquaBD -e ' *)",
+      "Bash(pip list *)",
+      "Bash(grep *)",
+      "Bash(crontab -u www-data -l)",
+      "Bash(node -c /var/www/html/AquaStaff/public/assets/js/dashboard-clientes-modal.js)",
+      "Bash(node --check /var/www/html/AquaStaff/public/assets/js/dashboard-clientes-modal.js)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(echo \"=== exit: $? \\(1 = sin coincidencias, ok\\) ===\")",
+      "Bash(echo \"=== exit $? \\(1=limpio\\) ===\")",
+      "Bash(echo \"=== exit $? \\(1 = limpio\\) ===\")"
     ]
   }
 }

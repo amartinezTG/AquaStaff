@@ -200,11 +200,20 @@ class ProcepagoController extends Controller
             }
         }
 
-        $required = ['folio', 'titular', 'importe', 'concepto', 'referencia', 'fecha', 'periodicidad', 'status', 'tipo'];
+        // Columnas siempre requeridas. "periodicidad" y "tipo" son opcionales
+        // (no vienen en el formato nuevo de Prosepa) y "fecha" puede llegar
+        // como rango ("fecha") o como fecha única ("fecha inicio").
+        $required = ['folio', 'titular', 'importe', 'concepto', 'referencia', 'status'];
         foreach ($required as $col) {
             if (!in_array($col, $headers)) {
                 return response()->json(['error' => "Columna requerida no encontrada: \"$col\". Columnas detectadas: " . implode(', ', $headers)], 422);
             }
+        }
+
+        $tieneFechaRango  = in_array('fecha', $headers);
+        $tieneFechaInicio = in_array('fecha inicio', $headers);
+        if (!$tieneFechaRango && !$tieneFechaInicio) {
+            return response()->json(['error' => "Columna requerida no encontrada: \"fecha\" o \"fecha inicio\". Columnas detectadas: " . implode(', ', $headers)], 422);
         }
 
         $idx = array_flip($headers);
@@ -212,14 +221,30 @@ class ProcepagoController extends Controller
         // Parsear importe: "$1,234.00" → 1234.00
         $toFloat = fn($v) => (float) preg_replace('/[^0-9.]/', '', str_replace(',', '', (string) ($v ?? 0)));
 
+        // Convierte celda de fecha (string, DateTime o serial de Excel) a "Y-m-d"
+        $toDateStr = function ($v) {
+            if ($v === null || $v === '') return null;
+            if ($v instanceof \DateTime) {
+                return Carbon::instance($v)->format('Y-m-d');
+            }
+            if (is_numeric($v) && $v > 1000) {
+                return Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $v))->format('Y-m-d');
+            }
+            try {
+                return Carbon::parse(trim((string) $v))->format('Y-m-d');
+            } catch (\Exception $e) {
+                return null;
+            }
+        };
+
         // Parsear fecha: "2026-04-16 al 2026-04-16" → [inicio, fin]
-        $parseFecha = function ($v) {
+        $parseFecha = function ($v) use ($toDateStr) {
             $v = trim((string) $v);
             if (str_contains($v, ' al ')) {
                 [$ini, $fin] = explode(' al ', $v, 2);
-                return [trim($ini) ?: null, trim($fin) ?: null];
+                return [$toDateStr($ini), $toDateStr($fin)];
             }
-            $d = trim($v) ?: null;
+            $d = $toDateStr($v);
             return [$d, $d];
         };
 
@@ -234,23 +259,38 @@ class ProcepagoController extends Controller
             $folio = isset($row[$idx['folio']]) ? (int) $row[$idx['folio']] : null;
             if (!$folio) continue;
 
-            [$fechaIni, $fechaFin] = $parseFecha($row[$idx['fecha']] ?? '');
+            if ($tieneFechaRango) {
+                [$fechaIni, $fechaFin] = $parseFecha($row[$idx['fecha']] ?? '');
+            } else {
+                $fechaIni = $toDateStr($row[$idx['fecha inicio']] ?? '');
+                $fechaFin = $fechaIni;
+            }
 
-            $fileRows[$folio] = [
+            $data = [
                 'titular'        => (string) ($row[$idx['titular']] ?? ''),
                 'importe'        => $toFloat($row[$idx['importe']] ?? 0),
                 'concepto'       => (string) ($row[$idx['concepto']] ?? ''),
                 'referencia'     => (string) ($row[$idx['referencia']] ?? ''),
                 'fecha_inicio'   => $fechaIni,
                 'fecha_fin'      => $fechaFin,
-                'periodicidad'   => (string) ($row[$idx['periodicidad']] ?? ''),
                 'status'         => (string) ($row[$idx['status']] ?? ''),
-                'tipo'           => (string) ($row[$idx['tipo']] ?? ''),
                 'archivo_origen' => $nombreArchivo,
                 'importado_en'   => $ahora,
                 'importado_por'  => $userId,
                 'updated_at'     => $ahora,
             ];
+
+            // "periodicidad" y "tipo" solo se incluyen si el archivo las trae.
+            // Si se omiten, el UPDATE no las toca (se conserva el valor previo
+            // en BD) y el INSERT las deja en NULL por ser columnas nullable.
+            if (isset($idx['periodicidad'])) {
+                $data['periodicidad'] = (string) ($row[$idx['periodicidad']] ?? '');
+            }
+            if (isset($idx['tipo'])) {
+                $data['tipo'] = (string) ($row[$idx['tipo']] ?? '');
+            }
+
+            $fileRows[$folio] = $data;
         }
 
         if (empty($fileRows)) {
@@ -325,12 +365,7 @@ class ProcepagoController extends Controller
 
     public function tablaDomiciliaciones(Request $request)
     {
-        $status = $request->input('status', '');
-        $tipo   = $request->input('tipo', '');
-        $desde  = $request->input('fecha_inicio');
-        $hasta  = $request->input('fecha_final');
-
-        $query = DB::table('procepago_domiciliaciones as d')
+        $rows = DB::table('procepago_domiciliaciones as d')
             ->leftJoin('users as u', 'd.importado_por', '=', 'u.id')
             ->whereNull('d.deleted_at')
             ->select(
@@ -339,14 +374,9 @@ class ProcepagoController extends Controller
                 'd.periodicidad', 'd.status', 'd.tipo',
                 'd.archivo_origen', 'd.importado_en',
                 'u.name as importado_por_nombre'
-            );
-
-        if ($status)  $query->where('d.status', $status);
-        if ($tipo)    $query->where('d.tipo', $tipo);
-        if ($desde)   $query->where('d.fecha_inicio', '>=', $desde);
-        if ($hasta)   $query->where('d.fecha_inicio', '<=', $hasta);
-
-        $rows = $query->orderBy('d.folio', 'desc')->get();
+            )
+            ->orderBy('d.folio', 'desc')
+            ->get();
 
         return response()->json(['data' => $rows]);
     }

@@ -90,46 +90,6 @@
                 </div>
             </div>
 
-            {{-- Filtros --}}
-            <div class="card mb-3" style="border-left:5px solid #0d6efd;">
-                <div class="card-body py-3">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-6 col-md-2">
-                            <label class="form-label fw-bold mb-1" style="font-size:.8rem;">Fecha inicio</label>
-                            <input type="date" id="fechaInicio" class="form-control form-control-sm"
-                                value="{{ now()->startOfMonth()->toDateString() }}">
-                        </div>
-                        <div class="col-6 col-md-2">
-                            <label class="form-label fw-bold mb-1" style="font-size:.8rem;">Fecha fin</label>
-                            <input type="date" id="fechaFin" class="form-control form-control-sm"
-                                value="{{ date('Y-m-d') }}">
-                        </div>
-                        <div class="col-6 col-md-2">
-                            <label class="form-label fw-bold mb-1" style="font-size:.8rem;">Status</label>
-                            <select id="statusFiltro" class="form-select form-select-sm">
-                                <option value="">Todos</option>
-                                <option value="Autorizada">Autorizada</option>
-                                <option value="Rechazada">Rechazada</option>
-                                <option value="Pendiente">Pendiente</option>
-                            </select>
-                        </div>
-                        <div class="col-6 col-md-2">
-                            <label class="form-label fw-bold mb-1" style="font-size:.8rem;">Tipo</label>
-                            <select id="tipoFiltro" class="form-select form-select-sm">
-                                <option value="">Todos</option>
-                                <option value="Prosewash">Prosewash</option>
-                                <option value="Normal">Normal</option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-2">
-                            <button class="btn btn-sm w-100 text-white" style="background:#0d6efd;" onclick="cargarTabla()">
-                                <i class="bi bi-search me-1"></i>Buscar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {{-- Tabla --}}
             <div class="card" style="border-left:5px solid #0d6efd;">
                 <div class="card-body p-3">
@@ -154,13 +114,6 @@
                             </tr>
                         </thead>
                         <tbody></tbody>
-                        <tfoot>
-                            <tr style="background:linear-gradient(135deg,#0a58ca,#0d6efd);color:#fff;font-weight:700;font-size:.80rem;">
-                                <th colspan="2">Total</th>
-                                <th id="foot-importe"></th>
-                                <th colspan="8"></th>
-                            </tr>
-                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -245,19 +198,11 @@
                 url: '/procepago/domiciliaciones/table',
                 type: 'POST',
                 data: {
-                    _token:       $('meta[name="csrf-token"]').attr('content'),
-                    fecha_inicio: $('#fechaInicio').val(),
-                    fecha_final:  $('#fechaFin').val(),
-                    status:       $('#statusFiltro').val(),
-                    tipo:         $('#tipoFiltro').val(),
+                    _token: $('meta[name="csrf-token"]').attr('content'),
                 },
                 dataSrc: function (json) {
                     Swal.close();
-                    const data = json.data || [];
-                    const total = data.reduce((s, r) => s + parseFloat(r.importe || 0), 0);
-                    document.getElementById('foot-importe').textContent =
-                        '$' + total.toLocaleString('es-MX', { minimumFractionDigits: 2 });
-                    return data;
+                    return json.data || [];
                 },
                 error: function () {
                     Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar los registros.' });
@@ -287,6 +232,7 @@
                     data: 'tipo',
                     render: (d, t) => {
                         if (t !== 'display') return d || '';
+                        if (!d) return '—';
                         const cls = d === 'Prosewash' ? 'badge-prosewash' : 'badge-normal';
                         return `<span class="badge ${cls}">${d}</span>`;
                     }
@@ -310,13 +256,6 @@
                     className: 'btn btn-warning buttons-copy'
                 },
             ],
-            footerCallback: function () {
-                const api = this.api();
-                const total = api.column(2, { search: 'applied' }).data()
-                    .reduce((s, v) => s + parseFloat(v || 0), 0);
-                document.getElementById('foot-importe').textContent =
-                    '$' + total.toLocaleString('es-MX', { minimumFractionDigits: 2 });
-            },
         });
     }
 
